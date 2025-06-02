@@ -1,0 +1,8 @@
+install.packages("greta")
+install.packages("terra")
+install.packages("readxl")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("scales")
+install.packages("tidyverse")
+install.packages("viridisLite")

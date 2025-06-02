@@ -8,19 +8,16 @@ predict_to_ras <- function(stack,
   ras <- stack[[grep(as.character(year), names(stack))]] %>%
     aggregate(fact = agg_factor)
   
-  
   coords_pixel <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
                         rep(year, length(terra::cells(ras)))) %>%
     as.data.frame() %>%
     setNames(c("x", "y", "year")) %>%
     mutate(scaled_year = scale_year(year))
-  message(nrow(coords_pixel))
   
   X_pixel <- build_design_matrix(stack,
                                  coords_pixel,
                                  temporal_range = rep(year, 2),
                                  scale = FALSE)
-  message(nrow(X_pixel))
   
   coords_pixel <- dplyr::select(coords_pixel, -c("year"))
   
@@ -30,13 +27,10 @@ predict_to_ras <- function(stack,
   mut_freq_pixel <- (X_pixel %*% parameters$beta + random_field_pixel) %>%
     ilogit()
   
-  message(dim(mut_freq_pixel))
-  
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
                                       nsim = 100,
-                                      trace_batch_size = 10) # reducing: will take longer, use less mem
-  message(dim(mut_freq_pixel))
+                                      trace_batch_size = 50) # reducing: will take longer, use less mem
   
   post_pixel_mean <- colMeans(post_pixel_sims$mut_freq_pixel[, , 1])
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
