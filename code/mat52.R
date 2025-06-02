@@ -28,6 +28,7 @@ X_obs <- build_design_matrix(covariates,
                              temporal_range = pfpr_years)
 # we want this to give us back scaled years but need to provide unscaled years
 # so that it can grab from correct annual covt raster
+message(nrow(X_obs))
 
 coords <- coords %>%
   dplyr::select(x, y, scaled_year)

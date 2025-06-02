@@ -1,4 +1,4 @@
-### A repo for models of prevalence ofr molecular markers of artemisinin and partner drug resistance
+### A repo for models of prevalence of molecular markers of artemisinin and partner drug resistance in Africa
 
 #### What the code does
 
@@ -12,6 +12,13 @@ We model prevalence as a Gaussian Process with a binomial observation model and 
 space [inc. refs]. [Say something about uncertainty]
 
 #### What's in here
+
+There are a number of scripts in `code/`:
+
+- `setup.R` reads in covariate data and surveyor data
+- `mat52.R` and `circmat.R` are two scripts for slightly different models
+- `predict.R` should be taking model outputs and doing some prediction
+- `build_design_matrix.R` and `predict_to_raster.R` wrap up some functions for different bits of the workflow
 
 #### See also
 
@@ -28,5 +35,7 @@ space [inc. refs]. [Say something about uncertainty]
 - put some links into README
 - think about partner drugs
 - think about how partner drug outputs combine with K13 outputs to make "overall ACT molecular resistance map"
+- fix up stable transmission mask ... check if Jen is working with something specific
+- need some figures showing parameter posteriors
 
 

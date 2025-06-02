@@ -1,4 +1,5 @@
-set.seed(834903)
+set.seed(0784)
+# for some reason, my usual seed was causing a mysterious TF error
 library(greta)
 library(DiagrammeR)
 library(terra)
@@ -79,14 +80,14 @@ dim(mut_data)
 #   points(mut_data[mut_data$present/mut_data$tested < 0.1, c("x","y")], col="red")
 # }
 
-pfpr_agg <- aggregate(pfpr, 10)
-
-df <- cbind(xyFromCell(pfpr_agg, 1:ncell(pfpr_agg)),
-            as.matrix(pfpr_agg)) %>% # has to be a matrix
-  as.data.frame() %>%
-  pivot_longer(cols = starts_with("pfpr"), 
-               names_to = "trunc_year",
-               names_prefix = "pfpr_")
+# pfpr_agg <- aggregate(pfpr, 10)
+# 
+# df <- cbind(xyFromCell(pfpr_agg, 1:ncell(pfpr_agg)),
+#             as.matrix(pfpr_agg)) %>% # has to be a matrix
+#   as.data.frame() %>%
+#   pivot_longer(cols = starts_with("pfpr"), 
+#                names_to = "trunc_year",
+#                names_prefix = "pfpr_")
 
 # library(rasterVis)
 # ggplot(df, aes(x, y, value)) +
@@ -105,14 +106,14 @@ covariates <- pfpr # now standardised
 
 
 ##########################################################
-grid_raster <- pfpr_agg[[1]] * 0
-names(grid_raster) <- NULL
-
-# Pick projection as UTM zone 36S (Uganda, Kenya, Tanzania)
-new_crs <- "epsg:21036"
-
-# project this template raster, the bioclim layers, and the population raster
-grid_raster <- terra::project(grid_raster, new_crs)
+# grid_raster <- pfpr_agg[[1]] * 0
+# names(grid_raster) <- NULL
+# 
+# # Pick projection as UTM zone 36S (Uganda, Kenya, Tanzania)
+# new_crs <- "epsg:21036"
+# 
+# # project this template raster, the bioclim layers, and the population raster
+# grid_raster <- terra::project(grid_raster, new_crs)
 
 
 

@@ -6,9 +6,10 @@ random_field <- read_rds("output/mat52_model/random_field.rds")
 m <- read_rds("output/mat52_model/m.rds")
 draws <- read_rds("output/mat52_model/draws.rds")
 
-source("code/setup.R")
 source("code/build_design_matrix.R")
-source("code/predict_to_raster.R")
+
+source("code/setup.R")
+
 
 # dropping prediction code from dhps_africa_greta
 stable_transmission_mask <- covariates$pfpr_2010 %>%
@@ -16,6 +17,56 @@ stable_transmission_mask <- covariates$pfpr_2010 %>%
 stable_transmission_mask[stable_transmission_mask < -0.62] <- NA
 # stable_transmission_mask <- crop(stable_transmission_mask,
 #                                  ext(-21, 60, -35.0833320617676, 37.4166679382324))
+
+# ras <- covariates[[grep(as.character(2010), names(covariates))]] %>%
+#   aggregate(fact = 15)
+# 
+# coords_pixel <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
+#                       rep(2010, length(terra::cells(ras)))) %>%
+#   as.data.frame() %>%
+#   setNames(c("x", "y", "year")) %>%
+#   mutate(scaled_year = scale_year(2010))
+# message(nrow(coords_pixel))
+# 
+# X_pixel <- build_design_matrix(covariates,
+#                                coords_pixel,
+#                                temporal_range = rep(2010, 2),
+#                                scale = FALSE)
+# message(nrow(X_pixel))
+# 
+# coords_pixel <- dplyr::select(coords_pixel, -c("year"))
+# 
+# # Rand field is coming from above
+# random_field_pixel <- greta.gp::project(random_field, coords_pixel)
+# 
+# mut_freq_pixel <- (X_pixel %*% parameters$beta + random_field_pixel) %>%
+#   ilogit()
+# 
+# message(dim(mut_freq_pixel))
+# 
+# post_pixel_sims <- greta::calculate(mut_freq_pixel,
+#                                     values = draws,
+#                                     nsim = 100,
+#                                     trace_batch_size = 10) # reducing: will take longer, use less mem
+# message(dim(mut_freq_pixel))
+# 
+# post_pixel_mean <- colMeans(post_pixel_sims$mut_freq_pixel[, , 1])
+# post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
+# 
+# out <- c(ras, ras) * 0 # assuming we have at least two layers in there ..
+# out <- setNames(out, c("post_mean", "post_sd"))
+# 
+# out$post_mean[terra::cells(out$post_mean)] <- post_pixel_mean
+# out$post_sd[terra::cells(out$post_sd)] <- post_pixel_sd
+# 
+# if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
+#   # let it be known that I did some googling about this :(
+#   # in raster I would have plopped `raster(NA)` in the function definition
+#   out <- mask(out, stable_transmission_mask)
+# }
+
+
+source("code/predict_to_raster.R")
 
 tmp2 <- predict_to_ras(covariates,
                        2010,
