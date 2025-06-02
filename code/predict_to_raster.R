@@ -1,4 +1,7 @@
-predict_to_ras <- function(stack, year, draws, parameters,
+predict_to_ras <- function(stack, 
+                           year, 
+                           draws, 
+                           parameters,
                            agg_factor = 1,
                            nsim = 100,
                            stable_transmission_mask = rast()){
