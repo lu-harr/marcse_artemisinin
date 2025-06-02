@@ -1,6 +1,5 @@
 set.seed(834903)
 library(greta)
-library(greta.gp) # we won't need my diy version for this one
 library(DiagrammeR)
 library(terra)
 library(readxl)
@@ -103,8 +102,6 @@ df <- cbind(xyFromCell(pfpr_agg, 1:ncell(pfpr_agg)),
 # # they call me a ggplot pro
 
 covariates <- pfpr # now standardised
-
-source("code/build_design_matrix.R")
 
 
 ##########################################################

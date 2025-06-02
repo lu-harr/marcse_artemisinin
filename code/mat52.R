@@ -1,4 +1,7 @@
-# default - doesn't work great
+library(greta.gp) # we won't need my diy version for this one
+source("code/build_design_matrix.R")
+
+# a start - works okay
 coords <- mut_data %>%
   dplyr::select(x, y, year, scaled_year)
 

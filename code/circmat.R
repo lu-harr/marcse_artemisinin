@@ -1,6 +1,13 @@
-# default - doesn't work great
+devtools::install_github("lu-harr/greta.gp.st.on.earth")
+library(greta.gp)
+?circmat
+
+# model with circular matern kernel over space?
 coords <- mut_data %>%
-  dplyr::select(x, y, year, scaled_year)
+  dplyr::select(x, y, year, scaled_year) %>%
+  # convert to radians
+  mutate(x = degrees_to_radians(x),
+         y = degrees_to_radians(y))
 
 define_greta_parameters <- function(){
   list(
@@ -13,11 +20,13 @@ define_greta_parameters <- function(){
 
 parameters <- define_greta_parameters() # are there any choices that should be arguments?
 
-
-kernel <- circmat(lengthscales = c(parameters$kernel_lengthscale_space, 
-                                 parameters$kernel_lengthscale_space, 
-                                 parameters$kernel_lengthscale_time),
-                variance = parameters$kernel_sd ^ 2)
+kernel <- circmat(lengthscale = kernel_lengthscale_space, 
+                  variance = 1, 
+                  columns = c(1, 2),
+                  circumference = 1) + 
+          expo(lengthscales = kernel_lengthscale_time,
+               variance = 1,
+               columns = 3)
 
 X_obs <- build_design_matrix(covariates, 
                              coords, 
