@@ -72,7 +72,7 @@ mut_data <- zoom_k13 %>%
 message("filtering out records pre-2007")
 
 dim(mut_data)
-plot(mut_data$year, mut_data$present/mut_data$tested)
+# plot(mut_data$year, mut_data$present/mut_data$tested)
 
 # {plot(pfpr$pfpr_2000, main=paste0(nrow(mut_data), " records in area of interest after grouping"))
 #   points(mut_data[,c("x","y")], col="grey90",
