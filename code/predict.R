@@ -6,7 +6,7 @@ random_field <- read_rds("output/mat52_model/random_field.rds")
 m <- read_rds("output/mat52_model/m.rds")
 draws <- read_rds("output/mat52_model/draws.rds")
 
-
+source("code/setup.R")
 source("code/predict_to_raster.R")
 
 # dropping prediction code from dhps_africa_greta
