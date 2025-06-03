@@ -1,13 +1,14 @@
 set.seed(0784)
 # for some reason, my usual seed was causing a mysterious TF error
 library(greta)
-library(DiagrammeR)
+#library(DiagrammeR)
 library(terra)
 library(readxl)
 library(dplyr)
-library(malariaAtlas)
+#library(malariaAtlas)
 library(tidyr)
 library(scales)
+library(magrittr)
 library(tidyverse)
 
 afr_extent <- (matrix(c(-21, -34.9, 63, 37.4), nrow = 2, ncol = 2, 

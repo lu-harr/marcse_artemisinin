@@ -55,9 +55,50 @@ draws <- mcmc(m, n_samples = 3000,
               initial_values = replicate(4, initials(beta = rep(0,3)), 
                                          simplify = FALSE))
 
-png("output/mat52_trace.png", height=750, width=1500)
-bayesplot::mcmc_trace(draws)
-dev.off()
+
+library(GGally)
+library(brms)
+
+modified_density = function(data, mapping, ...) {
+  ggally_densityDiag(data, mapping, ...) + 
+    scale_fill_brewer(type = "qual", palette = "Purples")
+}
+
+# ggplot is the silliest darn software going
+# why would anyone want or need to change a colour palette?
+# beats me
+modified_points = function(data, mapping, ...) {
+  ggally_points(data, mapping, ...) + 
+    scale_color_brewer(palette = "Purples")
+}
+
+modified_cor = function(data, mapping, ...){
+  ggally_cor(data, mapping, ...) +
+    scale_color_brewer(palette = "Purples")
+}
+
+post <- as_draws_df(draws) %>%
+  rename("Lengthscale (spatial)" = "parameters$kernel_lengthscale_space",
+         "Lengthscale (temporal)" = "parameters$kernel_lengthscale_time",
+         "sigma" = "parameters$kernel_sd",
+         "beta_0" = "parameters$beta[1,1]",
+         "beta_1" = "parameters$beta[2,1]",
+         "beta_2" = "parameters$beta[3,1]")
+
+library(bayesplot)
+color_scheme_set("brewer-Purples")
+bayesplot::mcmc_trace(post)
+ggsave("figures/mat52_trace.png", height=10, width=15)
+
+# love the purps but they're a bit too light to use for cor
+post %>%
+  mutate(chain = as.factor(.chain)) %>%
+  ggpairs(columns = 1:6,
+          mapping = aes(colour = chain),
+          lower = list(continuous = wrap(modified_points, alpha = 0.4)), # can't seem to turn alpha down here?
+          diag = list(continuous = wrap(modified_density, alpha = 0.5)),
+          upper = list(continuous = modified_cor)) # probably don't need corrs for chains?
+ggsave("figures/chain_corr_mat52.png", height=12, width=12)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
