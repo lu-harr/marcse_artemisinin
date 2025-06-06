@@ -71,8 +71,14 @@ m <- model(parameters$kernel_lengthscale_space,
 
 # get a fun little error down here ...
 draws <- mcmc(m, n_samples = 3000, 
-              initial_values = replicate(4, initials(beta = rep(0,3)), 
-                                         simplify = FALSE))
+               initial_values = replicate(4, initials(beta = rep(0,3)), 
+                                          simplify = FALSE))
+
+# Error in `self$check_reasonable_starting_values()`:
+# ! Could not find reasonable starting values after 20 attempts.
+# Please specify initial values manually via the `initial_values` argument
+# suggests everything is so bad it won't be accepted
+# get calculate working and test what gets crapped out ..
 
 png("output/circmat_trace.png", height=750, width=1500)
 bayesplot::mcmc_trace(draws)
