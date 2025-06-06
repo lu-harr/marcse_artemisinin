@@ -1,11 +1,29 @@
+source("code/setup.R")
+
 devtools::install_github("lu-harr/greta.gp.st.on.earth")
 library(greta.gp)
+
+# here are the bits I've added
 ?circmat
+?degrees_to_radians
+?great_circle_dist
 
 # model with circular matern kernel over space?
 coords <- mut_data %>%
-  dplyr::select(x, y, year, scaled_year) %>%
-  # convert to radians
+  dplyr::select(x, y, year, scaled_year)
+
+source("code/build_design_matrix.R")
+X_obs <- build_design_matrix(covariates, 
+                             coords, 
+                             scale = FALSE, 
+                             temporal_range = pfpr_years)
+# we want this to give us back scaled years but need to provide unscaled years
+# so that it can grab from correct annual covt raster
+
+coords <- coords %>%
+  # convert to radians - need to do this after covariate extraction above ..
+  # check this doesn't mess things up when we get to prediction ...
+  # will probably just need a radians_to_degrees?
   mutate(x = degrees_to_radians(x),
          y = degrees_to_radians(y))
 
@@ -20,20 +38,15 @@ define_greta_parameters <- function(){
 
 parameters <- define_greta_parameters() # are there any choices that should be arguments?
 
-kernel <- circmat(lengthscale = kernel_lengthscale_space, 
-                  variance = 1, 
+kernel <- circmat(lengthscale = parameters$kernel_lengthscale_space, 
+                  variance = parameters$kernel_sd**2, 
                   columns = c(1, 2),
                   circumference = 1) + 
-          expo(lengthscales = kernel_lengthscale_time,
-               variance = 1,
+          expo(lengthscales = parameters$kernel_lengthscale_time,
+               variance = parameters$kernel_sd**2,
                columns = 3)
 
-X_obs <- build_design_matrix(covariates, 
-                             coords, 
-                             scale = FALSE, 
-                             temporal_range = pfpr_years)
-# we want this to give us back scaled years but need to provide unscaled years
-# so that it can grab from correct annual covt raster
+# need to incorporate `kernel _sd` .. could go in both variance spots ..?
 
 coords <- coords %>%
   dplyr::select(x, y, scaled_year)
@@ -56,6 +69,7 @@ m <- model(parameters$kernel_lengthscale_space,
            parameters$kernel_sd, 
            parameters$beta)
 
+# get a fun little error down here ...
 draws <- mcmc(m, n_samples = 3000, 
               initial_values = replicate(4, initials(beta = rep(0,3)), 
                                          simplify = FALSE))

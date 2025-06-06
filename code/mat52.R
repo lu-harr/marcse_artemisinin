@@ -1,9 +1,18 @@
 library(greta.gp) # we won't need my diy version for this one
-source("code/build_design_matrix.R")
 
 # a start - works okay
 coords <- mut_data %>%
   dplyr::select(x, y, year, scaled_year)
+
+source("code/build_design_matrix.R")
+X_obs <- build_design_matrix(covariates, 
+                             coords, 
+                             scale = FALSE, 
+                             temporal_range = pfpr_years)
+# we want this to give us back scaled years but need to provide unscaled years
+# so that it can grab from correct annual covt raster
+message(nrow(X_obs))
+
 
 define_greta_parameters <- function(){
   list(
@@ -15,20 +24,16 @@ define_greta_parameters <- function(){
 }
 
 parameters <- define_greta_parameters() # are there any choices that should be arguments?
+# beta = normal(0, 3, dim = 3)
+# kernel_lengthscale_space = normal(0, 3, truncation = c(0, Inf))
+# kernel_lengthscale_time = normal(0, 3, truncation = c(0, Inf))
+# kernel_sd = normal(0, 1, truncation = c(0, Inf))
 
 
 kernel <- mat52(lengthscales = c(parameters$kernel_lengthscale_space, 
                                  parameters$kernel_lengthscale_space, 
                                  parameters$kernel_lengthscale_time),
                 variance = parameters$kernel_sd ^ 2)
-
-X_obs <- build_design_matrix(covariates, 
-                             coords, 
-                             scale = FALSE, 
-                             temporal_range = pfpr_years)
-# we want this to give us back scaled years but need to provide unscaled years
-# so that it can grab from correct annual covt raster
-message(nrow(X_obs))
 
 coords <- coords %>%
   dplyr::select(x, y, scaled_year)
