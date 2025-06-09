@@ -163,6 +163,14 @@ st_sd <- st %>%
   filter(grepl("SD", variable)) %>%
   mutate(variable = gsub("SD ", "", variable))
 
+library(ggplot2)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(dplyr)
+library(terra)
+world <- ne_countries(scale="medium", returnclass = "sf")
+
 ggplot() +
   geom_sf(data = filter(world, continent == "Africa"), fill = "white") +
   geom_tile(data = st_mean, aes(x, y, fill = value)) +
