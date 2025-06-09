@@ -1,3 +1,5 @@
+source("code/setup.R")
+
 mut_data <- read_rds("output/mat52_model/mut_data.rds")
 parameters <- read_rds("output/mat52_model/parameters.rds")
 # read_rds(mut_prob_obs, "output/mat52_model/mut_prob_obs.rds")
@@ -6,10 +8,23 @@ random_field <- read_rds("output/mat52_model/random_field.rds")
 m <- read_rds("output/mat52_model/m.rds")
 draws <- read_rds("output/mat52_model/draws.rds")
 
+# mut_data <- read_rds("../dhps_mapping/quintuple_question/quintuple/mut_data.rds")
+# parameters <- read_rds("../dhps_mapping/quintuple_question/quintuple/parameters.rds")
+# # read_rds(mut_prob_obs, "../dhps_mapping/quintuple_question/quintuple/mut_prob_obs.rds")
+# kernel <- read_rds("../dhps_mapping/quintuple_question/quintuple/kernel.rds")
+# random_field <- read_rds("../dhps_mapping/quintuple_question/quintuple/random_field.rds")
+# m <- read_rds("../dhps_mapping/quintuple_question/quintuple/m.rds")
+# draws <- read_rds("../dhps_mapping/quintuple_question/quintuple/draws.rds")
+# 
+# mut_data <- read_rds("../dhps_mapping/quintuple_question/540E/mut_data.rds")
+# parameters <- read_rds("../dhps_mapping/quintuple_question/540E/parameters.rds")
+# # read_rds(mut_prob_obs, "../dhps_mapping/quintuple_question/540E/mut_prob_obs.rds")
+# kernel <- read_rds("../dhps_mapping/quintuple_question/540E/kernel.rds")
+# random_field <- read_rds("../dhps_mapping/quintuple_question/540E/random_field.rds")
+# m <- read_rds("../dhps_mapping/quintuple_question/540E/m.rds")
+# draws <- read_rds("../dhps_mapping/quintuple_question/540E/draws.rds")
+
 source("code/build_design_matrix.R")
-
-source("code/setup.R")
-
 
 # dropping prediction code from dhps_africa_greta
 stable_transmission_mask <- covariates$pfpr_2010 %>%
@@ -18,9 +33,10 @@ stable_transmission_mask[stable_transmission_mask < -0.62] <- NA
 
 source("code/predict_to_raster.R")
 
-year1 = 2010
-year2 = 2017
-year3 = 2022
+year1 = 2000
+year2 = 2010
+year3 = 2020
+
 
 tmp2 <- predict_to_ras(covariates,
                        year1,
@@ -121,3 +137,64 @@ library(viridisLite)
   
   
   dev.off()}
+
+all_outs <- stack(tmp2, tmp3, tmp4) %>%
+  getValues() %>%
+  as.data.frame() %>%
+  cbind(xyFromCell(tmp2, seq_len(ncell(tmp2)))) %>%
+  setNames(c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
+             "Mean 2022", "SD 2022", "x", "y"))
+
+st = stack(tmp2, tmp3, tmp4)
+names(st) <- c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
+               "Mean 2022", "SD 2022")
+coords <- xyFromCell(st, seq_len(ncell(st)))
+st <- stack(as.data.frame(getValues(st)))
+names(st) <- c("value", "variable")
+st <- mutate(st, variable = gsub("\\.", " ", variable))
+  
+st <- cbind(coords, st)
+
+st_mean <- st %>%
+  filter(grepl("Mean", variable)) %>%
+  mutate(variable = gsub("Mean ", "", variable))
+
+st_sd <- st %>%
+  filter(grepl("SD", variable)) %>%
+  mutate(variable = gsub("SD ", "", variable))
+
+ggplot() +
+  geom_sf(data = filter(world, continent == "Africa"), fill = "white") +
+  geom_tile(data = st_mean, aes(x, y, fill = value)) +
+  facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
+  scale_fill_viridis_c(na.value = NA, "Prevalence") +
+  xlab("Longitude") +
+  ylab("Latitude")
+ggsave("k13_mean.png", width = 6, height = 2, scale = 2)
+
+ggplot() +
+  geom_sf(data = filter(world, continent == "Africa"), fill = "white") +
+  geom_tile(data = st_sd, aes(x, y, fill = value)) +
+  facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
+  scale_fill_distiller(palette="YlOrBr", na.value = NA, "Uncertainty", trans="sqrt") +
+  xlab("Longitude") +
+  ylab("Latitude")
+ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
+
+# perhaps what I should do is give up on the idea that they should be one plot
+
+
+library(rasterVis)
+gplot(stack(tmp2, tmp3, tmp4)) +
+  geom_tile(aes(fill = value)) +
+  facet_wrap(~ variable, ncol = 2) +
+  scale_fill_viridis_c(na.value = "white") +
+  coord_equal()
+
+
+
+
+
+
+
+

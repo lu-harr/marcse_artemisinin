@@ -79,6 +79,7 @@ draws <- mcmc(m, n_samples = 3000,
 # Please specify initial values manually via the `initial_values` argument
 # suggests everything is so bad it won't be accepted
 # get calculate working and test what gets crapped out ..
+# `valid_parameters`
 
 png("output/circmat_trace.png", height=750, width=1500)
 bayesplot::mcmc_trace(draws)

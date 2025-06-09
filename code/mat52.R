@@ -38,8 +38,12 @@ kernel <- mat52(lengthscales = c(parameters$kernel_lengthscale_space,
 coords <- coords %>%
   dplyr::select(x, y, scaled_year)
 
+# dhps data seems to need inducing points:
+#kmn <- kmeans(coords, centers = 15)
+
 random_field <- gp(x = coords, # lon, lat, year
                    kernel = kernel,
+                   #inducing = kmn$centers
                    inducing = unique(coords)  # shouldn't do much to simulated data but might be very helpful for actual data
 )
 
@@ -120,7 +124,23 @@ write_rds(m, "output/mat52_model/m.rds")
 write_rds(draws, "output/mat52_model/draws.rds")
 
 
-
+# # save everything and do the prediction in a separate script
+# write_rds(mut_data, "../dhps_mapping/quintuple_question/quintuple/mut_data.rds")
+# write_rds(parameters, "../dhps_mapping/quintuple_question/quintuple/parameters.rds")
+# # write_rds(mut_prob_obs, "../dhps_mapping/quintuple_question/quintuple/mut_prob_obs.rds")
+# write_rds(kernel, "../dhps_mapping/quintuple_question/quintuple/kernel.rds")
+# write_rds(random_field, "../dhps_mapping/quintuple_question/quintuple/random_field.rds")
+# write_rds(m, "../dhps_mapping/quintuple_question/quintuple/m.rds")
+# write_rds(draws, "../dhps_mapping/quintuple_question/quintuple/draws.rds")
+# 
+# # save everything and do the prediction in a separate script
+# write_rds(mut_data, "../dhps_mapping/quintuple_question/540E/mut_data.rds")
+# write_rds(parameters, "../dhps_mapping/quintuple_question/540E/parameters.rds")
+# # write_rds(mut_prob_obs, "../dhps_mapping/quintuple_question/540E/mut_prob_obs.rds")
+# write_rds(kernel, "../dhps_mapping/quintuple_question/540E/kernel.rds")
+# write_rds(random_field, "../dhps_mapping/quintuple_question/540E/random_field.rds")
+# write_rds(m, "../dhps_mapping/quintuple_question/540E/m.rds")
+# write_rds(draws, "../dhps_mapping/quintuple_question/540E/draws.rds")
 
 
 
