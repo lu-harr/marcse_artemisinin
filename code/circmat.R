@@ -157,8 +157,16 @@ write_rds(draws, "output/circmat_model/draws.rds")
 
 
 
+# would be nice to have a figure that shows difference between absolute distance 
+# and great circle
 
+pts = cbind(rep(20, 10), seq(30, -30, length.out = 10))
+dists = data.frame(euclid = as.matrix(dist(pts))[1,],
+                   gc = distHaversine(pts, c(20, 30))) %>%
+  mutate(euclid = euclid / , # this is in degrees ...
+         gc = gc/1000) # km
 
+plot(0:9, dists[,1])
+lines(0:9, dists[,2])
 
-
-
+# okay so this is a bust so far ...

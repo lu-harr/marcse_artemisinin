@@ -1,3 +1,5 @@
+source("code/setup.R")
+
 library(greta.gp) # we won't need my diy version for this one
 
 # a start - works okay
