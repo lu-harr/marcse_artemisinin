@@ -1,4 +1,11 @@
+source("code/build_design_matrix.R")
 source("code/setup.R")
+
+message("test")
+
+#install_greta_deps()
+
+#message("test1")
 
 library(greta.gp) # we won't need my diy version for this one
 
@@ -124,6 +131,8 @@ write_rds(kernel, "output/mat52_model/kernel.rds")
 write_rds(random_field, "output/mat52_model/random_field.rds")
 write_rds(m, "output/mat52_model/m.rds")
 write_rds(draws, "output/mat52_model/draws.rds")
+
+# I've seen worse .. just needs to run a bit longer
 
 
 # # save everything and do the prediction in a separate script

@@ -39,7 +39,8 @@ scale_year <- function(year, min_year=min(pfpr_years)){
 #   filter(str_detect(`marker group`, "540E")) %>%
 #   suppressWarnings()
 
-all_k13_africa <- read.csv("data/moldm_k13_afr_group_coord_year_tested_nomarker.csv") %>%
+#all_k13_africa <- read.csv("data/moldm_k13_afr_group_coord_year_tested_nomarker.csv") %>%
+all_k13_africa <- read.csv("data/moldm_k13_nomarker.csv") %>% 
   rename(x = Longitude,
          y = Latitude,
          present = Present,
@@ -67,10 +68,7 @@ mut_data <- zoom_k13 %>%
          scaled_year = scale_year(trunc_year, min_year=min(pfpr_years)),
          land = terra::extract(pfpr$pfpr_2000, cbind(x, y))) %>%
   drop_na() %>%
-  dplyr::select(-c(land)) %>%
-  filter(year > 2007)
-
-message("filtering out records pre-2007")
+  dplyr::select(-c(land))
 
 dim(mut_data)
 # plot(mut_data$year, mut_data$present/mut_data$tested)
