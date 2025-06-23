@@ -2,10 +2,12 @@ source("code/setup.R")
 source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
+# bring in all of the other outputs here too
 mut_data <- read_rds("output/circmat_model/mut_data.rds")
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
 
 preds <- lapply(pfpr_years, function(year){
+  message(year)
   predict_to_ras(covariates,
                  year,
                  draws,
@@ -22,4 +24,4 @@ preds <- rast(preds)
 # names(preds) <- sort(apply(expand.grid(pfpr_years, c("post_mean", "post_sd")), 1, 
 #                          paste, collapse = "_"))
 
-writeRaster(preds, "output/circmat_model/preds_all.grd")
+writeRaster(preds, "output/circmat_model/preds_all.grd", overwrite = TRUE)

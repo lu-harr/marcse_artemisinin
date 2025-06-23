@@ -17,8 +17,9 @@ predict_to_ras <- function(stack,
   
   coords <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
                   rep(year, length(terra::cells(ras)))) %>%
-    as.data.frame() %>%
-    setNames(c("x", "y", "year"))
+    as.data.frame()
+  
+  names(coords) <- c("x", "y", "year")
   
   tmp <- build_design_matrix(ras,
                              coords,
@@ -39,15 +40,14 @@ predict_to_ras <- function(stack,
                                       values = draws,
                                       nsim = 100,
                                       trace_batch_size = 50) # reducing: will take longer, use less mem
-  
+  # erm would prefer a median
   post_pixel_mean <- colMeans(post_pixel_sims$mut_freq_pixel[, , 1])
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
   
   out <- c(ras, ras) * 0 # assuming we have at least two layers in there ..
-  out <- setNames(out, c(paste(year, "_post_mean"), paste(year, "_post_sd")))
-  
-  out$post_mean[terra::cells(out$post_mean)] <- post_pixel_mean
-  out$post_sd[terra::cells(out$post_sd)] <- post_pixel_sd
+  names(out) <- paste0(year, c("_post_mean", "_post_sd"))
+  out[[1]][terra::cells(out[[1]])] <- post_pixel_mean
+  out[[2]][terra::cells(out[[2]])] <- post_pixel_sd
   
   if(!is.null(stable_transmission_mask)){
   #if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
@@ -55,7 +55,6 @@ predict_to_ras <- function(stack,
     # in raster I would have plopped `raster(NA)` in the function definition
     out <- mask(out, stable_transmission_mask)
   }
-  
   out
 }
 

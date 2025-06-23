@@ -1,7 +1,6 @@
 # MWE script: not too many inducing points, not too many iters, predicting to one year
 source("code/setup.R")
 source("code/build_design_matrix.R")
-library("greta.gp")
 
 mut_data 
 
@@ -57,7 +56,7 @@ kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) +
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
   white(nugget_var)
 
-kmn <- kmeans(X_obs[,coord_cols], centers = 15)
+kmn <- kmeans(X_obs[,coord_cols], centers = 20)
 random_field <- gp(x = X_obs[,coord_cols], 
                    kernel = kernel,
                    inducing = kmn$centers)
@@ -73,7 +72,8 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 
 set.seed(0748)
-draws <- mcmc(m, n_samples = 250,
+draws <- mcmc(m, 
+              n_samples = 3000,
               initial_values = initials(circmat_len = 0.02,
                                         circmat_var = 0.5,
                                         expo_var = 0.5,
@@ -82,37 +82,41 @@ draws <- mcmc(m, n_samples = 250,
                                         beta = rep(0, 3)))
 
 bayesplot::mcmc_trace(draws)
-# I've seen worse
 
-f_plot <- greta.gp::project(random_field, X_pixel[,coord_cols])
-mut_freq_plot <- X_pixel[,design_cols] %*% beta + f_plot
-y_plot <- greta::calculate(mut_freq_plot,
-                           values = draws)
-med_vals <- apply(y_plot[[1]], 2, median)
-sd_vals <- apply(y_plot[[1]], 2, sd)
+r_hats <- coda::gelman.diag(draws,
+                            autoburnin = FALSE,
+                            multivariate = FALSE)
+summary(r_hats$psrf)
 
-med_ras <- ras_agg
-med_ras[cells(med_ras)] <- unlist(calculate(ilogit(med_vals)))
-sd_ras <- ras_agg
-sd_ras[cells(sd_ras)] <- sd_vals
-
-par(mfrow=c(1,2))
-plot(med_ras, main="Median posterior samp")
-points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-
-plot(sd_ras, main="SD posterior samp")
-points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
+# quick little prediction script to one year:
+# f_plot <- greta.gp::project(random_field, X_pixel[,coord_cols])
+# mut_freq_plot <- X_pixel[,design_cols] %*% beta + f_plot
+# y_plot <- greta::calculate(mut_freq_plot,
+#                            values = draws)
+# med_vals <- apply(y_plot[[1]], 2, median)
+# sd_vals <- apply(y_plot[[1]], 2, sd)
+# 
+# med_ras <- ras_agg
+# med_ras[cells(med_ras)] <- unlist(calculate(ilogit(med_vals)))
+# sd_ras <- ras_agg
+# sd_ras[cells(sd_ras)] <- sd_vals
+# 
+# par(mfrow=c(1,2))
+# plot(med_ras, main="Median posterior samp")
+# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
+# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
+# 
+# plot(sd_ras, main="SD posterior samp")
+# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
+# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
 
 parameters <- list(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
-names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var", 
+names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",
                        "nugget_var", "beta")
 
 # save everything and do the prediction in a separate script
 write_rds(mut_data, "output/circmat_model/mut_data.rds")
 write_rds(parameters, "output/circmat_model/parameters.rds")
-# write_rds(mut_prob_obs, "output/circmat_model/mut_prob_obs.rds")
 write_rds(kernel, "output/circmat_model/kernel.rds")
 write_rds(random_field, "output/circmat_model/random_field.rds")
 write_rds(m, "output/circmat_model/m.rds")
