@@ -1,3 +1,4 @@
+# MWE script: not too many inducing points, not too many iters, predicting to one year
 source("code/setup.R")
 source("code/build_design_matrix.R")
 library("greta.gp")
@@ -104,5 +105,15 @@ plot(sd_ras, main="SD posterior samp")
 points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
 points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
 
+parameters <- list(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
+names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var", 
+                       "nugget_var", "beta")
 
-
+# save everything and do the prediction in a separate script
+write_rds(mut_data, "output/circmat_model/mut_data.rds")
+write_rds(parameters, "output/circmat_model/parameters.rds")
+# write_rds(mut_prob_obs, "output/circmat_model/mut_prob_obs.rds")
+write_rds(kernel, "output/circmat_model/kernel.rds")
+write_rds(random_field, "output/circmat_model/random_field.rds")
+write_rds(m, "output/circmat_model/m.rds")
+write_rds(draws, "output/circmat_model/draws.rds")

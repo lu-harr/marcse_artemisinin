@@ -1,6 +1,7 @@
 set.seed(0784)
 # for some reason, my usual seed was causing a mysterious TF error
 library(greta)
+library(greta.gp)
 #library(DiagrammeR)
 library(terra)
 library(readxl)
@@ -10,6 +11,10 @@ library(tidyr)
 library(scales)
 library(magrittr)
 library(tidyverse)
+
+library(rnaturalearth)
+library(rnaturalearthdata)
+world <- ne_countries(scale="medium", returnclass = "sf")
 
 afr_extent <- (matrix(c(-21, -34.9, 63, 37.4), nrow = 2, ncol = 2, 
                       dimnames = list(c("x", "y"), c("min", "max"))))

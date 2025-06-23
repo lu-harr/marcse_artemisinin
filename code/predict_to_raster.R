@@ -1,30 +1,38 @@
+# why no roxygen?
+
 predict_to_ras <- function(stack, 
                            year, 
                            draws, 
                            parameters,
+                           scaled_year = 0,
                            agg_factor = 1,
                            nsim = 100,
-                           stable_transmission_mask = rast()){
-  ras <- stack[[grep(as.character(year), names(stack))]] %>%
-    aggregate(fact = agg_factor)
+                           stable_transmission_mask = NULL,
+                           coord_cols = c("x", "y", "year"),
+                           design_cols = c("year")){
   
-  coords_pixel <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
-                        rep(year, length(terra::cells(ras)))) %>%
+  ras <- stack[[grep(as.character(year), names(stack))]]
+  
+  if(agg_factor != 1){ras <- aggregate(ras, fact = agg_factor)}
+  
+  coords <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
+                  rep(year, length(terra::cells(ras)))) %>%
     as.data.frame() %>%
-    setNames(c("x", "y", "year")) %>%
-    mutate(scaled_year = scale_year(year))
+    setNames(c("x", "y", "year"))
   
-  X_pixel <- build_design_matrix(stack,
-                                 coords_pixel,
-                                 temporal_range = rep(year, 2),
-                                 scale = FALSE)
+  tmp <- build_design_matrix(ras,
+                             coords,
+                             temporal_var = FALSE,
+                             scale = FALSE,
+                             degs_to_rads = TRUE)
   
-  coords_pixel <- dplyr::select(coords_pixel, -c("year"))
+  X_pixel <- tmp$df %>%
+    mutate(year_scaled = scaled_year)
   
   # Rand field is coming from above
-  random_field_pixel <- greta.gp::project(random_field, coords_pixel)
+  random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
   
-  mut_freq_pixel <- (X_pixel %*% parameters$beta + random_field_pixel) %>%
+  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + random_field_pixel) %>%
     ilogit()
   
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
@@ -36,12 +44,13 @@ predict_to_ras <- function(stack,
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
   
   out <- c(ras, ras) * 0 # assuming we have at least two layers in there ..
-  out <- setNames(out, c("post_mean", "post_sd"))
+  out <- setNames(out, c(paste(year, "_post_mean"), paste(year, "_post_sd")))
   
   out$post_mean[terra::cells(out$post_mean)] <- post_pixel_mean
   out$post_sd[terra::cells(out$post_sd)] <- post_pixel_sd
   
-  if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
+  if(!is.null(stable_transmission_mask)){
+  #if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
     # let it be known that I did some googling about this :(
     # in raster I would have plopped `raster(NA)` in the function definition
     out <- mask(out, stable_transmission_mask)

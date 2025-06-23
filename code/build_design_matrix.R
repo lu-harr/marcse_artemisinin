@@ -84,7 +84,8 @@ build_design_matrix <- function(covariates,
     }
     
     # extract, pad with intercept dummy, and return
-    covs <- terra::extract(covariates, cell_ids)
+    covs <- terra::extract(covariates, cell_ids) %>%
+      unlist()
   }
   
   if (degs_to_rads){
