@@ -62,10 +62,7 @@ mut_data <- zoom_k13 %>%
   summarise(tested = sum(tested),
             present = sum(present)) %>%
   ungroup() %>%
-  mutate(trunc_year = case_when(year < min(pfpr_years) ~ min(pfpr_years),
-                                year > max(pfpr_years) ~ max(pfpr_years),
-                                .default = year),
-         scaled_year = scale_year(trunc_year, min_year=min(pfpr_years)),
+  mutate(#scaled_year = scale_year(trunc_year, min_year=min(pfpr_years)),
          land = terra::extract(pfpr$pfpr_2000, cbind(x, y))) %>%
   drop_na() %>%
   dplyr::select(-c(land))

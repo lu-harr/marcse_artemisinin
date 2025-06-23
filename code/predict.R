@@ -192,12 +192,12 @@ ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
 # perhaps what I should do is give up on the idea that they should be one plot
 
 
-library(rasterVis)
-gplot(stack(tmp2, tmp3, tmp4)) +
-  geom_tile(aes(fill = value)) +
-  facet_wrap(~ variable, ncol = 2) +
-  scale_fill_viridis_c(na.value = "white") +
-  coord_equal()
+# library(rasterVis)
+# gplot(stack(tmp2, tmp3, tmp4)) +
+#   geom_tile(aes(fill = value)) +
+#   facet_wrap(~ variable, ncol = 2) +
+#   scale_fill_viridis_c(na.value = "white") +
+#   coord_equal()
 
 
 

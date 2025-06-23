@@ -1,8 +1,10 @@
 #setwd("~/Desktop/MARCSE/k13_seafrica")
 source("code/setup.R")
 
+coarse_mat <- aggregate(pfpr$pfpr_2000, fact = 10)
+
 # or install local version ...:
-devtools::install_github("lu-harr/greta.gp.st.on.earth")
+#devtools::install_github("lu-harr/greta.gp.st.on.earth")
 library(greta.gp)
 
 # here are the bits I've added
@@ -19,6 +21,7 @@ X_obs <- build_design_matrix(covariates,
                              coords, 
                              scale = FALSE, 
                              temporal_range = pfpr_years)
+
 # we want this to give us back scaled years but need to provide unscaled years
 # so that it can grab from correct annual covt raster
 
@@ -42,46 +45,78 @@ coords <- coords %>%
 
 # define_greta_parameters <- function(){
 #   list(
+#     # JF/YSF use flat priors - could make these flatter?
 #     beta = normal(0, 3, dim=3), # I have three betas so dim is 3 (intercept, time, PfPR)
-#     kernel_lengthscale_space = normal(0, 0.1, truncation = c(0, Inf)),
-#     kernel_lengthscale_time = normal(0, 3, truncation = c(0, Inf)),
-#     kernel_sd = normal(0, 1, truncation = c(0, Inf))
+#     lengthscale_space = lognormal(-0.5, 1),
+#     # YSF's prior in degrees:
+#     # degrees_to_radians(qlnorm(c(0.005, 0.995), meanlog = 0.5, sdlog = 1)) # [0.13, 21.67] degs
+#     # This prior in radians is in a similar order of magnitude:
+#     # qlnorm(c(0.005, 0.995), meanlog = -3.5, sdlog = 1)
+#     
+#     lengthscale_time = lognormal(-0.5, 1),
+#     # [0.5%, 99.5%] quantile of [0.046, 7.971] years
+#     # qlnorm(c(0.005, 0.995), meanlog = -0.5, sdlog = 1)
+#     
+#     kernel_sd = normal(0, 2, truncation = c(0, Inf))
+#     # YSF uses HalfNormal (Normal truncated at 0)
 #   )
 # }
-# 
+
 # parameters <- define_greta_parameters() # are there any choices that should be arguments?
 
+# JF/YSF use flat priors - could make these flatter?
 beta = normal(0, 3, dim=3) # I have three betas so dim is 3 (intercept, time, PfPR)
-kernel_lengthscale_space = normal(0, 0.1, truncation = c(0, Inf))
-kernel_lengthscale_time = normal(0, 3, truncation = c(0, Inf))
+lengthscale_space = lognormal(meanlog = -3, sdlog = 1.5)
+# YSF's prior in degrees:
+# degrees_to_radians(qlnorm(c(0.005, 0.995), meanlog = 0.5, sdlog = 1)) # [0.13, 21.67] degs
+# This prior in radians is in a similar order of magnitude:
+# qlnorm(c(0.005, 0.995), meanlog = -3.5, sdlog = 1)
+qlnorm(c(0.005, 0.995), meanlog = -0.5, sdlog = 1.5)
+
+lengthscale_time = lognormal(-3, 1)
+# [0.5%, 99.5%] quantile of [0.046, 7.971] years
+# temporal correlation is 0.05 when delta = 6*lengthscale
+# hist(X_obs[,2], breaks=20)
+# qlnorm(c(0.005, 0.995), meanlog = -0.5, sdlog = 1) # (unscaled years)
+# abline(v = median(X_obs[,2]), lwd = 2)
+# abline(v = median(X_obs[,2]) + c(1,-1)*qlnorm(0.005, meanlog = -3, sdlog = 1)*6, col="red")
+# abline(v = median(X_obs[,2]) + c(1,-1)*qlnorm(0.9, meanlog = -3, sdlog = 1)*6, col="blue")
+# qlnorm(c(0.005, 0.995), meanlog = -3, sdlog = 1)
+
 kernel_sd = normal(0, 1, truncation = c(0, Inf))
+# YSF uses HalfNormal (Normal truncated at 0)
 
-# kernel <- circmat(lengthscale = parameters$kernel_lengthscale_space, 
-#                   variance = parameters$kernel_sd**2, 
+# kernel <- circmat(lengthscale = parameters$lengthscale_space,
+#                   variance = 1,
 #                   columns = c(1, 2),
-#                   circumference = 1) + 
-#           expo(lengthscales = parameters$kernel_lengthscale_time,
-#                variance = parameters$kernel_sd**2,
-#                columns = 3)
+#                   circumference = 1) +
+#           expo(lengthscales = parameters$lengthscale_time,
+#                variance = 1,
+#                columns = 3) +
+#   white(parameters$kernel_sd**2)
 
-kernel <- circmat(lengthscale = kernel_lengthscale_space, 
-                  variance = kernel_sd**2, 
+kernel <- circmat(lengthscale = lengthscale_space,
+                  variance = 1,
                   columns = c(1, 2),
-                  circumference = 1) + 
-  expo(lengthscales = kernel_lengthscale_time,
-       variance = kernel_sd**2,
-       columns = 3)
+                  circumference = 1) +
+  expo(lengthscales = lengthscale_time,
+       variance = 1,
+       columns = 3) +
+  white(kernel_sd**2)
 
 # need to incorporate `kernel _sd` .. could go in both variance spots ..?
 
 coords <- coords %>%
-  dplyr::select(x, y, scaled_year)
+  dplyr::select(x, y, year)
+
+#kmn <- kmeans(coords, centers = 15)
 
 random_field <- gp(x = coords, # lon, lat, year
                    kernel = kernel,
-                   inducing = unique(coords)  # shouldn't do much to simulated data but might be very helpful for actual data
-)
+                   inducing = unique(coords))#,  # shouldn't do much to simulated data but might be very helpful for actual data
+                   #inducing = kmn$centers)
 
+# gp_mean_obs <- X_obs %*% parameters$beta + random_field
 gp_mean_obs <- X_obs %*% beta + random_field
 
 mut_prob_obs <- ilogit(gp_mean_obs)
@@ -89,56 +124,52 @@ mut_prob_obs <- ilogit(gp_mean_obs)
 distribution(mut_data$present) <- greta::binomial(size = mut_data$tested,
                                                   prob = mut_prob_obs)
 
-# beta = parameters$beta
-# m <- model(parameters$kernel_lengthscale_space, 
-#            parameters$kernel_lengthscale_time, 
-#            parameters$kernel_sd, 
+# m <- model(parameters$lengthscale_space,
+#            parameters$lengthscale_time,
+#            parameters$kernel_sd,
 #            parameters$beta)
-m <- model(kernel_lengthscale_space, 
-           kernel_lengthscale_time, 
-           kernel_sd, 
+m <- model(lengthscale_space,
+           lengthscale_time,
+           kernel_sd,
            beta)
 
-# get a fun little error down here ...
-draws <- mcmc(m, n_samples = 3000, 
-               initial_values = replicate(4, 
-                                          initials(beta = rep(0,3)), 
-                                          simplify = FALSE))
+# draws <- mcmc(m, n_samples = 100, warmup = 100, 
+#               initial_values = replicate(4, initials(`parameters$beta` = rep(0,3),
+#                                                      `parameters$lengthscale_space` = 0.01,
+#                                                      `parameters$lengthscale_time` = 0.01,
+#                                                      `parameters$kernel_sd` = 0.5), simplify = FALSE))
+draws <- mcmc(m, n_samples = 100, warmup = 100, 
+              initial_values = replicate(4, initials(`beta` = rep(0,3),
+                                                     `lengthscale_space` = 1,
+                                                     `lengthscale_time` = 1,
+                                                     `kernel_sd` = 0.1), simplify = FALSE))
 
-calculate(mut_prob_obs, values = list(kernel_lengthscale_space = 1,
-                                       kernel_lengthscale_time = 1,
-                                       kernel_sd = 0.1,
-                                       beta = c(0, 1, 1)))
+coords_pixel <- coarse_mat %>%
+  terra::xyFromCell(cell = terra::cells(coarse_mat)) %>%
+  as.data.frame() %>%
+  degrees_to_radians() %>%
+  mutate(scaled_year = 1.0320937)
 
-# alpha <- normal(0, 1)
-# beta <- normal(0, 1)
-# sigma <- lognormal(1, 0.1)
-# y <- as_data(iris$Petal.Width)
-# mu <- alpha + iris$Petal.Length * beta
-# distribution(y) <- normal(mu, sigma)
-# m <- model(alpha, beta, sigma)
-# 
-# # sample values of the parameters, or different observation data (y), from
-# # the priors (useful for prior # predictive checking) - see also
-# # ?simulate.greta_model
-# calculate(alpha, beta, sigma, nsim = 100)
-# calculate(y, nsim = 100)
-# 
-# # calculate intermediate greta arrays, given some parameter values (useful
-# # for debugging models)
-# calculate(mu[1:5], values = list(alpha = 1, beta = 2, sigma = 0.5))
-# calculate(mu[1:5], values = list(alpha = -1, beta = 0.2, sigma = 0.5))
+f_plot <- project(random_field, coords_pixel)
+# Make sure you populate nsim here:
 
-# Error in `self$check_reasonable_starting_values()`:
-# ! Could not find reasonable starting values after 20 attempts.
-# Please specify initial values manually via the `initial_values` argument
-# suggests everything is so bad it won't be accepted
-# get calculate working and test what gets crapped out ..
-# `valid_parameters`
+prior_eg = greta::calculate(f_plot, values = list(lengthscale_space = 2,
+                                                        lengthscale_time = 2,
+                                                        kernel_sd = 2,
+                                                        beta = c(0, 0, 0)),
+                            nsim = 1)
+tmp = coarse_mat
+tmp[!is.na(coarse_mat)] <- unlist(prior_eg)
 
-png("output/circmat_trace.png", height=750, width=1500)
+# with much lower lengthscale:
+plot(tmp,
+     xlab = "Longitude", ylab = "Latitude")
+# the new palette is sending me
+#points(x_rd, cex = z - min(z) + 1)
+
+#png("output/circmat_trace.png", height=750, width=1500)
 bayesplot::mcmc_trace(draws)
-dev.off()
+#dev.off()
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
