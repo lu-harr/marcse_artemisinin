@@ -209,7 +209,8 @@ p1 <- ggplot() +
   labs(title = "Median") +
   theme(strip.background = element_blank(),
         strip.text.x = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "top")
 
 p2 <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -227,8 +228,44 @@ p2 <- ggplot() +
   labs(title = "Standard deviation") +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "top")
 
+pal <- iddoPal::iddo_palettes$soft_blues
+
+df_sum <- df %>%
+  filter(tag == "mean") %>%
+  group_by(year) %>%
+  summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
+  unnest_wider(q) %>%
+  ungroup() %>%
+  mutate(year = as.numeric(year))
+  # pivot_longer(cols = ends_with("%"),
+  #              names_to = "Quantile",
+  #              values_to = "val")
+
+
+
+p3 <- ggplot(df_sum) +
+  geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
+  geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
+  geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
+  geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
+  geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
+  geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
+  scale_linetype_manual("", values = c("0% - 100%" = 2)) +
+  scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
+  ylab("Prevalence") +
+  xlab("Year") +
+  labs(title = "Estimated prevalence of Kelch 13 mutations in Africa") +
+  theme_bw() +
+  theme(legend.spacing.y = unit(-0.9, "cm"),
+        legend.background = element_rect(fill = NA))
+p3
+ggsave("figures/k13_out_times.png", height = 2, width = 4, scale = 2)
+
+# probably need to look at this next to data: 100% goes up before 2006
+# snap box to extent of years/0
 
 library(patchwork)
 
@@ -239,8 +276,22 @@ p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides =
 
 ggsave("figures/k13_out.png", height = 3.6, width = 3, scale = 2.5)
 
+layout <- "
+AABBC#
+AABBDD
+"
 
+# ecdf: surveillance PfPR?
+q1 <- p1 + 
+        p2 + 
+        guide_area() + 
+        plot_spacer() + 
+        plot_layout(design = layout, guides = "collect")
+q1
 
+q1 + inset_element(p3, left = 0, bottom = 0, right = 1, top = 0.4)
+library(gridExtra)
+grid.arrange
 
 
 

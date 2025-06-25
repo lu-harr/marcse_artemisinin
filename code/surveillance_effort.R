@@ -65,7 +65,7 @@ plot(sqrt(test_dens_masked))
 # need to have a think about bandwidth, resolution, etc
 # have changed resolution: this is now approximately people tested per 100kmsq
 
-writeRaster(test_dens_masked, "output/surveillance_effort.grd")
+writeRaster(test_dens_masked, "output/surveillance_effort.grd", overwrite = TRUE)
 
 # multipanel: time (hist: number tested, number of points)
 surveil <- xyFromCell(test_dens_masked, cell = cells(test_dens_masked)) %>%
