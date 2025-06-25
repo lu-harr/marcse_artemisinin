@@ -126,57 +126,123 @@ preds <- rast("output/circmat_model/preds_all.grd")
 #   
 #   
 #   dev.off()}
+# 
+# all_outs <- stack(tmp1, tmp2, tmp3) %>%
+#   getValues() %>%
+#   as.data.frame() %>%
+#   cbind(xyFromCell(tmp2, seq_len(ncell(tmp2)))) %>%
+#   setNames(c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
+#              "Mean 2022", "SD 2022", "x", "y"))
+# 
+# st = stack(tmp2, tmp3, tmp4)
+# names(st) <- c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
+#                "Mean 2022", "SD 2022")
+# coords <- xyFromCell(st, seq_len(ncell(st)))
+# st <- stack(as.data.frame(getValues(st)))
+# names(st) <- c("value", "variable")
+# st <- mutate(st, variable = gsub("\\.", " ", variable))
+# 
+# st <- cbind(coords, st)
+# 
+# st_mean <- st %>%
+#   filter(grepl("Mean", variable)) %>%
+#   mutate(variable = gsub("Mean ", "", variable))
+# 
+# st_sd <- st %>%
+#   filter(grepl("SD", variable)) %>%
+#   mutate(variable = gsub("SD ", "", variable))
+# 
+# library(ggplot2)
+# library(rnaturalearth)
+# library(rnaturalearthdata)
+# library(sf)
+# library(dplyr)
+# library(terra)
+# world <- ne_countries(scale="medium", returnclass = "sf")
+# 
+# ggplot() +
+#   geom_sf(afr, fill = "white") +
+#   geom_tile(data = st_mean, aes(x, y, fill = value)) +
+#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
+#   scale_fill_viridis_c(na.value = NA, "Prevalence") +
+#   xlab("Longitude") +
+#   ylab("Latitude")
+# ggsave("k13_mean.png", width = 6, height = 2, scale = 2)
+# 
+# ggplot() +
+#   geom_sf(afr, fill = "white") +
+#   geom_tile(data = st_sd, aes(x, y, fill = value)) +
+#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
+#   scale_fill_distiller(palette="YlOrBr", na.value = NA, "Uncertainty", trans="sqrt") +
+#   xlab("Longitude") +
+#   ylab("Latitude")
+# ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
+# 
+# # would like plot of change in prevalence / uncertainty over time :)
+# 
+afr <- world %>%
+  filter(continent == "Africa") %>%
+  vect() %>%
+  crop(ext(-21, 63, -35, 37)) %>%
+  st_as_sf()
 
-all_outs <- stack(tmp1, tmp2, tmp3) %>%
-  getValues() %>%
-  as.data.frame() %>%
-  cbind(xyFromCell(tmp2, seq_len(ncell(tmp2)))) %>%
-  setNames(c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-             "Mean 2022", "SD 2022", "x", "y"))
+coords <- xyFromCell(preds, cells(preds))
+vals <- terra::extract(preds, coords)
+df <- cbind(coords, vals) %>%
+  pivot_longer(starts_with("2"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = substr(lyr, 1, 4),
+         tag = substr(lyr, 11, 14)) # pick out year and thingo
 
-st = stack(tmp2, tmp3, tmp4)
-names(st) <- c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-               "Mean 2022", "SD 2022")
-coords <- xyFromCell(st, seq_len(ncell(st)))
-st <- stack(as.data.frame(getValues(st)))
-names(st) <- c("value", "variable")
-st <- mutate(st, variable = gsub("\\.", " ", variable))
+years_to_plot <- c("2014", "2018", "2022")
 
-st <- cbind(coords, st)
-
-st_mean <- st %>%
-  filter(grepl("Mean", variable)) %>%
-  mutate(variable = gsub("Mean ", "", variable))
-
-st_sd <- st %>%
-  filter(grepl("SD", variable)) %>%
-  mutate(variable = gsub("SD ", "", variable))
-
-library(ggplot2)
-library(rnaturalearth)
-library(rnaturalearthdata)
-library(sf)
-library(dplyr)
-library(terra)
-world <- ne_countries(scale="medium", returnclass = "sf")
-
-ggplot() +
-  geom_sf(data = filter(world, continent == "Africa"), fill = "white") +
-  geom_tile(data = st_mean, aes(x, y, fill = value)) +
-  facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence") +
+p1 <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "mean"), 
+            mapping = aes(x = x, y = y, fill = val)) +
+  facet_wrap(~year, ncol = 1) +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
   xlab("Longitude") +
-  ylab("Latitude")
-ggsave("k13_mean.png", width = 6, height = 2, scale = 2)
+  ylab("Latitude") +
+  labs(title = "Median") +
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
-ggplot() +
-  geom_sf(data = filter(world, continent == "Africa"), fill = "white") +
-  geom_tile(data = st_sd, aes(x, y, fill = value)) +
-  facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-  scale_fill_distiller(palette="YlOrBr", na.value = NA, "Uncertainty", trans="sqrt") +
+p2 <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "sd"), 
+            mapping = aes(x = x, y = y, fill = val)) +
+  facet_wrap(~year, ncol = 1, strip.position = "right") +
+  scale_fill_distiller(palette = "Oranges", 
+                       na.value = NA, 
+                       "Uncertainty", 
+                       direction = 1,
+                       trans = "sqrt") +
   xlab("Longitude") +
-  ylab("Latitude")
-ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
+  ylab("") +
+  labs(title = "Standard deviation") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
-# would like plot of change in prevalence / uncertainty over time :)
+
+library(patchwork)
+
+# would like to group x axis labels but giving up for now
+# the feature should be available with axes/axis_titles arguments ....
+# plot_space() is cool tho
+p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
+
+ggsave("figures/k13_out.png", height = 3.6, width = 3, scale = 2.5)
+
+
+
+
+
+
+
 

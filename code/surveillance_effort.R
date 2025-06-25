@@ -30,6 +30,9 @@
 # so fun would be count tested ... or something along those lines,
 # background would be zero
 
+library(terra)
+library(sf)
+
 ras <- covariates$pfpr_2000 %>%
   aggregate(fact = 2)
 
@@ -53,7 +56,7 @@ test_dens <- raster::focal(ras, gf, pad = TRUE, na.rm=TRUE)
 afr <- world %>%
   filter(continent == "Africa") %>%
   vect() %>%
-  crop(ext(test_dens))
+  crop(ext(-21, 63, -35, 37))
 
 test_dens_masked <- mask(test_dens, afr)
 plot(test_dens_masked, main="Surveillance effort")
@@ -61,6 +64,8 @@ plot(log10(test_dens_masked)) # lol
 plot(sqrt(test_dens_masked)) 
 # need to have a think about bandwidth, resolution, etc
 # have changed resolution: this is now approximately people tested per 100kmsq
+
+writeRaster(test_dens_masked, "output/surveillance_effort.grd")
 
 # multipanel: time (hist: number tested, number of points)
 surveil <- xyFromCell(test_dens_masked, cell = cells(test_dens_masked)) %>%
@@ -95,17 +100,21 @@ p2 <- ggplot(data = mut_data %>%
 p3 <- ggplot() +
   geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
   geom_tile(data = surveil, aes(x, y, fill = effort)) +
-  scale_fill_viridis_c(na.value = NA, "Tests per \n~100kmsq", trans="sqrt") +
+  geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
+  scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
   xlab("Longitude") +
   ylab("Latitude") +
   ggtitle("(c)")
 
 library(deeptime)
 
-gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(1)), draw = FALSE)
+gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
 ggarrange2(gg1, p3, widths = c(1,2))
+ggsave("figures/surveillance_effort.png", ggarrange2(gg1, p3, widths = c(1,2)))
 # It only took me 45 mins to work this out I guess
 
+# Lucy: you were supposed to email HR and also the /output/ files you just tried to add
+# are too big remove from commit
 
 
 

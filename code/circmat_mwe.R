@@ -44,8 +44,8 @@ points(X_obs[,c("x_rd", "y_rd")], cex = X_obs$present / X_obs$tested * 20, col="
 
 
 # hyperparameters
-circmat_len <- lognormal(meanlog = -2, sdlog = 1)
-circmat_var <- lognormal(meanlog = -2, sdlog = 1)
+circmat_len <- greta::lognormal(meanlog = -2, sdlog = 1)
+circmat_var <- greta::lognormal(meanlog = -2, sdlog = 1)
 expo_len <- normal(0, 1, truncation = c(0, Inf))
 expo_var <- normal(0, 1, truncation = c(0, Inf))
 nugget_var <- normal(0,1, truncation = c(0, Inf))
@@ -89,26 +89,26 @@ r_hats <- coda::gelman.diag(draws,
 summary(r_hats$psrf)
 
 # quick little prediction script to one year:
-# f_plot <- greta.gp::project(random_field, X_pixel[,coord_cols])
-# mut_freq_plot <- X_pixel[,design_cols] %*% beta + f_plot
-# y_plot <- greta::calculate(mut_freq_plot,
-#                            values = draws)
-# med_vals <- apply(y_plot[[1]], 2, median)
-# sd_vals <- apply(y_plot[[1]], 2, sd)
-# 
-# med_ras <- ras_agg
-# med_ras[cells(med_ras)] <- unlist(calculate(ilogit(med_vals)))
-# sd_ras <- ras_agg
-# sd_ras[cells(sd_ras)] <- sd_vals
-# 
-# par(mfrow=c(1,2))
-# plot(med_ras, main="Median posterior samp")
-# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-# 
-# plot(sd_ras, main="SD posterior samp")
-# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
+f_plot <- greta.gp::project(random_field, X_pixel[,coord_cols])
+mut_freq_plot <- X_pixel[,design_cols] %*% beta + f_plot
+y_plot <- greta::calculate(mut_freq_plot,
+                           values = draws)
+med_vals <- apply(y_plot[[1]], 2, median)
+sd_vals <- apply(y_plot[[1]], 2, sd)
+
+med_ras <- ras_agg
+med_ras[cells(med_ras)] <- unlist(calculate(ilogit(med_vals)))
+sd_ras <- ras_agg
+sd_ras[cells(sd_ras)] <- sd_vals
+
+par(mfrow=c(1,2))
+plot(med_ras, main="Median posterior samp")
+points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
+points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
+
+plot(sd_ras, main="SD posterior samp")
+points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
+points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
 
 parameters <- list(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",

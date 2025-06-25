@@ -40,13 +40,13 @@ predict_to_ras <- function(stack,
                                       values = draws,
                                       nsim = 100,
                                       trace_batch_size = 50) # reducing: will take longer, use less mem
-  # erm would prefer a median
-  post_pixel_mean <- colMeans(post_pixel_sims$mut_freq_pixel[, , 1])
+
+  post_pixel_median <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, median)
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
   
   out <- c(ras, ras) * 0 # assuming we have at least two layers in there ..
-  names(out) <- paste0(year, c("_post_mean", "_post_sd"))
-  out[[1]][terra::cells(out[[1]])] <- post_pixel_mean
+  names(out) <- paste0(year, c("_post_median", "_post_sd"))
+  out[[1]][terra::cells(out[[1]])] <- post_pixel_median
   out[[2]][terra::cells(out[[2]])] <- post_pixel_sd
   
   if(!is.null(stable_transmission_mask)){

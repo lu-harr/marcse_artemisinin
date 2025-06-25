@@ -28,6 +28,7 @@ pfpr <- rast("data/pfpr_rasters_afr.tif") %>%
 
 names(pfpr) <- paste0("pfpr_", years)
 
+# conflict with what i've got in the mwe script
 scaled_years <- scale(pfpr_years)[,1]
 
 scale_year <- function(year, min_year=min(pfpr_years)){
