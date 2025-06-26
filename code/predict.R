@@ -1,4 +1,5 @@
-source("code/setup.R")
+#source("code/setup.R")
+# need to retrieve scaled_years FROM SOMEWHERE THAT IS NOT SETUP SCRIPT
 source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
@@ -12,7 +13,7 @@ preds <- lapply(pfpr_years, function(year){
                  year,
                  draws,
                  parameters,
-                 agg_factor = 10,
+                 agg_factor = AGG_FACTOR,
                  scaled_year = scaled_years[[as.character(year)]],
                  coord_cols = c("x_rd", "y_rd", "year_scaled"),
                  design_cols = c("intercept","year_scaled","pfpr"),

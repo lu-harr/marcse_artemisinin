@@ -37,7 +37,7 @@ wald_ci <- function(n, p, alpha){
 
 wilson_ci <- function(n, p, alpha){
   z <- qnorm(alpha)
-  (1 + z**2/n)**(-1)*(p + z**2/(2*n) + c(-1, 1)*(z / (2*n) * sqrt(4*n*p*(1 - p) + z**2)))
+  return((1 + z**2/n)**(-1)*(p + z**2/(2*n) + c(-1, 1)*(z / (2*n) * sqrt(4*n*p*(1 - p) + z**2))))
 }
 
 tmp <- wald_ci(n, p, 0.9)
@@ -55,8 +55,10 @@ plot(tmp$lyr2 - tmp$lyr1, main = "Confidence interval width")
 plot(1/sqrt(n))
 # confidence interval width is mostly constant! duh! it's in the graph you just looked at!
 
-
-
+# no idea what's going on down here I'm cooked but can't trust outputs until I figure it out
+ppp <- seq(0,1, length.out = 100)
+tmp <- wilson_ci(100, ppp, 0.95)
+plot(ppp, tmp[seq])
 
 
 

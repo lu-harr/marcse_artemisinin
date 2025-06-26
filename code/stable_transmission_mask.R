@@ -5,7 +5,7 @@ source("code/setup.R")
 library(sf)
 
 ras <- covariates$pfpr_2021 %>%
-  aggregate(10)
+  aggregate(AGG_FACTOR)
 
 wt <- focalMat(ras, 0.5, type = "rectangle")
 ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
@@ -24,4 +24,5 @@ ras_mask <- mask(ras_mask,
 # plot(st_geometry(world %>% filter(continent == "Africa")), add=TRUE)
 
 writeRaster(ras_mask,
-            "data/stable_transmission_mask.grd")
+            "data/stable_transmission_mask.grd",
+            overwrite = TRUE)

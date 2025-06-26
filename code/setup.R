@@ -1,4 +1,6 @@
 set.seed(0784)
+AGG_FACTOR = 5
+
 # for some reason, my usual seed was causing a mysterious TF error
 library(greta)
 library(greta.gp)

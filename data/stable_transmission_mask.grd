@@ -4,16 +4,16 @@ datatype=FLT4S
 nodatavalue=nan
 byteorder=little
 nbands=1
-minvalue=-3.38580936426516936e+38
-maxvalue=3.38013799689179628e+38
+minvalue=-3.38376753409036974e+38
+maxvalue=3.36198970242664084e+38
 categorical=FALSE
 [description]
 layername=focal_sum
 [georeference]
-nrows=174
-ncols=202
+nrows=347
+ncols=404
 xmin=-21.0000000000000036
-ymin=-35.0833320617675994
+ymin=-34.8749987284342566
 xmax=63.1666666666666572
 ymax=37.4166679382324006
 projection=+proj=longlat +datum=WGS84 +no_defs
