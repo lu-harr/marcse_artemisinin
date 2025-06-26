@@ -1,10 +1,14 @@
-#source("code/setup.R")
-# need to retrieve scaled_years FROM SOMEWHERE THAT IS NOT SETUP SCRIPT
+source("code/setup_k13.R")
 source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
+# for prediction raster:
+AGG_FACTOR = 5
+
+scaled_years <- scale_years(range(pfpr_years))
+
 # bring in all of the other outputs here too
-mut_data <- read_rds("output/circmat_model/mut_data.rds")
+mut_data <- read_rds("output/circmat_k13/mut_data.rds")
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
 
 preds <- lapply(pfpr_years, function(year){
@@ -21,8 +25,5 @@ preds <- lapply(pfpr_years, function(year){
 })
 
 preds <- rast(preds)
-# made edit to pred_to_ras
-# names(preds) <- sort(apply(expand.grid(pfpr_years, c("post_mean", "post_sd")), 1, 
-#                          paste, collapse = "_"))
 
-writeRaster(preds, "output/circmat_model/preds_all.grd", overwrite = TRUE)
+writeRaster(preds, "output/circmat_k13/preds_all.grd", overwrite = TRUE)

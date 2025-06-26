@@ -17,6 +17,18 @@
 #' @author Nick Golding; edited by Lucy Harrison to account for temporally 
 #' varying covariates et al
 #' @export
+
+scale_years <- function(temporal_range){
+  years <- do.call(seq, as.list(temporal_range))
+  scaled_years <- scale(years)
+  # fiddle with output of scale:
+  scaled_years <- lapply(years, function(x){scaled_years[x - min(temporal_range) + 1]})
+  names(scaled_years) <- years
+  
+  scaled_years
+} 
+
+
 build_design_matrix <- function(covariates, 
                                 coords = NULL, 
                                 scale = TRUE, 
@@ -38,27 +50,29 @@ build_design_matrix <- function(covariates,
   if (temporal_var){
     # this is little silly
     temporal_range <- range(temporal_range)
+    
     # don't want to cellFromXY loads of times but the functionality is missing to XYZ
     # pre-treat years ... this is super clunky and I do not like it ... come back
     coords$year_truncated <- case_when(coords$year < min(temporal_range) ~ min(temporal_range),
                                        coords$year > max(temporal_range) ~ max(temporal_range),
                                         .default = coords$year)
-    #return(coords)
+    
     # scale years after they are truncated ........ 
-    scaled_years <- scale(do.call(seq, as.list(temporal_range)))
-    coords$year_scaled <- scaled_years[coords$year_truncated - min(temporal_range) + 1]
+    scaled_years <- scale_years(temporal_range)
+    #coords$year_scaled <- scaled_years[coords$year_truncated - min(temporal_range) + 1]
+    coords$year_scaled <- unlist(scaled_years[as.character(coords$year_truncated)])
     
     years <- unique(coords$year_truncated)
     covs <- rep(NA, nrow(coords)) 
-    # should be a df for more than one covariate
-    
-    scaled_years <- lapply(years, function(x){scaled_years[x - min(temporal_range) + 1]})
-    names(scaled_years) <- years
+    # should be a df for more than one covariate ..
     
     for (year in years){
+      
       coord_idx <- which(coords$year_truncated == year)
       lyr_idx <- grep(as.character(year), names(covariates))
+      
       if (length(lyr_idx) == 0){
+        
         # we're assuming that all of the covariates are labelled with a year 
         # (and none are labelled with no year)
         # and we're assuming that all years have the same number of covariates
