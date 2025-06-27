@@ -1,15 +1,15 @@
-# Fit K13 model and write outputs to output/circmat_k13/directory
+# Fit crt model and write outputs to output/circmat_crt/directory
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv")
+mut_data <- setup_mut_data("data/moldm_crt76.csv")
 
 out <- build_design_matrix(covariates,
-                             coords = mut_data,
-                             scale = FALSE,
-                             temporal_var = TRUE,
-                             temporal_range = pfpr_years,
-                             degs_to_rads = TRUE)
+                           coords = mut_data,
+                           scale = FALSE,
+                           temporal_var = TRUE,
+                           temporal_range = pfpr_years,
+                           degs_to_rads = TRUE)
 X_obs <- out$df
 scaled_years <- out$scaled_years
 
@@ -29,7 +29,7 @@ kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) +
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
   white(nugget_var)
 
-kmn <- kmeans(X_obs[,coord_cols], centers = 40)
+kmn <- kmeans(X_obs[,coord_cols], centers = 20)
 random_field <- gp(x = X_obs[,coord_cols], 
                    kernel = kernel,
                    inducing = kmn$centers)
@@ -54,24 +54,28 @@ draws <- mcmc(m,
                                         nugget_var = 0.5,
                                         beta = rep(0, 3)))
 
+# looks like this needs some time ... might be some identifiability between expo_var/circmat_var/beta 2
+draws <- extra_samples(draws, n_samples = 3000)
+
 bayesplot::mcmc_trace(draws)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
                             multivariate = FALSE)
 summary(r_hats$psrf)
+# run longer?
 
 parameters <- list(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",
                        "nugget_var", "beta")
 
 # save everything and do the prediction in a separate script
-write_rds(mut_data, "output/circmat_k13/mut_data.rds")
-write_rds(parameters, "output/circmat_k13/parameters.rds")
-write_rds(kernel, "output/circmat_k13/kernel.rds")
-write_rds(random_field, "output/circmat_k13/random_field.rds")
-write_rds(m, "output/circmat_k13/m.rds")
-write_rds(draws, "output/circmat_k13/draws.rds")
+write_rds(mut_data, "output/circmat_crt/mut_data.rds")
+write_rds(parameters, "output/circmat_crt/parameters.rds")
+write_rds(kernel, "output/circmat_crt/kernel.rds")
+write_rds(random_field, "output/circmat_crt/random_field.rds")
+write_rds(m, "output/circmat_crt/m.rds")
+write_rds(draws, "output/circmat_crt/draws.rds")
 
 # quick little visualisation + prediction script to one year:
 # ras_agg <- covariates$pfpr_2019 %>%

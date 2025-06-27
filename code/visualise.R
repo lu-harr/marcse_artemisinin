@@ -12,9 +12,9 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37))
 
 # multipanel: time (hist: number tested, number of points)
-surveil <- xyFromCell(test_dens_masked, cell = cells(test_dens_masked)) %>%
+surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
   as.data.frame() %>%
-  mutate(effort = unlist(extract(test_dens_masked, cells(test_dens_masked))))
+  mutate(effort = unlist(extract(test_dens, cells(test_dens))))
 
 p1 <- ggplot(data = mut_data %>%
                group_by(year) %>%
@@ -63,7 +63,7 @@ library(GGally)
 library(brms)
 library(bayesplot)
 
-draws <- read_rds("output/circmat_model/draws.rds")
+draws <- read_rds("output/circmat_crt/draws.rds")
 
 post <- as_draws_df(draws) %>%
   rename("Lengthscale (spatial)" = "circmat_len",
@@ -249,7 +249,7 @@ years_to_plot <- c("2014", "2018", "2022")
 p1 <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "mean"), 
+              filter(year %in% years_to_plot & tag == "medi"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
@@ -283,7 +283,7 @@ p2 <- ggplot() +
 pal <- iddoPal::iddo_palettes$soft_blues
 
 df_sum <- df %>%
-  filter(tag == "mean") %>%
+  filter(tag == "medi") %>%
   group_by(year) %>%
   summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
   unnest_wider(q) %>%

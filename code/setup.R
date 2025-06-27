@@ -32,9 +32,10 @@ years <- as.character(pfpr_years)
 pfpr <- rast("data/pfpr_rasters_afr.tif") %>%
   scale()
 # referred to as "covariates" everywhere else
-covariates <- pfpr # now standardised
 
 names(pfpr) <- paste0("pfpr_", years)
+
+covariates <- pfpr # now standardised
 
 setup_mut_data <- function(path){
   # read in and format k13 data

@@ -26,4 +26,4 @@ preds <- lapply(pfpr_years, function(year){
 
 preds <- rast(preds)
 
-writeRaster(preds, "output/circmat_k13/preds_all.grd", overwrite = TRUE)
+writeRaster(preds, "output/circmat_crt/preds_all.grd", overwrite = TRUE)

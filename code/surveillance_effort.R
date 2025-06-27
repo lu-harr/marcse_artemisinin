@@ -30,8 +30,8 @@ survey_effort <- function(coords, # a df
 # here's how to use it:
 ras <- covariates$pfpr_2000 %>%
   aggregate(fact = 2)
-tmp <- survey_effort(mut_data, ras, 1.5)
-writeRaster(tmp, "output/surveillance_effort.grd", overwrite = TRUE)
+test_dens <- survey_effort(mut_data, ras, 1.5)
+writeRaster(test_dens, "output/surveillance_effort_crt.grd", overwrite = TRUE)
 
 
 
