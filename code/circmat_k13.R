@@ -27,7 +27,7 @@ nugget_var <- normal(0,1, truncation = c(0, Inf))
 # kernel & GP
 kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) + 
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
-  white(nugget_var)
+  constant(nugget_var)
 
 kmn <- kmeans(X_obs[,coord_cols], centers = 40)
 random_field <- gp(x = X_obs[,coord_cols], 
@@ -46,7 +46,7 @@ m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 
 set.seed(0748)
 draws <- mcmc(m, 
-              n_samples = 3000,
+              n_samples = 250,
               initial_values = initials(circmat_len = 0.02,
                                         circmat_var = 0.5,
                                         expo_var = 0.5,

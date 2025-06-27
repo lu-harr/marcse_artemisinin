@@ -1,11 +1,9 @@
 # do some visualisation in here
 library(viridisLite)
 library(sf)
+# diverging palette for median surfaces please !
 
-###############################################################################
-# surveillance effort
-
-test_dens <- rast()
+mut_data <- setup_mut_data("data/moldm_crt76.csv")
 
 # mask
 afr <- world %>%
@@ -13,6 +11,37 @@ afr <- world %>%
   vect() %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
+
+###############################################################################
+# just the data
+
+ggplot() + 
+  geom_sf(data = afr, 
+          fill = "white") + 
+  geom_point(data = mut_data %>%
+               mutate(year_bin = cut_number(year, n = 8)) %>%
+               arrange(desc(tested)), 
+             mapping = aes(x = x, y =y,
+                           size = tested,
+                           fill = present / tested),
+             col = "grey50", pch=21, stroke = 0.2) +
+  #scale_fill_viridis_c("Prevalence") +
+  scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
+                       "",
+                       breaks = c(0, 0.5, 1), 
+                       labels = c("0  (all K76)", "0.5", "1  (all 76T)"),
+                       limits = c(0,1)) +
+  scale_size_continuous(range = c(0.2, 4), trans="sqrt", "Sample size") +
+  facet_wrap(~ year_bin, ncol=4) +
+  labs(title = "Pfcrt K76T prevalence") +
+  theme_grey()
+ggsave("figures/moldm_crt76.png", width = 4, height = 2.5, scale = 2)
+
+
+###############################################################################
+# surveillance effort
+
+test_dens <- rast("output/surveillance_effort_crt.grd")
 
 # multipanel: time (hist: number tested, number of points)
 surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
@@ -57,7 +86,8 @@ library(deeptime)
 
 gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
 ggarrange2(gg1, p3, widths = c(1,2))
-ggsave("figures/surveillance_effort.png", ggarrange2(gg1, p3, widths = c(1,2)))
+ggsave("figures/surveillance_effort_crt.png", ggarrange2(gg1, p3, widths = c(1,2)),
+       height = 5, width = 7.5, scale = 1.5)
 # It only took me 45 mins to work this out I guess
 
 ###############################################################################
@@ -113,130 +143,9 @@ post %>%
 ggsave("figures/chain_corr_circmat.png", height=12, width=12)
 
 ###############################################################################
-preds <- rast("output/circmat_model/preds_all.grd")
+preds <- rast("output/circmat_crt/preds_all.grd")
 # require common colour palette between years !
 
-# ew gross base graphics
-# {png("figures/k13.png",
-#      height=2800, width=2800, pointsize=40)
-#   par(mfrow=c(3,3), mar=c(0.2, 0, 0, 5.5), oma=c(4,4.5,3,0))
-#   plot(sqrt(trim(tmp2$post_mean)), col="grey90", legend=F, xaxt="n")
-#   tmp_pts <- mut_data %>%
-#     filter(year == 2009)
-#   points(tmp_pts[,c("x", "y")],
-#          col=ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=3, cex=1.2)
-#   mtext(year1, line=3, side=2)
-#   mtext("Data", line=1)
-#   
-#   plot(sqrt(trim(tmp2$post_mean)), col=viridis(100),
-#        breaks=seq(0, 0.6, length.out=100), legend=F, xaxt="n", yaxt="n")
-#   mtext("Mean", line=1)
-#   
-#   plot(sqrt(trim(tmp2$post_sd)), col=viridis(100), xaxt="n", yaxt="n",
-#        breaks=seq(0, 0.34, length.out=100), legend=F)
-#   mtext("SD", line=1)
-#   
-#   
-#   plot(sqrt(trim(tmp2$post_mean)), col="grey90", legend=F)
-#   tmp_pts <- mut_data %>%
-#     filter(year == 2019)
-#   points(tmp_pts[,c("x", "y")],
-#          col = ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=2,
-#          cex = 1.2 + tmp_pts$present/tmp_pts$tested * 10)
-#   mtext(year2, line=3, side=2)
-#   
-#   plot(sqrt(trim(tmp3$post_mean)), col=viridis(100),
-#        breaks=seq(0,0.6, length.out=100), legend=F, yaxt="n")
-#   
-#   plot(sqrt(trim(tmp3$post_sd)), col=viridis(100), yaxt="n",
-#        breaks=seq(0, 0.34, length.out=100), legend=F)
-#   #mtext("k13 prevalence: preliminary model", outer=TRUE)
-#   
-#   plot(sqrt(trim(tmp4$post_mean)), col="grey90", legend=F)
-#   tmp_pts <- mut_data %>%
-#     filter(year > 2021)
-#   points(tmp_pts[,c("x", "y")],
-#          col = ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=2,
-#          cex = 1.2 + tmp_pts$present/tmp_pts$tested * 10)
-#   mtext(year3, line=3, side=2)
-#   
-#   legend_tix <- c(0, 0.1, 0.2, 0.3)
-#   par(new=TRUE, mfrow=c(1,3), mfg=c(1,2))
-#   plot(0, type="n", xaxt="n", yaxt="n", bty="n", xlab="", ylab="")
-#   plot(sqrt(trim(tmp2$post_mean)), col=viridis(100),
-#        breaks=seq(0, 0.6, length.out=100), xaxt="n", yaxt="n", legend.only=TRUE,
-#        axis.args=list(at = sqrt(legend_tix), labels = legend_tix), 
-#        legend.width=1.2)
-#   
-#   legend_tix <- c(0, 0.025, 0.05, 0.075, 0.1)
-#   plot(0, type="n", xaxt="n", yaxt="n", bty="n", xlab="", ylab="")
-#   legend("center", c("Presence", "Absence"), fill=c("orange", "grey50"))
-#   plot(sqrt(trim(tmp2$post_sd)), col=viridis(100),
-#        breaks=seq(0, 0.34, length.out=100), xaxt="n", yaxt="n", legend.only=TRUE,
-#        axis.args=list(at = sqrt(legend_tix), labels = legend_tix),
-#        legend.width=1.2)
-#   
-#   
-#   dev.off()}
-# 
-# all_outs <- stack(tmp1, tmp2, tmp3) %>%
-#   getValues() %>%
-#   as.data.frame() %>%
-#   cbind(xyFromCell(tmp2, seq_len(ncell(tmp2)))) %>%
-#   setNames(c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-#              "Mean 2022", "SD 2022", "x", "y"))
-# 
-# st = stack(tmp2, tmp3, tmp4)
-# names(st) <- c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-#                "Mean 2022", "SD 2022")
-# coords <- xyFromCell(st, seq_len(ncell(st)))
-# st <- stack(as.data.frame(getValues(st)))
-# names(st) <- c("value", "variable")
-# st <- mutate(st, variable = gsub("\\.", " ", variable))
-# 
-# st <- cbind(coords, st)
-# 
-# st_mean <- st %>%
-#   filter(grepl("Mean", variable)) %>%
-#   mutate(variable = gsub("Mean ", "", variable))
-# 
-# st_sd <- st %>%
-#   filter(grepl("SD", variable)) %>%
-#   mutate(variable = gsub("SD ", "", variable))
-# 
-# library(ggplot2)
-# library(rnaturalearth)
-# library(rnaturalearthdata)
-# library(sf)
-# library(dplyr)
-# library(terra)
-# world <- ne_countries(scale="medium", returnclass = "sf")
-# 
-# ggplot() +
-#   geom_sf(afr, fill = "white") +
-#   geom_tile(data = st_mean, aes(x, y, fill = value)) +
-#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-#   scale_fill_viridis_c(na.value = NA, "Prevalence") +
-#   xlab("Longitude") +
-#   ylab("Latitude")
-# ggsave("k13_mean.png", width = 6, height = 2, scale = 2)
-# 
-# ggplot() +
-#   geom_sf(afr, fill = "white") +
-#   geom_tile(data = st_sd, aes(x, y, fill = value)) +
-#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-#   scale_fill_distiller(palette="YlOrBr", na.value = NA, "Uncertainty", trans="sqrt") +
-#   xlab("Longitude") +
-#   ylab("Latitude")
-# ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
-# 
-# # would like plot of change in prevalence / uncertainty over time :)
-# 
-afr <- world %>%
-  filter(continent == "Africa") %>%
-  vect() %>%
-  crop(ext(-21, 63, -35, 37)) %>%
-  st_as_sf()
 
 coords <- xyFromCell(preds, cells(preds))
 vals <- terra::extract(preds, coords)
@@ -247,7 +156,7 @@ df <- cbind(coords, vals) %>%
   mutate(year = substr(lyr, 1, 4),
          tag = substr(lyr, 11, 14)) # pick out year and thingo
 
-years_to_plot <- c("2014", "2018", "2022")
+years_to_plot <- c("2010", "2015", "2020")
 
 p1 <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -255,7 +164,12 @@ p1 <- ggplot() +
               filter(year %in% years_to_plot & tag == "medi"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+  #scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+  scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
+                       "",
+                       breaks = c(0, 0.5, 1), 
+                       labels = c("0  (all K76)", "0.5", "1  (all 76T)"),
+                       limits = c(0,1)) +
   xlab("Longitude") +
   ylab("Latitude") +
   labs(title = "Median") +
@@ -309,12 +223,12 @@ p3 <- ggplot(df_sum) +
   scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
   ylab("Prevalence") +
   xlab("Year") +
-  labs(title = "Estimated prevalence of Kelch 13 mutations in Africa") +
+  labs(title = "Estimated prevalence of Pfcrt K76T in Africa") +
   theme_bw() +
   theme(legend.spacing.y = unit(-0.9, "cm"),
         legend.background = element_rect(fill = NA))
 p3
-ggsave("figures/k13_out_times.png", height = 2, width = 4, scale = 2)
+ggsave("figures/crt_out_times.png", height = 2, width = 4, scale = 2)
 
 # probably need to look at this next to data: 100% goes up before 2006
 # snap box to extent of years/0
@@ -326,7 +240,7 @@ library(patchwork)
 # plot_space() is cool tho
 p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
 
-ggsave("figures/k13_out.png", height = 3.6, width = 3, scale = 2.5)
+ggsave("figures/crt_out.png", height = 3.6, width = 3, scale = 2.5)
 
 layout <- "
 AABBC#
