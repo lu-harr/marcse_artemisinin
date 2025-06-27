@@ -4,21 +4,24 @@
 source("code/setup.R")
 library(sf)
 
-ras <- covariates$pfpr_2021 %>%
-  aggregate(AGG_FACTOR)
+ras <- covariates$pfpr_2021 #%>%
+  #aggregate(AGG_FACTOR)
 
-wt <- focalMat(ras, 0.5, type = "rectangle")
+wt <- focalMat(ras, 0.5, type = "Gauss")
 ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
 
+# tried fiddling with buffer ... wish this was smoother
+#plot(rasterize(st_buffer(st_as_sf(tmp), dist = 100000), ras))
+
 ras_mask <- ras_blur
-ras_mask[ras_mask < 0.1] <- NA
+ras_mask[ras_mask < 0.01] <- NA
 ras_mask <- mask(ras_mask, ras)
 ras_mask <- mask(ras_mask, 
                  world %>% 
                    filter(continent == "Africa") %>% 
                    st_buffer(dist = 100000))
 
-# plot(ras_blur)
+plot(ras_mask)
 # plot(ras, col="grey80")
 # plot(ras_mask, add=TRUE)
 # plot(st_geometry(world %>% filter(continent == "Africa")), add=TRUE)
