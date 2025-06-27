@@ -1,41 +1,77 @@
-### A repo for models of prevalence of molecular markers of artemisinin and partner drug resistance in Africa
 
-#### What the code does
+## Prevalence of molecular markers of artemisinin and partner drug resistance in Africa
 
-There should (eventually) be (at least) three models in here. For now, there is a model of kelch13 mutation 
-prevalence only. This model takes as input published data from the WWARN artemisinin resistance surveyor 
-dataset [include link] of prevalence (number of people tested **and** number of people with mutant *P. falciparum* 
-parasites) of WHO or WWARN-validated or -associated markers for artemisinin resistance in the propeller region
-of the kelch13 gene of *P. falciparum* malaria.
+### What the code does
 
-We model prevalence as a Gaussian Process with a binomial observation model and Circular Matern kernel in 
-space [inc. refs]. [Say something about uncertainty]
+There should (eventually) be (at least) three models in here. For now,
+there is a model of *pfkelch13* mutation prevalence and a model of
+*pfcrtK76T* mutation prevalence. All models take as input published data
+from the **IDDO Surveyors** ([kelch
+13](https://visualizer.iddo.org/map/k13); [partner
+drugs](https://www.iddo.org/wwarn/tracking-resistance/act-partner-drug-molecular-surveyor))
+which collate published records molecular surveillance in *Plasmodium
+falciparum* malaria.
 
-#### What's in here
+All the modelling is done in R’s `greta` and `greta.gp`. I’ve added my
+own kernel to `greta.gp` in this
+[fork](https://github.com/lu-harr/greta.gp.st).
+
+#### Model targets
+
+The model of *kelch13* mutation prevalence estimates prevalence of any
+WHO or WWARN-validated or -associated markers for artemisinin resistance
+in the propeller region of the *kelch13* gene of *P. falciparum*.
+
+The model of *crtK76T* mutation prevalence estimates the ratio between
+wildtype (*K76*) and mutant (*76T*) genotypes which are inversely
+associated with amodiaquine and lumefantrine resistance (together with
+other markers, e.g. in the *pfmdr1* gene).
+
+### What’s in here
 
 There are a number of scripts in `code/`:
 
-- `setup.R` reads in covariate data and surveyor data
-- `mat52.R` and `circmat.R` are two scripts for slightly different models
-- `predict.R` should be taking model outputs and doing some prediction
-- `build_design_matrix.R` and `predict_to_raster.R` wrap up some functions for different bits of the workflow
+- `setup.R` sets up R packages, covariate data and code for prevalence
+  data formatting
+- `circmat_*.R` are scripts for model initialisation and fitting
+- `predict.R` takes outputs of model fitting to make predictions
+- `visualise_*.R` generates figures for individual models. (TODO: script
+  to collate models)
 
-#### See also
+Secondary to these there are:
+
+- `build_design_matrix.R` and `predict_to_raster.R` wrap up some
+  functions for different bits of the workflow
+- `surveillance_effort.R` wraps up the calculation of kernel density
+  estimates for smoothed annual/aggregated surveillance effort rasters
+  for each model.
+- `stable_transmission_mask.R` cooks up a mask for prediction using
+  MAP’s estimate of *P. falciparum* parasite rate for 2021 with some
+  smoothing and buffering applied.
+- `power.R`: I was playing around with different metrics for model
+  uncertainty, particularly in the context of K13 where the SD of
+  posterior samples is greatest in areas where $\hat p > 0$. Here is
+  some code to calculate pixel-level power-to-detect mutant markers
+  (worked but was unsatisfied about interpretability of units) and
+  pixel-level CIs of estimated prevalence (Wald: didn’t work great due
+  to low $n$ and low $\hat p$ in the Binomial observation model; Wilson:
+  worked okay but basically proportional to $n^{-\frac{1}{2}}$, because
+  $\hat p$ is overall so low and correlated with $n$) TLDR, there’s more
+  to do here.
+
+### See also
 
 - Flegg et al., 2022
 - Flegg et al., 2024
 - Foo et al., 2024
 
-#### TODOs
+### TODOs
 
-- grab data from K13 surveyor
 - write down equations for existing binomial model and for extensions
-- do some summaries for myself of the number/spread of the different mutations
-- I'm all about getting this on the HPC
 - put some links into README
 - think about partner drugs
-- think about how partner drug outputs combine with K13 outputs to make "overall ACT molecular resistance map"
-- fix up stable transmission mask ... check if Jen is working with something specific
+- think about how partner drug outputs combine with K13 outputs to make
+  “overall ACT molecular resistance map”
+- fix up stable transmission mask … check if Jen is working with
+  something specific
 - need some figures showing parameter posteriors
-
-

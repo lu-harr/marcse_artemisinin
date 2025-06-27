@@ -2,9 +2,9 @@
   <PAMRasterBand band="1">
     <Description>focal_sum</Description>
     <Metadata>
-      <MDI key="STATISTICS_MAXIMUM">4.7484750747681</MDI>
+      <MDI key="STATISTICS_MAXIMUM">4.5020656585693</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">0.10001087933779</MDI>
+      <MDI key="STATISTICS_MINIMUM">0.010000665672123</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
