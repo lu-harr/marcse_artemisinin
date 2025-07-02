@@ -1,4 +1,4 @@
-source("code/setup_k13.R")
+source("code/setup.R")
 source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
@@ -8,13 +8,17 @@ AGG_FACTOR = 5
 out_dir <- "output/circmat_pfmdr86/"
 
 
-
 scaled_years <- scale_years(range(pfpr_years))
 
 # bring in all of the other outputs here too
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
   aggregate(AGG_FACTOR)
+random_field <- read_rds(paste0(out_dir, "random_field.rds"))
+parameters <- read_rds(paste0(out_dir, "parameters.rds"))
+draws <- read_rds(paste0(out_dir, "draws.rds"))
+
+pfpr_years = 2000:2022
 
 preds <- lapply(pfpr_years, function(year){
   message(year)
@@ -22,6 +26,7 @@ preds <- lapply(pfpr_years, function(year){
                  year,
                  draws,
                  parameters,
+                 random_field,
                  agg_factor = AGG_FACTOR,
                  scaled_year = scaled_years[[as.character(year)]],
                  coord_cols = c("x_rd", "y_rd", "year_scaled"),

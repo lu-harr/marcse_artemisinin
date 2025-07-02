@@ -291,7 +291,24 @@ df_sum <- df %>%
   #              names_to = "Quantile",
   #              values_to = "val")
 
-
+pred_time_plot <- function(df, title=""){
+  # haven't tested this ...
+  ggplot(df) +
+    geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
+    geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
+    geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
+    geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
+    geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
+    geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
+    scale_linetype_manual("", values = c("0% - 100%" = 2)) +
+    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
+    ylab("Prevalence") +
+    xlab("Year") +
+    labs(title = title) +
+    theme_bw() +
+    theme(legend.spacing.y = unit(-0.9, "cm"),
+          legend.background = element_rect(fill = NA))
+}
 
 p3 <- ggplot(df_sum) +
   geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +

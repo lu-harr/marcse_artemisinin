@@ -2,7 +2,7 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/moldm_crt76.csv")
+mut_data <- setup_mut_data("data/moldm_crt76.csv", min_year = 2000)
 
 out <- build_design_matrix(covariates,
                            coords = mut_data,

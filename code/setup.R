@@ -47,7 +47,7 @@ setup_mut_data <- function(path, min_year = NULL){
            y = Latitude,
            present = Present,
            tested = Tested) %>%
-    filter(if (isnull(min_year)) TRUE else year >= min_year) %>%
+    filter(if (is.null(min_year)) TRUE else year >= min_year) %>%
     filter(x < afr_extent["x","max"] & afr_extent["x","min"] < x &
              y < afr_extent["y","max"] & afr_extent["y","min"] < y) %>%
     dplyr::select(x, y, year, tested, present) %>%
@@ -60,7 +60,7 @@ setup_mut_data <- function(path, min_year = NULL){
     dplyr::select(-c(land))
 }
 
-setup_multiple_snps <- function(path){
+setup_multiple_snps <- function(path, min_year = NULL){
   # read in and format data for multiple responses
   # (extra columns: snp, snp_id; snp included in grouping)
   read.csv(path) %>% 

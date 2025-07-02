@@ -2,7 +2,9 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("../moldm/clean/pfmdr_single_86.csv")
+snp <- 86
+
+mut_data <- setup_mut_data(paste0("../moldm/clean/pfmdr_single_", snp, ".csv"))
 
 out <- build_design_matrix(covariates,
                            coords = mut_data,
@@ -53,6 +55,7 @@ draws <- mcmc(m,
                                         expo_len = 0.5,
                                         nugget_var = 0.5,
                                         beta = rep(0, 3)))
+draws <- extra_samples(draws, 3000)
 
 bayesplot::mcmc_trace(draws)
 
@@ -61,17 +64,19 @@ r_hats <- coda::gelman.diag(draws,
                             multivariate = FALSE)
 summary(r_hats$psrf)
 
+# identifiability an issue between temporal lengthscale and variance
+
 parameters <- list(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",
                        "nugget_var", "beta")
 
 # save everything and do the prediction in a separate script
-write_rds(mut_data, "output/circmat_pfmdr86/mut_data.rds")
-write_rds(parameters, "output/circmat_pfmdr86/parameters.rds")
-write_rds(kernel, "output/circmat_pfmdr86/kernel.rds")
-write_rds(random_field, "output/circmat_pfmdr86/random_field.rds")
-write_rds(m, "output/circmat_pfmdr86/m.rds")
-write_rds(draws, "output/circmat_pfmdr86/draws.rds")
+write_rds(mut_data, paste0("output/circmat_pfmdr", snp, "/mut_data.rds"))
+write_rds(parameters, paste0("output/circmat_pfmdr", snp, "/parameters.rds"))
+write_rds(kernel, paste0("output/circmat_pfmdr", snp, "/kernel.rds"))
+write_rds(random_field, paste0("output/circmat_pfmdr", snp, "/random_field.rds"))
+write_rds(m, paste0("output/circmat_pfmdr", snp, "/m.rds"))
+write_rds(draws, paste0("output/circmat_pfmdr", snp, "/draws.rds"))
 
 # quick little visualisation + prediction script to one year:
 # ras_agg <- covariates$pfpr_2019 %>%
