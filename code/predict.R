@@ -5,9 +5,11 @@ source("code/predict_to_raster.R")
 # for prediction raster:
 AGG_FACTOR = 5
 
-scaled_years <- scale_years(range(pfpr_years))
-
 out_dir <- "output/circmat_pfmdr86/"
+
+
+
+scaled_years <- scale_years(range(pfpr_years))
 
 # bring in all of the other outputs here too
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))

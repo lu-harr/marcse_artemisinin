@@ -20,7 +20,8 @@ scaled_years <- out$scaled_years
 n_snp <- length(unique(mut_data$snp))
 n_latent <- 2  # guessing ...
 coord_cols <- c("x_rd", "y_rd")#, "year_scaled")
-design_cols <- c("intercept", "year_scaled", "pfpr")
+coord_cols <- c("x", "y")
+design_cols <- c("intercept", "pfpr") #"year_scaled", 
 
 source("code/define_greta_params.R")
 
@@ -31,13 +32,17 @@ source("code/define_greta_params.R")
 
 # where do I encode the number of betas?
 parameters <- define_greta_parameters(n_snp = n_snp,
-                                      n_latent = n_latent)
+                                      n_latent = n_latent,
+                                      n_beta = length(design_cols))
 
 # matern 5/2 isotropic kernel - space-only
-kernel_lengthscale <- normal(14, 1, truncation = c(0, Inf))
+kernel_lengthscale <- normal(2, 1, truncation = c(0, Inf))
 kernel_sd <- normal(0, 1, truncation = c(0, Inf))
+# circmat_len <- greta::lognormal(meanlog = -2, sdlog = 1)
+# circmat_var <- greta::lognormal(meanlog = -2, sdlog = 1)
 kernel <- mat52(lengthscales = c(kernel_lengthscale, kernel_lengthscale),
                 variance = kernel_sd ^ 2)
+#kernel <- circmat(circmat_len, circmat_var)
 
 coords <- X_obs[,coord_cols] %>%
   mutate(coord_id = row_number())
@@ -67,16 +72,33 @@ distribution(mut_data$present) <- greta::binomial(size = mut_data$tested,
 
 beta <- parameters$beta
 m <- model(kernel_lengthscale, kernel_sd, beta)
-draws <- mcmc(m)
+# m <- model(circmat_len, circmat_var, beta)
+draws <- mcmc(m)#,
+              # initial_values = initials(circmat_len = 0.02,
+              #                           circmat_var = 0.5))
 draws <- extra_samples(draws, 2000)
+# seems like it's a matter of giving this long enough to run
 
 # to my great surprise this appears to run
+# ... however there might be some identifiability isssues
+# the kernel lengthscale is super big too .. I gave it radians right?
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
                             multivariate = FALSE)
 summary(r_hats$psrf)
 
+bayesplot::mcmc_trace(draws)
 
+parameters$beta <- beta # may be tempting the greta goblins with this one
+parameters$kernel_lengthscale <- kernel_lengthscale
+parameters$kernel_sd <- kernel_sd
+
+write_rds(mut_data, "output/pfmdr_hier/mut_data.rds")
+write_rds(parameters, "output/pfmdr_hier/parameters.rds")
+write_rds(kernel, "output/pfmdr_hier/kernel.rds")
+write_rds(latents_obs, "output/pfmdr_hier/latents_obs.rds") # GP/s
+write_rds(m, "output/pfmdr_hier/m.rds")
+write_rds(draws, "output/pfmdr_hier/draws.rds")
 
 
 

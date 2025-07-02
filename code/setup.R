@@ -39,13 +39,15 @@ names(pfpr) <- paste0("pfpr_", years)
 
 covariates <- pfpr # now standardised
 
-setup_mut_data <- function(path){
+setup_mut_data <- function(path, min_year = NULL){
+  
   # read in and format data for a single response (k13, crt76, mdr1-86, ...)
   read.csv(path) %>% 
     rename(x = Longitude,
            y = Latitude,
            present = Present,
            tested = Tested) %>%
+    filter(if (isnull(min_year)) TRUE else year >= min_year) %>%
     filter(x < afr_extent["x","max"] & afr_extent["x","min"] < x &
              y < afr_extent["y","max"] & afr_extent["y","min"] < y) %>%
     dplyr::select(x, y, year, tested, present) %>%

@@ -8,11 +8,12 @@
 #' @author Nick Golding
 #' @export
 define_greta_parameters <- function(n_snp,
-                                    n_latent) {
+                                    n_latent,
+                                    n_beta) {
   
   
-  beta_mu <- define_greta_beta_mu()
-  beta_sd <- define_greta_beta_sd()
+  beta_mu <- define_greta_beta_mu(n_beta)
+  beta_sd <- define_greta_beta_sd(n_beta)
   
   list(
     # individual probabilities of failure per SNP
@@ -25,7 +26,8 @@ define_greta_parameters <- function(n_snp,
     beta_sd = beta_sd,
     beta = define_greta_beta(n_snp = n_snp,
                              mu = beta_mu,
-                             sd = beta_sd)
+                             sd = beta_sd,
+                             n_beta = n_beta)
   )
   
 }
@@ -38,9 +40,9 @@ define_greta_parameters <- function(n_snp,
 #' @return a greta array of dimension 3
 #' @importFrom greta normal
 #' @author Nick Golding
-define_greta_beta_sd <- function() {
+define_greta_beta_sd <- function(n_beta) {
   
-  greta::normal(0, 1, dim = 3, truncation = c(0, Inf))
+  greta::normal(0, 1, dim = n_beta, truncation = c(0, Inf))
   
 }
 
@@ -52,9 +54,9 @@ define_greta_beta_sd <- function() {
 #' @return a greta array of dimension 3
 #' @importFrom greta normal
 #' @author Nick Golding
-define_greta_beta_mu <- function() {
+define_greta_beta_mu <- function(n_beta) {
   
-  greta::normal(0, 1, dim = 3)
+  greta::normal(0, 1, dim = n_beta)
   
 }
 
@@ -69,11 +71,12 @@ define_greta_beta_mu <- function() {
 #' @author Nick Golding
 define_greta_beta <- function(n_snp,
                               mu,
-                              sd) {
+                              sd,
+                              n_beta) {
   
   # use hierarchical decentring specification, to remove prior correlation from
   # the posterior
-  beta_raw <- greta::normal(0, 1, dim = c(n_snp, 3))
+  beta_raw <- greta::normal(0, 1, dim = c(n_snp, n_beta))
   beta_raw_sd <- greta::sweep(beta_raw, 2, sd, FUN = "*")
   beta <- greta::sweep(beta_raw_sd, 2, mu, FUN = "+")
   beta

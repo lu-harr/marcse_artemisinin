@@ -36,7 +36,7 @@ stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
 mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv")
 test_dens <- survey_effort(mut_data, stable_transmission_mask, 1.5)
 plot(test_dens, main = "Kelch 13 surveillance effort")
-writeRaster(test_dens, "output/surveillance_effort_k13.grd", overwrite = TRUE)
+writeRaster(test_dens, "output/circmat_k13/surveillance_effort_k13.grd", overwrite = TRUE)
 
 # by year:
 years = 2010:2023
@@ -48,13 +48,13 @@ test_dens <- lapply(years, function(z){
 test_dens <- rast(test_dens)
 names(test_dens) <- paste0("surv_", years)
 plot(test_dens)
-writeRaster(test_dens, "output/surveillance_effort_k13_2010-23.grd", overwrite = TRUE)
+writeRaster(test_dens, "output/circmat_k13/surveillance_effort_k13_2010-23.grd", overwrite = TRUE)
 
 # For pfcrt:
 mut_data <- setup_mut_data("data/moldm_crt76.csv")
 test_dens <- survey_effort(mut_data, stable_transmission_mask, 1.5)
 plot(test_dens, main = "Pfcrt76 surveillance effort")
-writeRaster(test_dens, "output/surveillance_effort_crt.grd", overwrite = TRUE)
+writeRaster(test_dens, "output/circmat_crt/surveillance_effort_crt.grd", overwrite = TRUE)
 
 # by year:
 years = 2010:2023
@@ -66,7 +66,7 @@ test_dens <- lapply(years, function(z){
 test_dens <- rast(test_dens)
 names(test_dens) <- paste0("surv_", years)
 plot(test_dens)
-writeRaster(test_dens, "output/surveillance_effort_crt_2010-23.grd", overwrite = TRUE)
+writeRaster(test_dens, "output/circmat_crt/surveillance_effort_crt_2010-23.grd", overwrite = TRUE)
 
 
 
