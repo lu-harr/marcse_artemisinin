@@ -2,6 +2,8 @@
 library(viridisLite)
 library(sf)
 
+output_dir <- "output/circmat_pfmdr86/"
+
 ###############################################################################
 # surveillance effort
 
@@ -9,7 +11,8 @@ library(sf)
 afr <- world %>%
   filter(continent == "Africa") %>%
   vect() %>%
-  crop(ext(-21, 63, -35, 37))
+  crop(ext(-21, 63, -35, 37)) %>%
+  st_as_sf()
 
 # multipanel: time (hist: number tested, number of points)
 surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
@@ -63,7 +66,7 @@ library(GGally)
 library(brms)
 library(bayesplot)
 
-draws <- read_rds("output/circmat_crt/draws.rds")
+draws <- read_rds(paste0(output_dir, "draws.rds"))
 
 post <- as_draws_df(draws) %>%
   rename("Lengthscale (spatial)" = "circmat_len",
@@ -110,7 +113,7 @@ post %>%
 ggsave("figures/chain_corr_circmat.png", height=12, width=12)
 
 ###############################################################################
-preds <- rast("output/circmat_model/preds_all.grd")
+preds <- rast(paste0(output_dir, "preds_all.grd"))
 # require common colour palette between years !
 
 # ew gross base graphics
@@ -229,11 +232,6 @@ preds <- rast("output/circmat_model/preds_all.grd")
 # 
 # # would like plot of change in prevalence / uncertainty over time :)
 # 
-afr <- world %>%
-  filter(continent == "Africa") %>%
-  vect() %>%
-  crop(ext(-21, 63, -35, 37)) %>%
-  st_as_sf()
 
 coords <- xyFromCell(preds, cells(preds))
 vals <- terra::extract(preds, coords)
@@ -306,12 +304,12 @@ p3 <- ggplot(df_sum) +
   scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
   ylab("Prevalence") +
   xlab("Year") +
-  labs(title = "Estimated prevalence of Kelch 13 mutations in Africa") +
+  labs(title = "Estimated prevalence of Pfmdr1 N86Y in Africa") +
   theme_bw() +
   theme(legend.spacing.y = unit(-0.9, "cm"),
         legend.background = element_rect(fill = NA))
 p3
-ggsave("figures/k13_out_times.png", height = 2, width = 4, scale = 2)
+ggsave("figures/pfmdr86_out_times.png", height = 2, width = 4, scale = 2)
 
 # probably need to look at this next to data: 100% goes up before 2006
 # snap box to extent of years/0
@@ -323,7 +321,7 @@ library(patchwork)
 # plot_space() is cool tho
 p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
 
-ggsave("figures/k13_out.png", height = 3.6, width = 3, scale = 2.5)
+ggsave("figures/pfmdr86_out.png", height = 3.6, width = 3, scale = 2.5)
 
 layout <- "
 AABBC#

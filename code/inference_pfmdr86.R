@@ -1,15 +1,15 @@
-# Fit K13 model and write outputs to output/circmat_k13/directory
+# Fit pfmdr86 model and write outputs to output/circmat_pfmdr86/directory
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv")
+mut_data <- setup_mut_data("../moldm/clean/pfmdr_single_86.csv")
 
 out <- build_design_matrix(covariates,
-                             coords = mut_data,
-                             scale = FALSE,
-                             temporal_var = TRUE,
-                             temporal_range = pfpr_years,
-                             degs_to_rads = TRUE)
+                           coords = mut_data,
+                           scale = FALSE,
+                           temporal_var = TRUE,
+                           temporal_range = pfpr_years,
+                           degs_to_rads = TRUE)
 X_obs <- out$df
 scaled_years <- out$scaled_years
 
@@ -66,12 +66,12 @@ names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",
                        "nugget_var", "beta")
 
 # save everything and do the prediction in a separate script
-write_rds(mut_data, "output/circmat_k13/mut_data.rds")
-write_rds(parameters, "output/circmat_k13/parameters.rds")
-write_rds(kernel, "output/circmat_k13/kernel.rds")
-write_rds(random_field, "output/circmat_k13/random_field.rds")
-write_rds(m, "output/circmat_k13/m.rds")
-write_rds(draws, "output/circmat_k13/draws.rds")
+write_rds(mut_data, "output/circmat_pfmdr86/mut_data.rds")
+write_rds(parameters, "output/circmat_pfmdr86/parameters.rds")
+write_rds(kernel, "output/circmat_pfmdr86/kernel.rds")
+write_rds(random_field, "output/circmat_pfmdr86/random_field.rds")
+write_rds(m, "output/circmat_pfmdr86/m.rds")
+write_rds(draws, "output/circmat_pfmdr86/draws.rds")
 
 # quick little visualisation + prediction script to one year:
 # ras_agg <- covariates$pfpr_2019 %>%

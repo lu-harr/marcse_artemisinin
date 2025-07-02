@@ -3,6 +3,7 @@ library(viridisLite)
 library(sf)
 
 source("code/setup.R")
+source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv")
 preds <- rast("output/circmat_k13/preds_all.grd")
@@ -65,6 +66,60 @@ ggsave("figures/surveillance_effort_k13.png", ggarrange2(gg1, p3, widths = c(1,2
        height = 5, width = 7.5, scale = 1.5)
 # don't love that I'm judging vertical stretching by eye
 # It only took me 45 mins to work this out I guess
+
+###############################################################################
+# visualise lengthscale priors:
+
+axis(xxx, labels = degrees_to_radians(xxx), "Distance (degrees)")
+axis(xxx, labels = distHaversine(xxx), "Distance (km)")
+
+circmat_len <- lognormal(meanlog = 0, sdlog = 1)
+xxx = seq(0, 1, length.out = 100)
+sdlogs = c(2.5, 2, 1.5, 1)
+sdlogs = rep(1, 3)
+mulogs = c(-1,-0.5, 0, 0.5)
+
+dist_rads <- seq(0, 0.5, length.out=6)
+dist_degs <- radians_to_degrees(dist_rads)
+dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), dist_degs), ncol = 2))
+
+cand_rads <- c(0, 0.0785, 0.158, 0.235, 0.314, 0.392)#, 0.472)
+cand_degs <- radians_to_degrees(cand_rads)
+dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), cand_degs), ncol = 2))
+dist_ms
+
+draws <- read_rds("output/circmat_k13/draws.rds")
+summ_s <- summary(draws$`11`[,1])
+summ_t <- summary(draws$`11`[,3])
+
+par(mfrow = c(1,2), oma = c(8,0,0,0))
+
+prior_meanlog = -2
+prior_sdlog = 1
+
+scaled_years <- scale_years(range(pfpr_years)) %>%
+  unlist()
+
+# can't really think any more tbh
+plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
+     xlab = "Lengthscale (scaled_years)", ylab = "p(lengthscale)", 
+     main = "Lognormal prior on temporal lengthscale", type="l", xlim = c(0, 5))
+axis(1, 0:5 * 0.147442, 0:5, line = 5)
+
+plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
+     xlab = "Lengthscale (radians)", ylab = "p(lengthscale)", 
+     main = "Lognormal prior on spatial lengthscale", type="l", xlim = c(0, 0.42))
+#axis(1, dist_rads, labels = round(dist_degs, digits=2), line = 5)
+axis(1, degrees_to_radians(seq(0, 25, length.out = 6)), 
+     labels = seq(0, 25, length.out = 6), line = 5)
+mtext(side = 1, "Lengthscale (degrees)", line = 8)
+axis(1, cand_rads, labels = seq(0, 2500, length.out = 6), #round(dist_ms/1000), 
+     line = 10)
+mtext(side = 1, "Lengthscale (km)", line = 13)
+abline(v = summ_s$quantiles[3])
+abline(v = summ_s$quantiles[c(1,5)], lty=2)
+legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
+# add priors to hists ...?
 
 ###############################################################################
 # nice clean traceplot

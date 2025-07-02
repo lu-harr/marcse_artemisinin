@@ -1,6 +1,8 @@
 set.seed(0784)
 
-# for some reason, my usual seed was causing a mysterious TF error
+# TODO
+# filter on end.year ..
+# filter on 
 
 library(greta)
 library(greta.gp)
@@ -38,7 +40,7 @@ names(pfpr) <- paste0("pfpr_", years)
 covariates <- pfpr # now standardised
 
 setup_mut_data <- function(path){
-  # read in and format k13 data
+  # read in and format data for a single response (k13, crt76, mdr1-86, ...)
   read.csv(path) %>% 
     rename(x = Longitude,
            y = Latitude,
@@ -56,4 +58,29 @@ setup_mut_data <- function(path){
     dplyr::select(-c(land))
 }
 
+setup_multiple_snps <- function(path){
+  # read in and format data for multiple responses
+  # (extra columns: snp, snp_id; snp included in grouping)
+  read.csv(path) %>% 
+    rename(x = Longitude,
+           y = Latitude,
+           present = Present,
+           tested = Tested,
+           snp = realised) %>%
+    # remove floaters outside of rectangular extent
+    filter(x < afr_extent["x","max"] & afr_extent["x","min"] < x &
+             y < afr_extent["y","max"] & afr_extent["y","min"] < y) %>%
+    dplyr::select(x, y, year, tested, present, snp) %>%
+    group_by(x, y, year, snp) %>%
+    summarise(tested = sum(tested),
+              present = sum(present)) %>%
+    ungroup() %>%
+    # check all points are landed
+    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y)),
+           snp_id = as.numeric(as.factor(snp))) %>%
+    drop_na() %>%
+    dplyr::select(-c(land))
+}
 
+# e.g.:
+# mut_data <- setup_multiple_snps("../moldm/clean/pfmdr_single_locus.csv")

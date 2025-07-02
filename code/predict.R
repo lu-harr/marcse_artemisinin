@@ -7,9 +7,12 @@ AGG_FACTOR = 5
 
 scaled_years <- scale_years(range(pfpr_years))
 
+out_dir <- "output/circmat_pfmdr86/"
+
 # bring in all of the other outputs here too
-mut_data <- read_rds("output/circmat_k13/mut_data.rds")
-stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
+mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
+stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
+  aggregate(AGG_FACTOR)
 
 preds <- lapply(pfpr_years, function(year){
   message(year)
@@ -26,4 +29,4 @@ preds <- lapply(pfpr_years, function(year){
 
 preds <- rast(preds)
 
-writeRaster(preds, "output/circmat_crt/preds_all.grd", overwrite = TRUE)
+writeRaster(preds, paste0(out_dir, "preds_all.grd"), overwrite = TRUE)
