@@ -5,7 +5,7 @@ source("code/predict_to_raster.R")
 # for prediction raster:
 AGG_FACTOR = 5
 
-out_dir <- "output/circmat_pfmdr86/"
+out_dir <- "output/circmat_pfmdr184/"
 
 
 scaled_years <- scale_years(range(pfpr_years))
