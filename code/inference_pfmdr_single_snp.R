@@ -2,7 +2,7 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-snp <- 184
+snp <- 1246
 
 mut_data <- setup_mut_data(paste0("../moldm/clean/pfmdr_single_", snp, ".csv"))
 
@@ -50,6 +50,7 @@ m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 # make sure you use 141 for pfmdr184 ....
 # I might need to reconfigure model setup here ....
 set.seed(141)
+# require a different seed to get pfmdr1246 to work
 draws <- mcmc(m, 
               n_samples = 3000,
               initial_values = initials(circmat_len = 0.02,
