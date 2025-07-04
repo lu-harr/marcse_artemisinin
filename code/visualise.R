@@ -14,6 +14,8 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
+test_dens <- rast(paste0("output/", output_dir, "/")
+
 # multipanel: time (hist: number tested, number of points)
 surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
   as.data.frame() %>%
@@ -58,7 +60,7 @@ library(deeptime)
 gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
 ggarrange2(gg1, p3, widths = c(1,2))
 ggsave("figures/surveillance_effort.png", ggarrange2(gg1, p3, widths = c(1,2)))
-# It only took me 45 mins to work this out I guess
+
 
 ###############################################################################
 # nice clean traceplot
@@ -292,8 +294,20 @@ df_sum <- df %>%
   #              values_to = "val")
 
 pred_time_plot <- function(df, title=""){
+  # wrapping up plot of all-Africa posterior meds over time
   # haven't tested this ...
-  ggplot(df) +
+  df_sum <- df %>%
+    filter(tag == "medi") %>%
+    group_by(year) %>%
+    summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
+    unnest_wider(q) %>%
+    ungroup() %>%
+    mutate(year = as.numeric(year))
+  # pivot_longer(cols = ends_with("%"),
+  #              names_to = "Quantile",
+  #              values_to = "val")
+  
+  ggplot(df_sum) +
     geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
     geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
     geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
@@ -359,5 +373,5 @@ grid.arrange
 
 
 
-
+p1 <- pred_time_plot()
 

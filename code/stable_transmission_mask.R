@@ -4,28 +4,51 @@
 source("code/setup.R")
 library(sf)
 
-ras <- covariates$pfpr_2021 #%>%
+ras <- covariates$pfpr_2022 #%>%
   #aggregate(AGG_FACTOR)
 
 wt <- focalMat(ras, 0.5, type = "Gauss")
 ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
 
-# tried fiddling with buffer ... wish this was smoother
-#plot(rasterize(st_buffer(st_as_sf(tmp), dist = 100000), ras))
+# ras_mask <- ras
+# ras_mask[ras_mask < 0.01] <- NA
+# ras_mask <- mask(ras_mask, ras)
+# ras_mask <- mask(ras_mask, 
+#                  world %>% 
+#                    filter(continent == "Africa") %>% 
+#                    st_buffer(dist = 100000))
 
-ras_mask <- ras_blur
-ras_mask[ras_mask < 0.01] <- NA
-ras_mask <- mask(ras_mask, ras)
-ras_mask <- mask(ras_mask, 
-                 world %>% 
-                   filter(continent == "Africa") %>% 
-                   st_buffer(dist = 100000))
+# I'm not sure why this is negative ... on MAP's dashboard they've scaled it from 
+# a "rate" (they're definitely still calling it a rate) to [0,100] (% prevalence 
+# in 2-10 yos)
+
+# This raster looks a bit more conservative in the south, e.g. Namibia, Botswana:
+# k13 has popped up there but that info isn't in the Surveyor (right?)
+
+ras_mask <- ras
+ras_mask[ras_mask < -0.65] <- NA
 
 plot(ras_mask)
-# plot(ras, col="grey80")
-# plot(ras_mask, add=TRUE)
-# plot(st_geometry(world %>% filter(continent == "Africa")), add=TRUE)
+
+library(rnaturalearth)
+library(rnaturalearthdata)
+world <- ne_countries(scale="medium", returnclass = "sf")
+
+# country shps for plotting/masking
+afr <- world %>%
+  filter(continent == "Africa") %>%
+  filter(!name %in% c("Algeria", "Libya", "Egypt", "Tunisia", "Morocco")) %>%
+  vect() %>%
+  crop(ext(-21, 63, -35, 37))
+
+ras_mask <- mask(ras_mask,
+                 afr)
 
 writeRaster(ras_mask,
             "data/stable_transmission_mask.grd",
             overwrite = TRUE)
+
+
+
+
+

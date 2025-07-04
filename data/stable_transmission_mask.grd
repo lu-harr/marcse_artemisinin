@@ -4,11 +4,11 @@ datatype=FLT4S
 nodatavalue=nan
 byteorder=little
 nbands=1
-minvalue=-3.4018659338279002e+38
-maxvalue=3.40244053449197165e+38
+minvalue=-3.68934881474191032e+19
+maxvalue=3.68934881474191032e+19
 categorical=FALSE
 [description]
-layername=focal_sum
+layername=pfpr_2022
 [georeference]
 nrows=1735
 ncols=2016
