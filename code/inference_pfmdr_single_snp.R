@@ -51,6 +51,7 @@ m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 # I might need to reconfigure model setup here ....
 set.seed(141)
 # require a different seed to get pfmdr1246 to work
+set.seed(1246)
 draws <- mcmc(m, 
               n_samples = 3000,
               initial_values = initials(circmat_len = 0.02,
