@@ -52,7 +52,7 @@ survey_effort_panel <- function(in_path,
     xlab(xlab) +
     ylab(ylab) +
     ggtitle(paste(pan, main)) +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom", strip.text.x = element_text(size = 12))
   
   p
 }
@@ -60,7 +60,7 @@ survey_effort_panel <- function(in_path,
 survey_effort_panel(c("output/circmat_k13/surveillance_effort_k13.grd",
                       "output/circmat_crt/surveillance_effort_crt.grd",
                       "output/circmat_pfmdr86/surveillance_effort_pfmdr86.grd"),
-                    lyr_names = c("Pfkelch13 (all)", "Pfcrt (76)", "Pfmdr1 (86)"))
+                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 
 # p1 <- survey_effort_panel("output/circmat_k13/surveillance_effort_k13.grd", 
 #                           pan = "(a)", main = "Kelch 13", xlab="")
@@ -74,7 +74,7 @@ survey_effort_panel(c("output/circmat_k13/surveillance_effort_k13.grd",
 #   plot_layout(ncol = 3, widths = c(4, 4, 4),
 #               axis_titles = "collect")
 ggsave("figures/surveillance_effort_all.png", 
-        height = 6, width=15, scale=0.7)
+        height = 5, width=10, scale = 0.8)
 
 
 # after all that, I might just facet_wrap ....
@@ -142,7 +142,16 @@ p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = 
 ggsave("figures/all_markers_time.png", scale = 1.5, height = 7, width = 6)
 
 
+#########################################################################
+# wrap up model predictions for pfcrt/pfmdr1:
 
+map_pred_row <- function(in_path,
+                         years,
+                         lyr = "med",
+                         pal = ){
+  preds <- rast(in_path)
+  
+}
 
 
 
