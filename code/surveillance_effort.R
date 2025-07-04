@@ -30,6 +30,7 @@ survey_effort <- function(coords, # a df
 }
 
 
+
 wrap_survey_effort <- function(mut_data_path,
                                out_path,
                                agg_factor = 1,
@@ -62,6 +63,8 @@ wrap_survey_effort <- function(mut_data_path,
   writeRaster(test_dens, out_path, overwrite = TRUE)
 }
 
+
+
 ###############################################################################
 library(terra)
 library(sf)
@@ -80,7 +83,7 @@ wrap_survey_effort("data/moldm_k13_nomarker.csv",
                    plot_out = TRUE)
 
 wrap_survey_effort("data/moldm_crt76.csv",
-                   "output/circmat_crt/surveillance_effort_crt.grd",
+                   "output/circmat_/surveillance_effort_crt.grd",
                    sigma = 1.5, 
                    plot_out = TRUE)
 
@@ -91,17 +94,17 @@ wrap_survey_effort("data/moldm_crt76.csv",
                    plot_out = TRUE)
 
 wrap_survey_effort("data/pfmdr_single_86.csv",
-                   "output/circmat_crt/surveillance_effort_pfmdr86.grd",
+                   "output/circmat_pfmdr86/surveillance_effort_pfmdr86.grd",
                    sigma = 1.5, 
                    plot_out = TRUE)
 
 wrap_survey_effort("data/pfmdr_single_184.csv",
-                   "output/circmat_crt/surveillance_effort_pfmdr184.grd",
+                   "output/circmat_pfmdr184/surveillance_effort_pfmdr184.grd",
                    sigma = 1.5, 
                    plot_out = TRUE)
 
 wrap_survey_effort("data/pfmdr_single_1246.csv",
-                   "output/circmat_crt/surveillance_effort_pfmdr1246.grd",
+                   "output/circmat_pfmdr1246/surveillance_effort_pfmdr1246.grd",
                    sigma = 1.5, 
                    plot_out = TRUE)
 

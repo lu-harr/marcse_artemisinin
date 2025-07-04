@@ -1,11 +1,6 @@
-# do some visualisation in here
+# do some visualisation in here ... 
 library(viridisLite)
 library(sf)
-
-output_dir <- "output/circmat_pfmdr86/"
-
-###############################################################################
-# surveillance effort
 
 # mask
 afr <- world %>%
@@ -14,364 +9,79 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
-test_dens <- rast(paste0("output/", output_dir, "/")
-
-# multipanel: time (hist: number tested, number of points)
-surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
-  as.data.frame() %>%
-  mutate(effort = unlist(extract(test_dens, cells(test_dens))))
-
-p1 <- ggplot(data = mut_data %>%
-               group_by(year) %>%
-               summarise(n = n())) +
-  geom_bar(stat = "identity", aes(x = year, y = n)) +
-  ylab("Number of locations") +
-  xlab("Year") +
-  ggtitle("(a)")
-
-p2 <- ggplot(data = mut_data %>%
-               group_by(year) %>%
-               summarise(tested = sum(tested))) +
-  geom_bar(stat = "identity", aes(x = year, y = tested)) +
-  ylab("Number of tests") +
-  xlab("Year") +
-  ggtitle("(b)")
-
-# could just go back to totals? As emphasis is on effort?
-# p2 <- ggplot(data = mut_data %>%
-#                group_by(year) %>%
-#                summarise(present = sum(present),
-#                          absent = sum(tested) - present) %>%
-#                pivot_longer(!year, names_to = "Tests", values_to = "Count")) +
-#   geom_bar(stat = "identity", aes(x = year, y = Count, fill = Tests)) +
-#   xlab("Year")
-
-p3 <- ggplot() +
-  geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
-  geom_tile(data = surveil, aes(x, y, fill = effort)) +
-  geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
-  scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  ggtitle("(c)")
-
-library(deeptime)
-
-gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
-ggarrange2(gg1, p3, widths = c(1,2))
-ggsave("figures/surveillance_effort.png", ggarrange2(gg1, p3, widths = c(1,2)))
-
+output_dir <- "output/circmat_pfmdr86/"
 
 ###############################################################################
-# nice clean traceplot
-library(GGally)
-library(brms)
-library(bayesplot)
+# surveillance effort
 
-draws <- read_rds(paste0(output_dir, "draws.rds"))
-
-post <- as_draws_df(draws) %>%
-  rename("Lengthscale (spatial)" = "circmat_len",
-         "Variance (spatial)" = "circmat_var", 
-         "Lengthscale (temporal)" = "expo_len",    
-         "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
-         "Nugget variance" = "nugget_var",
-         "Beta (intercept)" = "beta[1,1]",
-         "Beta (scaled year)" = "beta[2,1]",
-         "Beta (PfPR)" = "beta[3,1]")
-
-color_scheme_set("purple") # the bayesplot scheme is much better suited to this application ..
-bayesplot::mcmc_trace(post)
-ggsave("figures/circmat_trace.png", height=10, width=15)
-
-
-
-modified_density = function(data, mapping, ...) {
-  ggally_densityDiag(data, mapping, ...) + 
-    scale_fill_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-# ggplot is the silliest darn software going
-# why would anyone want or need to change a colour palette?
-# beats me
-modified_points = function(data, mapping, ...) {
-  ggally_points(data, mapping, ...) + 
-    scale_color_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-modified_cor = function(data, mapping, ...){
-  ggally_cor(data, mapping, ...) +
-    scale_color_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-# love the purps but they're a bit too light to use for cor
-post %>%
-  mutate(chain = as.factor(.chain)) %>%
-  ggpairs(columns = 1:6,
-          mapping = aes(colour = chain),
-          lower = list(continuous = wrap(modified_points, alpha = 0.4)), # can't seem to turn alpha down here?
-          diag = list(continuous = wrap(modified_density, alpha = 0.5)),
-          upper = list(continuous = modified_cor)) # probably don't need corrs for chains?
-ggsave("figures/chain_corr_circmat.png", height=12, width=12)
-
-###############################################################################
-preds <- rast(paste0(output_dir, "preds_all.grd"))
-# require common colour palette between years !
-
-# ew gross base graphics
-# {png("figures/k13.png",
-#      height=2800, width=2800, pointsize=40)
-#   par(mfrow=c(3,3), mar=c(0.2, 0, 0, 5.5), oma=c(4,4.5,3,0))
-#   plot(sqrt(trim(tmp2$post_mean)), col="grey90", legend=F, xaxt="n")
-#   tmp_pts <- mut_data %>%
-#     filter(year == 2009)
-#   points(tmp_pts[,c("x", "y")],
-#          col=ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=3, cex=1.2)
-#   mtext(year1, line=3, side=2)
-#   mtext("Data", line=1)
-#   
-#   plot(sqrt(trim(tmp2$post_mean)), col=viridis(100),
-#        breaks=seq(0, 0.6, length.out=100), legend=F, xaxt="n", yaxt="n")
-#   mtext("Mean", line=1)
-#   
-#   plot(sqrt(trim(tmp2$post_sd)), col=viridis(100), xaxt="n", yaxt="n",
-#        breaks=seq(0, 0.34, length.out=100), legend=F)
-#   mtext("SD", line=1)
-#   
-#   
-#   plot(sqrt(trim(tmp2$post_mean)), col="grey90", legend=F)
-#   tmp_pts <- mut_data %>%
-#     filter(year == 2019)
-#   points(tmp_pts[,c("x", "y")],
-#          col = ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=2,
-#          cex = 1.2 + tmp_pts$present/tmp_pts$tested * 10)
-#   mtext(year2, line=3, side=2)
-#   
-#   plot(sqrt(trim(tmp3$post_mean)), col=viridis(100),
-#        breaks=seq(0,0.6, length.out=100), legend=F, yaxt="n")
-#   
-#   plot(sqrt(trim(tmp3$post_sd)), col=viridis(100), yaxt="n",
-#        breaks=seq(0, 0.34, length.out=100), legend=F)
-#   #mtext("k13 prevalence: preliminary model", outer=TRUE)
-#   
-#   plot(sqrt(trim(tmp4$post_mean)), col="grey90", legend=F)
-#   tmp_pts <- mut_data %>%
-#     filter(year > 2021)
-#   points(tmp_pts[,c("x", "y")],
-#          col = ifelse(tmp_pts$present == 0, "grey50", "orange"), lwd=2,
-#          cex = 1.2 + tmp_pts$present/tmp_pts$tested * 10)
-#   mtext(year3, line=3, side=2)
-#   
-#   legend_tix <- c(0, 0.1, 0.2, 0.3)
-#   par(new=TRUE, mfrow=c(1,3), mfg=c(1,2))
-#   plot(0, type="n", xaxt="n", yaxt="n", bty="n", xlab="", ylab="")
-#   plot(sqrt(trim(tmp2$post_mean)), col=viridis(100),
-#        breaks=seq(0, 0.6, length.out=100), xaxt="n", yaxt="n", legend.only=TRUE,
-#        axis.args=list(at = sqrt(legend_tix), labels = legend_tix), 
-#        legend.width=1.2)
-#   
-#   legend_tix <- c(0, 0.025, 0.05, 0.075, 0.1)
-#   plot(0, type="n", xaxt="n", yaxt="n", bty="n", xlab="", ylab="")
-#   legend("center", c("Presence", "Absence"), fill=c("orange", "grey50"))
-#   plot(sqrt(trim(tmp2$post_sd)), col=viridis(100),
-#        breaks=seq(0, 0.34, length.out=100), xaxt="n", yaxt="n", legend.only=TRUE,
-#        axis.args=list(at = sqrt(legend_tix), labels = legend_tix),
-#        legend.width=1.2)
-#   
-#   
-#   dev.off()}
-# 
-# all_outs <- stack(tmp1, tmp2, tmp3) %>%
-#   getValues() %>%
-#   as.data.frame() %>%
-#   cbind(xyFromCell(tmp2, seq_len(ncell(tmp2)))) %>%
-#   setNames(c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-#              "Mean 2022", "SD 2022", "x", "y"))
-# 
-# st = stack(tmp2, tmp3, tmp4)
-# names(st) <- c("Mean 2010", "SD 2010", "Mean 2017", "SD 2017", 
-#                "Mean 2022", "SD 2022")
-# coords <- xyFromCell(st, seq_len(ncell(st)))
-# st <- stack(as.data.frame(getValues(st)))
-# names(st) <- c("value", "variable")
-# st <- mutate(st, variable = gsub("\\.", " ", variable))
-# 
-# st <- cbind(coords, st)
-# 
-# st_mean <- st %>%
-#   filter(grepl("Mean", variable)) %>%
-#   mutate(variable = gsub("Mean ", "", variable))
-# 
-# st_sd <- st %>%
-#   filter(grepl("SD", variable)) %>%
-#   mutate(variable = gsub("SD ", "", variable))
-# 
-# library(ggplot2)
-# library(rnaturalearth)
-# library(rnaturalearthdata)
-# library(sf)
-# library(dplyr)
-# library(terra)
-# world <- ne_countries(scale="medium", returnclass = "sf")
-# 
-# ggplot() +
-#   geom_sf(afr, fill = "white") +
-#   geom_tile(data = st_mean, aes(x, y, fill = value)) +
-#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-#   scale_fill_viridis_c(na.value = NA, "Prevalence") +
-#   xlab("Longitude") +
-#   ylab("Latitude")
-# ggsave("k13_mean.png", width = 6, height = 2, scale = 2)
-# 
-# ggplot() +
-#   geom_sf(afr, fill = "white") +
-#   geom_tile(data = st_sd, aes(x, y, fill = value)) +
-#   facet_wrap(~ factor(variable, c("2010", "2017", "2022")), nrow=1) +
-#   scale_fill_distiller(palette="YlOrBr", na.value = NA, "Uncertainty", trans="sqrt") +
-#   xlab("Longitude") +
-#   ylab("Latitude")
-# ggsave("k13_sd.png", width = 6, height = 2, scale = 2)
-# 
-# # would like plot of change in prevalence / uncertainty over time :)
-# 
-
-coords <- xyFromCell(preds, cells(preds))
-vals <- terra::extract(preds, coords)
-df <- cbind(coords, vals) %>%
-  pivot_longer(starts_with("2"),
-               names_to = "lyr",
-               values_to = "val") %>%
-  mutate(year = substr(lyr, 1, 4),
-         tag = substr(lyr, 11, 14)) # pick out year and thingo
-
-years_to_plot <- c("2014", "2018", "2022")
-
-p1 <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "medi"), 
-            mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  labs(title = "Median") +
-  theme(strip.background = element_blank(),
-        strip.text.x = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
-
-p2 <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sd"), 
-            mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1, strip.position = "right") +
-  scale_fill_distiller(palette = "Oranges", 
-                       na.value = NA, 
-                       "Uncertainty", 
-                       direction = 1,
-                       trans = "sqrt") +
-  xlab("Longitude") +
-  ylab("") +
-  labs(title = "Standard deviation") +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
-
-pal <- iddoPal::iddo_palettes$soft_blues
-
-df_sum <- df %>%
-  filter(tag == "medi") %>%
-  group_by(year) %>%
-  summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
-  unnest_wider(q) %>%
-  ungroup() %>%
-  mutate(year = as.numeric(year))
-  # pivot_longer(cols = ends_with("%"),
-  #              names_to = "Quantile",
-  #              values_to = "val")
-
-pred_time_plot <- function(df, title=""){
-  # wrapping up plot of all-Africa posterior meds over time
-  # haven't tested this ...
-  df_sum <- df %>%
-    filter(tag == "medi") %>%
-    group_by(year) %>%
-    summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
-    unnest_wider(q) %>%
-    ungroup() %>%
-    mutate(year = as.numeric(year))
-  # pivot_longer(cols = ends_with("%"),
-  #              names_to = "Quantile",
-  #              values_to = "val")
+survey_effort_panel <- function(in_path, 
+                                agg_factor = 1, 
+                                pan = "", 
+                                main = "",
+                                xlab = "Longitude",
+                                ylab = "Latitude",
+                                lyr_names = main){
   
-  ggplot(df_sum) +
-    geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
-    geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
-    geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
-    geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
-    geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
-    geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
-    scale_linetype_manual("", values = c("0% - 100%" = 2)) +
-    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
-    ylab("Prevalence") +
-    xlab("Year") +
-    labs(title = title) +
-    theme_bw() +
-    theme(legend.spacing.y = unit(-0.9, "cm"),
-          legend.background = element_rect(fill = NA))
+  test_dens <- lapply(in_path, rast) %>%
+    rast()
+  if (agg_factor > 1){
+    test_dens <- aggregate(test_dens, agg_factor)
+  }
+  
+  # nasty formula to convert to tests per 100kmsq (ish)
+  test_dens <- test_dens * 100 / (res(test_dens)[1] * 111) ** 2
+  
+  # surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
+  #   as.data.frame() %>%
+  #   cbind(unlist(extract(test_dens, cells(test_dens))))
+  surveil <- cbind(xyFromCell(test_dens, cell = cells(test_dens)), 
+                   extract(test_dens, cells(test_dens)))
+  names(surveil) <- c("x", "y", lyr_names)
+  
+  surveil <- surveil %>%
+    pivot_longer(lyr_names, names_to = "lyr", values_to = "effort") %>%
+    mutate(lyr = factor(lyr, levels = lyr_names))
+  
+  p <- ggplot() +
+    geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
+    geom_tile(data = surveil, aes(x, y, fill = effort)) +
+    geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
+    scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
+    facet_wrap(~ lyr) +
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(paste(pan, main))
+  
+  p
 }
 
-p3 <- ggplot(df_sum) +
-  geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
-  geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
-  geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
-  geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
-  geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
-  geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
-  scale_linetype_manual("", values = c("0% - 100%" = 2)) +
-  scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
-  ylab("Prevalence") +
-  xlab("Year") +
-  labs(title = "Estimated prevalence of Pfmdr1 N86Y in Africa") +
-  theme_bw() +
-  theme(legend.spacing.y = unit(-0.9, "cm"),
-        legend.background = element_rect(fill = NA))
-p3
-ggsave("figures/pfmdr86_out_times.png", height = 2, width = 4, scale = 2)
+survey_effort_panel(c("output/circmat_k13/surveillance_effort_k13.grd",
+                      "output/circmat_crt/surveillance_effort_crt.grd",
+                      "output/circmat_pfmdr86/surveillance_effort_pfmdr86.grd"),
+                    lyr_names = c("Pfkelch13 (all)", "Pfcrt (76)", "Pfmdr1 (86)"))
 
-# probably need to look at this next to data: 100% goes up before 2006
-# snap box to extent of years/0
+# p1 <- survey_effort_panel("output/circmat_k13/surveillance_effort_k13.grd", 
+#                           pan = "(a)", main = "Kelch 13", xlab="")
+# p2 <- survey_effort_panel("output/circmat_crt/surveillance_effort_crt.grd", 
+#                           pan = "(b)", main = "Pfcrt 76", ylab="")
+# p3 <- survey_effort_panel("output/pfmdr_hier/surveillance_effort_pfmdr86.grd", 
+#                           pan = "(c)", main = "Pfmdr1 86/184/1246", xlab="", ylab="")
+# 
+# library(patchwork)
+# p1 + p2 + p3 +
+#   plot_layout(ncol = 3, widths = c(4, 4, 4),
+#               axis_titles = "collect")
+ggsave("figures/surveillance_effort_all.png", 
+        height = 6, width=15, scale=0.7)
 
-library(patchwork)
 
-# would like to group x axis labels but giving up for now
-# the feature should be available with axes/axis_titles arguments ....
-# plot_space() is cool tho
-p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
-
-ggsave("figures/pfmdr86_out.png", height = 3.6, width = 3, scale = 2.5)
-
-layout <- "
-AABBC#
-AABBDD
-"
-
-# ecdf: surveillance PfPR?
-q1 <- p1 + 
-        p2 + 
-        guide_area() + 
-        plot_spacer() + 
-        plot_layout(design = layout, guides = "collect")
-q1
-
-q1 + inset_element(p3, left = 0, bottom = 0, right = 1, top = 0.4)
-library(gridExtra)
-grid.arrange
+# after all that, I might just facet_wrap ....
 
 
 
-p1 <- pred_time_plot()
+###############################################################################
+# time !
+
+
+
 
