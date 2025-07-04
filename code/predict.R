@@ -5,8 +5,8 @@ source("code/predict_to_raster.R")
 # for prediction raster:
 AGG_FACTOR = 5
 
+# set this to the location where all the inference outputs are at:
 out_dir <- "output/circmat_pfmdr1246/"
-
 
 scaled_years <- scale_years(range(pfpr_years))
 
