@@ -1,5 +1,4 @@
-library(terra)
-library(sf)
+
 
 survey_effort <- function(coords, # a df
                           mask, # a SpatRaster
@@ -7,6 +6,10 @@ survey_effort <- function(coords, # a df
                           xy = c("x", "y"), # where the coords are
                           field = "tested", # where the counts are
                           crs = "epsg:4326"){
+  # given df of `coords` associated with column `field` (by default, number of 
+  # tests), find Gaussian kernel density estimate with standard deviation `sigma`
+  # return SpatRaster masked by `mask` (i.e. `stable_transmission_mask`)
+  
   # cast to SpatVector
   coords <- coords %>%
     vect(geom = xy, crs = crs) %>%
@@ -15,7 +18,7 @@ survey_effort <- function(coords, # a df
   # sum "tested" in each pixel
   ras <- terra::rasterize(coords,
                           mask,
-                          field = field,
+                          field = field, # sum of number of tests in pixel
                           fun = "sum",
                           background = 0)
 
@@ -26,13 +29,17 @@ survey_effort <- function(coords, # a df
   mask(test_dens, mask)
 }
 
+
 wrap_survey_effort <- function(mut_data_path,
                                out_path,
                                agg_factor = 1,
                                sigma = 1.5,
                                years = NULL,
                                plot_out = NULL){
-  # not 100% sure why I'm wrapping a wrapper
+  # not 100% sure why I'm wrapping a wrapper ...
+  # A wrapper for `survey_effort()` that reads in `coords` and `mask`, does optional
+  # aggregation of `mask`, optionally separates `coords` by year and makes multiple
+  # (annual) calls to `survey_effort()`.
   stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
   if (agg_factor > 1){
     stable_transmission_mask <- aggregate(stable_transmission_mask, agg_factor)
@@ -55,40 +62,52 @@ wrap_survey_effort <- function(mut_data_path,
   writeRaster(test_dens, out_path, overwrite = TRUE)
 }
 
+###############################################################################
+library(terra)
+library(sf)
+source("code/setup.R")
 
+# function calls:
 wrap_survey_effort("data/moldm_k13_nomarker.csv",
                    "output/circmat_k13/surveillance_effort_k13.grd",
                    sigma = 1.5, 
                    plot_out = TRUE)
 
 wrap_survey_effort("data/moldm_k13_nomarker.csv",
-                   "output/circmat_k13/surveillance_effort_k13_testyr.grd",
-                   years = 2020:2021,
-                   agg_factor = 2,
+                   "output/circmat_k13/surveillance_effort_k13_2010-23.grd",
+                   years = 2010:2023,
                    sigma = 1.5, 
                    plot_out = TRUE)
 
-#writeRaster(test_dens, "output/circmat_k13/surveillance_effort_k13_2010-23.grd", overwrite = TRUE)
+wrap_survey_effort("data/moldm_crt76.csv",
+                   "output/circmat_crt/surveillance_effort_crt.grd",
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
-# For pfcrt:
-mut_data <- setup_mut_data("data/moldm_crt76.csv")
-test_dens <- survey_effort(mut_data, stable_transmission_mask, 1.5)
-plot(test_dens, main = "Pfcrt76 surveillance effort")
-writeRaster(test_dens, "output/circmat_crt/surveillance_effort_crt.grd", overwrite = TRUE)
+wrap_survey_effort("data/moldm_crt76.csv",
+                   "output/circmat_crt/surveillance_effort_crt_2010-23.grd",
+                   years = 2010:2023,
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
-# by year:
-years = 2010:2023
-test_dens <- lapply(years, function(z){
-  tmp <- mut_data %>% filter(year == z)
-  survey_effort(tmp, stable_transmission_mask, 1.5)
-})
+wrap_survey_effort("data/pfmdr_single_86.csv",
+                   "output/circmat_crt/surveillance_effort_pfmdr86.grd",
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
-test_dens <- rast(test_dens)
-names(test_dens) <- paste0("surv_", years)
-plot(test_dens)
-writeRaster(test_dens, "output/circmat_crt/surveillance_effort_crt_2010-23.grd", overwrite = TRUE)
+wrap_survey_effort("data/pfmdr_single_184.csv",
+                   "output/circmat_crt/surveillance_effort_pfmdr184.grd",
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
+wrap_survey_effort("data/pfmdr_single_1246.csv",
+                   "output/circmat_crt/surveillance_effort_pfmdr1246.grd",
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
-
+wrap_survey_effort("data/pfmdr_single_locus.csv",
+                   "output/circmat_crt/surveillance_effort_pfmdragg.grd",
+                   sigma = 1.5, 
+                   plot_out = TRUE)
 
   
