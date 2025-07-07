@@ -29,10 +29,10 @@ kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) +
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
   constant(nugget_var)
 
-kmn <- kmeans(X_obs[,coord_cols], centers = 40)
+#kmn <- kmeans(X_obs[,coord_cols], centers = 40)
 random_field <- gp(x = X_obs[,coord_cols], 
-                   kernel = kernel,
-                   inducing = kmn$centers)
+                   kernel = kernel)#,
+                   #inducing = kmn$centers)
 
 beta <- normal(0, 1, dim = 3)
 gp_mean_obs <- X_obs[,design_cols] %*% beta + random_field
@@ -44,6 +44,7 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 # fit the model by Hamiltonian Monte Carlo
 m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 
+# this will take around 2h
 set.seed(0748)
 draws <- mcmc(m, 
               n_samples = 3000,
@@ -53,6 +54,8 @@ draws <- mcmc(m,
                                         expo_len = 0.5,
                                         nugget_var = 0.5,
                                         beta = rep(0, 3)))
+
+draws <- extra_samples(draws, 3000)
 
 bayesplot::mcmc_trace(draws)
 

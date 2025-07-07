@@ -145,16 +145,123 @@ ggsave("figures/all_markers_time.png", scale = 1.5, height = 7, width = 6)
 #########################################################################
 # wrap up model predictions for pfcrt/pfmdr1:
 
+library(RColorBrewer)
+oranges <- brewer.pal(9, "Oranges")
+blrd <- iddoPal::iddo_palettes$BlGyRd
+
 map_pred_row <- function(in_path,
                          years,
-                         lyr = "med",
-                         pal = ){
+                         pal,
+                         field = c("medi", "sd"),
+                         xlab = "Longitude",
+                         ylab = "Latitude",
+                         legend_lim = waiver()){
   preds <- rast(in_path)
+  coords <- xyFromCell(preds, cells(preds))
+  vals <- terra::extract(preds, coords)
+  df <- cbind(coords, vals) %>%
+    pivot_longer(starts_with("2"),
+                 names_to = "lyr",
+                 values_to = "val") %>%
+    mutate(year = substr(lyr, 1, 4),
+           tag = substr(lyr, 11, 14)) %>%
+    filter(year %in% years & tag == field) # pick out year and thingo
   
+  p <- ggplot() +
+    geom_sf(data = afr, fill = "white") +
+    geom_tile(data = df, 
+              mapping = aes(x = x, y = y, fill = val)) +
+    facet_wrap(~year, nrow = 1) +
+    #scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+    scale_fill_gradientn(colors = pal, 
+                         "",
+                         #breaks = c(0, 0.5, 1), 
+                         #labels = c("0  (all K76)", "0.5", "1  (all 76T)"),
+                         limits = legend_lim
+                         ) +
+    xlab(xlab) +
+    ylab(ylab) +
+    #labs(title = "Median") +
+    theme(strip.background = element_blank(),
+          strip.text.x = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.justification = "top",
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank())
+  
+  p
 }
 
+years_to_plot <- c("2006","2010", "2014", "2018", "2022")
+p1 <- map_pred_row("output/circmat_crt/preds_all.grd", 
+             years = years_to_plot, field = "medi", pal = blrd,
+             legend_lim = c(0,1))
+p2 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+                   years = years_to_plot, field = "medi", pal = blrd,
+                   legend_lim = c(0,1), xlab = "", ylab = "")
+p3 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
+                   years = years_to_plot, field = "medi", pal = blrd,
+                   legend_lim = c(0,1), xlab = "", ylab = "")
+p4 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
+                   years = years_to_plot, field = "medi", pal = blrd,
+                   legend_lim = c(0,1), xlab = "", ylab = "")
+p5 <- map_pred_row("output/circmat_crt/preds_all.grd", 
+                   years = years_to_plot, field = "sd", pal = oranges,
+                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+p6 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+                   years = years_to_plot, field = "sd", pal = oranges,
+                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+p7 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
+                   years = years_to_plot, field = "sd", pal = oranges,
+                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+p8 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
+                   years = years_to_plot, field = "sd", pal = oranges,
+                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+
+# library(gridExtra)
+# grid.arrange(p2, p6, p3, p7, p4, p8,
+#              ncol = 1)
+
+library(cowplot)
+pcol <- plot_grid(p2 + theme(legend.position = "none"), 
+             p6 + theme(legend.position = "none"), 
+             p3 + theme(legend.position = "none"),
+             p7 + theme(legend.position = "none"),
+             p4 + theme(legend.position = "none"),
+             p8 + theme(legend.position = "none"),
+             ncol = 1)
+
+y.grob <- textGrob("Latitude", rot=90)
+
+x.grob <- textGrob("Longitude")
+
+pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
+
+legend1 = get_legend(p2)
+legend2 = get_legend(p6)
+
+plegend <- plot_grid(legend1, legend2, ncol = 1)
+
+p <- plot_grid(pcol, plegend, rel_widths = c(0.8,0.2))
+
+p
+
+ggsave("figures/mdr_out.png", height = 9, width = 6)
+
+#p1 + p5 + 
+p2 + p6 + p3 + p7 + p4 + p8 + 
+  plot_layout(ncol = 1, guides = "collect", axis_titles = "collect")
+
+ggsave("figures/mdr_out.png")
 
 
 
 
 
+
+
+
+
+
+  
+  
