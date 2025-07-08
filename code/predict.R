@@ -20,6 +20,8 @@ draws <- read_rds(paste0(out_dir, "draws.rds"))
 
 pfpr_years = 2000:2022
 
+pfpr_years = c(2000, 2008, 2012, 2016, 2020)
+
 set.seed(0748)
 preds <- lapply(pfpr_years, function(year){
   message(year)
