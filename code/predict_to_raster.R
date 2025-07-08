@@ -68,12 +68,10 @@ predict_to_ras <- function(stack,
                        random_field_pixel) %>%
     ilogit()
   
-  message("here")
-  
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
                                       nsim = 100,
-                                      trace_batch_size = 50) # reducing: will take longer, use less mem
+                                      trace_batch_size = 1) # reducing: will take longer, use less mem
   message("now here")
   post_pixel_median <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, median)
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)

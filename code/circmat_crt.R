@@ -27,7 +27,7 @@ nugget_var <- normal(0,1, truncation = c(0, Inf))
 # kernel & GP
 kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) + 
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
-  white(nugget_var)
+  constant(nugget_var)
 
 kmn <- kmeans(X_obs[,coord_cols], centers = 20)
 random_field <- gp(x = X_obs[,coord_cols], 
