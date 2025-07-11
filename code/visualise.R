@@ -1,4 +1,5 @@
 # do some visualisation in here ... 
+setwd("~/Desktop/MARCSE/k13_seafrica")
 source("code/setup.R")
 library(viridisLite)
 library(sf)
@@ -192,7 +193,8 @@ map_pred_row <- function(in_path,
                          field = c("medi", "sd"),
                          xlab = "Longitude",
                          ylab = "Latitude",
-                         legend_lim = waiver()){
+                         legend_lim = waiver(),
+                         top_pan = FALSE){
   preds <- rast(in_path)
   coords <- xyFromCell(preds, cells(preds))
   vals <- terra::extract(preds, coords)
@@ -209,22 +211,38 @@ map_pred_row <- function(in_path,
     geom_tile(data = df, 
               mapping = aes(x = x, y = y, fill = val)) +
     facet_wrap(~year, nrow = 1) +
-    #scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
-    scale_fill_gradientn(colors = pal, 
-                         "",
-                         #breaks = c(0, 0.5, 1), 
-                         #labels = c("0  (all K76)", "0.5", "1  (all 76T)"),
-                         limits = legend_lim
-                         ) +
-    xlab(xlab) +
+    #xlab(xlab) +
     ylab(ylab) +
-    #labs(title = "Median") +
-    theme(strip.background = element_blank(),
-          strip.text.x = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          legend.justification = "top",
+    #scale_x_continuous(breaks = seq(-20, 40, 20)) +
+    #scale_y_continuous(breaks = seq(-20, 40, 20)) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          legend.justification = "left",
           axis.title.x = element_blank(),
-          axis.title.y = element_blank())
+          axis.title.y = element_text(angle = 0, hjust = 1),
+          #axis.title.y = element_blank(),
+          title = element_blank())
+  
+  if (!top_pan){
+    p <- p + theme(strip.background = element_blank(),
+                   strip.text.x = element_blank())
+  }
+  
+  if (field == "medi"){
+    p <- p + scale_fill_gradientn(name = "Prevalence",
+                                   colors = pal, 
+                                   breaks = c(0, 0.5, 1), 
+                                   labels = c("0  (all wildtype)", "0.5", "1  (all mutant)"),
+                                   limits = legend_lim)
+  } else {
+    p <- p + scale_fill_gradientn(colors = pal, 
+                                  name = "Estimate SD",
+                                  limits = legend_lim)
+  }
   
   p
 }
@@ -232,64 +250,80 @@ map_pred_row <- function(in_path,
 years_to_plot <- c("2006","2010", "2014", "2018", "2022")
 p1 <- map_pred_row("output/circmat_crt/preds_all.grd", 
              years = years_to_plot, field = "medi", pal = blrd,
-             legend_lim = c(0,1))
+             legend_lim = c(0,1), ylab = "", top_pan = TRUE)#
 p2 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
-                   legend_lim = c(0,1), xlab = "", ylab = "")
+                   legend_lim = c(0,1), xlab = "", ylab = "", top_pan = TRUE)# ylab = "(a)")
 p3 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
-                   legend_lim = c(0,1), xlab = "", ylab = "")
+                   legend_lim = c(0,1), xlab = "", ylab = "")#  ylab = "(c)")
 p4 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
-                   legend_lim = c(0,1), xlab = "", ylab = "")
+                   legend_lim = c(0,1), xlab = "",ylab = "")#  ylab = "(e)")
 p5 <- map_pred_row("output/circmat_crt/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+                   legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(b)")
 p6 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+                   legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(b)")
 p7 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+                   legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(d)")
 p8 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.1), xlab = "", ylab = "")
+                   legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(f)")
 
-# library(gridExtra)
-# grid.arrange(p2, p6, p3, p7, p4, p8,
-#              ncol = 1)
-
+library(gridExtra)
+library(grid)
 library(cowplot)
+# chuck the rows together
 pcol <- plot_grid(p2 + theme(legend.position = "none"), 
              p6 + theme(legend.position = "none"), 
              p3 + theme(legend.position = "none"),
              p7 + theme(legend.position = "none"),
              p4 + theme(legend.position = "none"),
              p8 + theme(legend.position = "none"),
-             ncol = 1)
+             #ncol = 1, rel_heights = c(1.21, rep(1, 5))) +
+             ncol = 1, rel_heights = c(1.167, rep(1, 5))) +
+  theme(panel.spacing = unit(0, "cm"))
 
-y.grob <- textGrob("Latitude", rot=90)
+#pcol
 
-x.grob <- textGrob("Longitude")
-
-pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
+#pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
 
 legend1 = get_legend(p2)
 legend2 = get_legend(p6)
 
-plegend <- plot_grid(legend1, legend2, ncol = 1)
+plegend <- plot_grid(legend1, legend2, ncol = 1, axis = "r")
+
+#plegend
 
 p <- plot_grid(pcol, plegend, rel_widths = c(0.8,0.2))
 
-p
+# this df worked when I was using subfigure labels ...
+# df <- data.frame(xmin = rep(0.02, 3),
+#                  xmax = rep(0.062, 3),
+#                  ymin = c(0.017, 0.34, 0.66),
+#                  ymax = c(0.312, 0.635, 0.955),
+#                  lab = c("D1246Y", "Y184F", "N86Y"))
+df <- data.frame(xmin = rep(0.001, 3),
+                 xmax = rep(0.028, 3),
+                 ymin = c(0.0155, 0.337, 0.663),
+                 ymax = c(0.315, 0.639, 0.965),
+                 lab = c("D1246Y", "Y184F", "N86Y"))
+p <- p + 
+  # tried adding outer margin but that didn't do anything
+  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+                          ymax=ymax), 
+            colour="grey10", fill="grey85", linewidth=0.3) +
+  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+                            label = lab), angle = 90) +
+  geom_text(data = data.frame(x = rep(0.85, 2), y = c(0.34, 0.84), 
+                              label = c("Estimate SD", "Prevalence")),
+            aes(x = x, y = y, label = label))
 
-ggsave("figures/mdr_out.png", height = 9, width = 6)
-
-#p1 + p5 + 
-p2 + p6 + p3 + p7 + p4 + p8 + 
-  plot_layout(ncol = 1, guides = "collect", axis_titles = "collect")
-
-ggsave("figures/mdr_out.png")
+# gave up on add_sub
+ggsave("figures/mdr_out.png", height = 9, width = 8.5)
 
 
 

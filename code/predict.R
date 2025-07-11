@@ -3,7 +3,7 @@ source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
 # for prediction raster:
-AGG_FACTOR = 5
+AGG_FACTOR = 1
 
 # set this to the location where all the inference outputs are at:
 out_dir <- "output/circmat_k13/"

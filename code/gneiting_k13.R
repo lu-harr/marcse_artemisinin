@@ -21,7 +21,7 @@ design_cols <- c("intercept", "year_scaled", "pfpr")
 # hyperparameters
 gneiting_len <- normal(0, 3, truncation = c(0, Inf))
 gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
-gneiting_sd <- normal(0, 3, truncation = c(0, Inf))
+gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
 nugget_sd <- normal(0, 3, truncation = c(0, Inf))
 
 # kernel & GP
@@ -46,16 +46,18 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 # fit the model by Hamiltonian Monte Carlo
 m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
-# this will take around 2h for full GP
 set.seed(0748)
 draws <- mcmc(m, 
               n_samples = 1000,
               initial_values = initials(gneiting_len = 1,
-                                        gneiting_tim = 1,
-                                        gneiting_sd = 1,
-                                        beta = rep(0, 3)))
+                                        gneiting_tim = 3,
+                                        gneiting_sd = 13,
+                                        nugget_sd = 0.5,
+                                        beta = c(-0.8, 1.5, 0.5)))
 
-#draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 3000)
 
 bayesplot::mcmc_trace(draws)
 
