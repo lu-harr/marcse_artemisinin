@@ -93,7 +93,7 @@ crt$Present[which(crt$Present/crt$Tested > 1)] <- crt$Tested[which(crt$Present/c
 plot(crt$year, crt$Present / crt$Tested)
 
 # check stud size minimum requirement
-write.csv(crt, "data/clean/moldm_crt76.csv")
+write.csv(crt, "data/clean/moldm_crt76.csv", row.names = FALSE)
 
 
 
