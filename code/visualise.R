@@ -225,7 +225,8 @@ map_pred_row <- function(in_path,
           axis.title.x = element_blank(),
           axis.title.y = element_text(angle = 0, hjust = 1),
           #axis.title.y = element_blank(),
-          title = element_blank())
+          title = element_blank(),
+          panel.spacing = unit(0, "lines"))
   
   if (!top_pan){
     p <- p + theme(strip.background = element_blank(),
@@ -276,6 +277,8 @@ p8 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd",
 library(gridExtra)
 library(grid)
 library(cowplot)
+
+
 # chuck the rows together
 pcol <- plot_grid(p2 + theme(legend.position = "none"), 
              p6 + theme(legend.position = "none"), 
@@ -322,11 +325,68 @@ p <- p +
                               label = c("Estimate SD", "Prevalence")),
             aes(x = x, y = y, label = label))
 
+p
+
 # gave up on add_sub
 ggsave("figures/mdr_out.png", height = 9, width = 8.5)
 
+########################################################################
+# can I fit crt in too?
+p2 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+                   years = years_to_plot, field = "medi", pal = blrd,
+                   legend_lim = c(0,1), xlab = "", ylab = "")# ylab = "(a)")
 
+# chuck the rows together
+pcol <- plot_grid(p1 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
+                  p5 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+                  p2 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
+                  p6 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
+                  p3 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+                  p7 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+                  p4 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+                  p8 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+                  #ncol = 1, rel_heights = c(1.21, rep(1, 5))) +
+                  ncol = 1, rel_heights = c(1.22, rep(1, 7))) +
+  theme(panel.spacing = unit(0, "cm"))
 
+#pcol
+
+#pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
+
+legend1 = get_legend(p2)
+legend2 = get_legend(p6)
+
+plegend <- plot_grid(legend1, legend2, ncol = 1, axis = "r")
+
+#plegend
+
+p <- plot_grid(pcol, plegend, rel_widths = c(0.8,0.22))
+
+# this df worked when I was using subfigure labels ...
+# df <- data.frame(xmin = rep(0.02, 3),
+#                  xmax = rep(0.062, 3),
+#                  ymin = c(0.017, 0.34, 0.66),
+#                  ymax = c(0.312, 0.635, 0.955),
+#                  lab = c("D1246Y", "Y184F", "N86Y"))
+df <- data.frame(xmin = rep(0.001, 4),
+                 xmax = rep(0.035, 4),
+                 ymin = c(0.005, 0.249, 0.492, 0.735),
+                 ymax = c(0.242, 0.487, 0.73, 0.975),
+                 lab = c("Pfmdr1 D1246Y", "Pfmdr1 Y184F", "Pfmdr1 N86Y", "Pfcrt K76T"))
+p <- p + 
+  # tried adding outer margin but that didn't do anything
+  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin,
+                           ymax=ymax),
+            colour="grey10", fill="grey85", linewidth=0.3) +
+  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+                           label = lab), angle = 90) +
+  geom_text(data = data.frame(x = rep(0.85, 2), y = c(0.34, 0.84), 
+                              label = c("Estimate SD", "Prevalence")),
+            aes(x = x, y = y, label = label))
+
+p
+
+ggsave("figures/crt_mdr_out.png", height = 9, width = 7)
 
 
 

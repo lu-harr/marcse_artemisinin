@@ -1,5 +1,5 @@
 # Fit K13 model and write outputs to output/gneiting_k13/directory
-setwd("~/Desktop/MARCSE/k13_seafrica")
+#setwd("~/Desktop/MARCSE/k13_seafrica")
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
@@ -59,7 +59,7 @@ draws <- extra_samples(draws, 3000)
 draws <- extra_samples(draws, 3000)
 draws <- extra_samples(draws, 3000)
 
-bayesplot::mcmc_trace(draws)
+#bayesplot::mcmc_trace(draws)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,

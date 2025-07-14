@@ -8,7 +8,8 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(terra)
 
-
+YEAR_LOWER_BOUND <- 2000
+MIN_SAMPLE_SIZE <- 10
 
 world <- ne_countries(scale="medium", returnclass = "sf")
 afr <- world %>%
@@ -218,7 +219,7 @@ forwards <- names(tmp)  # (mutants)
 single_opps <- c(single_opps, tmp)
 
 pfmdr <- pfmdr %>%
-  filter(Tested > 10) %>%
+  filter(Tested > MIN_SAMPLE_SIZE) %>%
   group_by(Longitude, Latitude, year, PubMedID, Tested, realised, `86`, `184`, `1246`, n_loci) %>%
   summarise(pres = paste(Present, collapse = ","), 
             n_tri = length(unique(tri)),
@@ -361,7 +362,8 @@ partners <- bind_rows(crt,
                       single_loc %>%
                         mutate(loc = paste("Pfmdr1", loc))) %>%
   mutate(loc = factor(loc, levels = c("Pfcrt K76T", "Pfmdr1 N86Y", "Pfmdr1 Y184F", "Pfmdr1 D1246Y"))) %>%
-  filter(year > YEAR_MIN_CUTOFF)
+  filter(year > YEAR_LOWER_BOUND) %>%
+  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2008, 2012, 2016, 2020, max(year))))
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -374,10 +376,14 @@ ggplot() +
                        breaks = c(0, 0.5, 1), 
                        labels = c("0  (all WT)", "0.5", "1  (all mutant)"),
                        limits = c(0,1)) +
-  scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
+  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
   facet_grid(year_bin ~ loc) +
-  labs(title = "Pfmdr1 84-186-1246: Surveillance at single loci") +
+  # labs(#title = "Pfmdr1 84-186-1246: Surveillance at single loci",
+  #      xlab = "Longitude", ylab = "Latitude") +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_grey()
-ggsave("figures/pfmdr_single_locus.png", scale = 1.7, height = 6, width = 5)
+  theme_grey() #+
+  #theme(title = element_blank())
+ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 5, width = 5)
