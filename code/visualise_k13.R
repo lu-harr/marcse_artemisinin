@@ -1,13 +1,14 @@
 # do some visualisation in here
 library(viridisLite)
 library(sf)
+library(cowplot)
 
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv")
+mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv")
 preds <- rast("output/circmat_k13/preds_all.grd")
-test_dens <- rast("output/surveillance_effort_k13.grd")
+test_dens <- rast("output/circmat_k13/surveillance_effort_k13.grd")
 
 # mask
 afr <- world %>%
@@ -70,8 +71,10 @@ ggsave("figures/surveillance_effort_k13.png", ggarrange2(gg1, p3, widths = c(1,2
 ###############################################################################
 # visualise lengthscale priors:
 
-axis(xxx, labels = degrees_to_radians(xxx), "Distance (degrees)")
-axis(xxx, labels = distHaversine(xxx), "Distance (km)")
+# axis(xxx, labels = degrees_to_radians(xxx), "Distance (degrees)")
+# axis(xxx, labels = distHaversine(xxx), "Distance (km)")
+library(geosphere)
+library(greta.gp)
 
 circmat_len <- lognormal(meanlog = 0, sdlog = 1)
 xxx = seq(0, 1, length.out = 100)
@@ -122,173 +125,161 @@ legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
 # add priors to hists ...?
 
 ###############################################################################
-# nice clean traceplot
-library(GGally)
-library(brms)
-library(bayesplot)
-
-draws <- read_rds("output/circmat_k13/draws.rds")
-
-post <- as_draws_df(draws) %>%
-  rename("Lengthscale (spatial)" = "circmat_len",
-         "Variance (spatial)" = "circmat_var", 
-         "Lengthscale (temporal)" = "expo_len",    
-         "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
-         "Nugget variance" = "nugget_var",
-         "Beta (intercept)" = "beta[1,1]",
-         "Beta (scaled year)" = "beta[2,1]",
-         "Beta (PfPR)" = "beta[3,1]")
-
-color_scheme_set("purple") # the bayesplot scheme is much better suited to this application ..
-bayesplot::mcmc_trace(post)
-ggsave("figures/trace_k13.png", height=10, width=15)
-
-
-
-modified_density = function(data, mapping, ...) {
-  ggally_densityDiag(data, mapping, ...) + 
-    scale_fill_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-# ggplot is the silliest darn software going
-# why would anyone want or need to change a colour palette?
-# beats me
-modified_points = function(data, mapping, ...) {
-  ggally_points(data, mapping, ...) + 
-    scale_color_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-modified_cor = function(data, mapping, ...){
-  ggally_cor(data, mapping, ...) +
-    scale_color_manual(values = c("#e5cce5","#bf7fbf","#a64ca6","#800080","#660066","#400040"))
-}
-
-# love the purps but they're a bit too light to use for cor
-post %>%
-  mutate(chain = as.factor(.chain)) %>%
-  ggpairs(columns = 1:6,
-          mapping = aes(colour = chain),
-          lower = list(continuous = wrap(modified_points, alpha = 0.4)), # can't seem to turn alpha down here?
-          diag = list(continuous = wrap(modified_density, alpha = 0.5)),
-          upper = list(continuous = modified_cor)) # probably don't need corrs for chains?
-ggsave("figures/chain_corr_k13.png", height=12, width=12)
-
-###############################################################################
 preds <- rast("output/circmat_k13/preds_all.grd")
 # require common colour palette between years !
 
+zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
+victoria <- list(xmin = 27, xmax = 35, ymin = -6, ymax = 2)
+eswatini <- list(xmin = 34, xmax = 41, ymin = 12, ymax = 19)
 
-coords <- xyFromCell(preds, cells(preds))
-vals <- terra::extract(preds, coords)
-df <- cbind(coords, vals) %>%
-  pivot_longer(starts_with("2"),
-               names_to = "lyr",
-               values_to = "val") %>%
-  mutate(year = substr(lyr, 1, 4),
-         tag = substr(lyr, 11, 14)) # pick out year and thingo
+zoom_df <- rbind(zambezi, victoria, eswatini) %>%
+  as.data.frame() %>%
+  unnest() %>%
+  suppressWarnings()
+
+gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
+  # this was annoying me
+  if (!is.null(extent)){
+    extent <- ext(unlist(extent))
+    ras <- mask(ras, extent) %>%
+      crop(extent)
+    
+    if (!is.null(shp)){
+      # assuming we're working with sf
+      shp <- st_crop(shp, extent)
+    }
+  }
+  
+  coords <- xyFromCell(ras, cells(ras))
+  vals <- terra::extract(ras, coords)
+  
+  df <- cbind(coords, vals) %>%
+    pivot_longer(starts_with("2"),
+                 names_to = "lyr",
+                 values_to = "val") %>%
+    mutate(year = substr(lyr, 1, 4),
+           tag = substr(lyr, 11, 14))
+  
+  list(df = df,
+       shp = shp)
+}
+
+df <- gg_ras_prep(preds)$df
+zambezi_bits <- gg_ras_prep(preds, zambezi, afr)
+victoria_bits <- gg_ras_prep(preds, victoria, afr)
+eswatini_bits <- gg_ras_prep(preds, eswatini, afr)
 
 years_to_plot <- c("2014", "2018", "2022")
 
-p1 <- ggplot() +
+zoom_pan <- function(bits, 
+                     yearr, 
+                     tagg = "medi",
+                     pal = viridis(100), 
+                     scale_lims = c(0, 0.42),
+                     panel_col = "black"){
+  message(yearr)
+  ggplot() +
+    geom_tile(data = bits$df %>%
+                filter(year == yearr & tag == tagg), 
+              mapping = aes(x = x, y = y, fill = val)) +
+    geom_sf(data = bits$shp, fill = NA, col = "grey") +
+    scale_fill_gradientn(colours = pal, limits = scale_lims) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.justification = "top",
+          axis.title = element_blank(),
+          legend.position = "none",
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.margin = unit(rep(0,4), "cm"),
+          panel.border = element_rect(colour = panel_col,
+                                      linewidth = 1))
+}
+
+
+medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "medi"), 
+              filter(year %in% years_to_plot & tag == "medi"),
             mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1) +
+  facet_wrap(~year, ncol = 1, strip.position = "left") +
+  # geom_tile(data = df %>%
+  #             filter(year =="2022" & tag == "medi"),
+  #           mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_viridis_c(na.value = NA, "Prevalence") +
-  # scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
-  #                      "",
-  #                      breaks = c(0, 0.5, 1), 
-  #                      labels = c("0  (all K76)", "0.5", "1  (all 76T)"),
-  #                      limits = c(0,1)) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  labs(title = "Median") +
-  theme(strip.background = element_blank(),
-        strip.text.x = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
-p1
+  # xlab("Longitude") +
+  # ylab("Latitude") +
+  # labs(title = "Median") +
+  geom_rect(zoom_df %>% mutate(year = years_to_plot[1]), 
+            mapping = aes(xmin = xmin,
+                xmax = xmax,
+                ymin = ymin,
+                ymax = ymax), colour = pcols, linewidth = 1, fill = NA) +
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_blank(), #element_text(hjust = 0.5),
+        legend.justification = "top") 
+medians
 
-p2 <- ggplot() +
+library(iddoPal)
+pcols <- iddo_palettes_discrete$iddo_new[c(1, 3, 5)]
+
+yr1 <- plot_grid(zoom_pan(zambezi_bits, "2014", panel_col = pcols[1]),
+                 zoom_pan(victoria_bits, "2014", panel_col = pcols[2]),
+                 NULL,
+                 zoom_pan(eswatini_bits, "2014", panel_col = pcols[3])) +
+  theme(plot.margin = unit(rep(0.2,4), "cm"))
+
+yr2 <- plot_grid(zoom_pan(zambezi_bits, "2018", panel_col = pcols[1]),
+                 zoom_pan(victoria_bits, "2018", panel_col = pcols[2]),
+                 NULL,
+                 zoom_pan(eswatini_bits, "2018", panel_col = pcols[3])) +
+  theme(plot.margin = unit(rep(0.2,4), "cm"))
+
+yr3 <- plot_grid(zoom_pan(zambezi_bits, "2022", panel_col = pcols[1]),
+                 zoom_pan(victoria_bits, "2022", panel_col = pcols[2]),
+                 NULL,
+                 zoom_pan(eswatini_bits, "2022", panel_col = pcols[3])) +
+  theme(plot.margin = unit(rep(0.2,4), "cm"))
+
+zooms <- plot_grid(yr1, yr2, yr3, ncol = 1)
+
+sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
               filter(year %in% years_to_plot & tag == "sd"), 
             mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1, strip.position = "right") +
+  facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
                        "Uncertainty", 
                        direction = 1,
                        trans = "sqrt") +
-  xlab("Longitude") +
-  ylab("") +
-  labs(title = "Standard deviation") +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
-
-pal <- iddoPal::iddo_palettes$soft_blues
-
-df_sum <- df %>%
-  filter(tag == "medi") %>%
-  group_by(year) %>%
-  summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
-  unnest_wider(q) %>%
-  ungroup() %>%
-  mutate(year = as.numeric(year))
-# pivot_longer(cols = ends_with("%"),
-#              names_to = "Quantile",
-#              values_to = "val")
-
-
-
-p3 <- ggplot(df_sum) +
-  geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
-  geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
-  geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
-  geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
-  geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
-  geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
-  scale_linetype_manual("", values = c("0% - 100%" = 2)) +
-  scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
-  ylab("Prevalence") +
-  xlab("Year") +
-  labs(title = "Estimated prevalence of Kelch 13 mutations in Africa") +
+  # xlab("Longitude") +
+  # ylab("") +
+  # labs(title = "Standard deviation") +
   theme_bw() +
-  theme(legend.spacing.y = unit(-0.9, "cm"),
-        legend.background = element_rect(fill = NA))
-p3
-ggsave("figures/k13_out_times.png", height = 2, width = 4, scale = 2)
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_blank(), # element_text(hjust = 0.5),
+        legend.justification = "top") 
 
-# probably need to look at this next to data: 100% goes up before 2006
-# snap box to extent of years/0
+plot_grid(zooms, 
+          medians + theme(legend.position = "none"), 
+          sds + theme(legend.position = "none"), 
+          ncol = 3, rel_widths = c(0.5,1,0.9))
 
-library(patchwork)
+#p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
 
-# would like to group x axis labels but giving up for now
-# the feature should be available with axes/axis_titles arguments ....
-# plot_space() is cool tho
-p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
+ggsave("figures/k13_out.png", height = 5, width = 4, scale = 2)
 
-ggsave("figures/k13_out.png", height = 3.6, width = 3, scale = 2.5)
-
-layout <- "
-AABBC#
-AABBDD
-"
-
-# ecdf: surveillance PfPR?
-q1 <- p1 + 
-  p2 + 
-  guide_area() + 
-  plot_spacer() + 
-  plot_layout(design = layout, guides = "collect")
-q1
-
-q1 + inset_element(p3, left = 0, bottom = 0, right = 1, top = 0.4)
-library(gridExtra)
 
 
 

@@ -3,6 +3,7 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
+# note that this is all out of date now I've messed with my data directory
 mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv", min_year = 2000)
 
 out <- build_design_matrix(covariates,
@@ -47,14 +48,30 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
 set.seed(0748)
-draws <- mcmc(m, 
+draws <- mcmc(m,
               n_samples = 1000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
                                         nugget_sd = 0.5,
                                         beta = c(-0.8, 1.5, 0.5)))
+# doesn't look like I can read things back in and ask for extra_samples
+# parameters <- readRDS("output/gneiting_k13/parameters.rds")
+# kernel <- readRDS("output/gneiting_k13/kernel.rds")
+# m <- readRDS("output/gneiting_k13/m.rds")
+# random_field <- readRDS("output/gneiting_k13/random_field.rds")
+# draws <- readRDS("output/gneiting_k13/draws.rds")
+# 
+# gneiting_len <- parameters$gneiting_len
+# gneiting_tim <- parameters$gneiting_tim
+# gneiting_sd <- parameters$gneiting_sd
+# nugget_sd <- parameters$nugget_sd
+# beta <- parameters$beta
 
+
+draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 3000)
 draws <- extra_samples(draws, 3000)
 draws <- extra_samples(draws, 3000)
 draws <- extra_samples(draws, 3000)

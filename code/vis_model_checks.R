@@ -5,17 +5,26 @@ library(GGally)
 library(brms)
 library(bayesplot)
 
-output_dir <- "output/circmat_pfmdr1246/"
-out_tag <- "pfmdr1246"
+output_dir <- "output/gneiting_k13/"
+out_tag <- "gneiting_k13"
 
 draws <- read_rds(paste0(output_dir, "draws.rds"))
 
+# post <- as_draws_df(draws) %>%
+#   rename("Lengthscale (spatial)" = "circmat_len",
+#          "Variance (spatial)" = "circmat_var", 
+#          "Lengthscale (temporal)" = "expo_len",    
+#          "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
+#          "Nugget variance" = "nugget_var",
+#          "Beta (intercept)" = "beta[1,1]",
+#          "Beta (scaled year)" = "beta[2,1]",
+#          "Beta (PfPR)" = "beta[3,1]")
+
 post <- as_draws_df(draws) %>%
-  rename("Lengthscale (spatial)" = "circmat_len",
-         "Variance (spatial)" = "circmat_var", 
-         "Lengthscale (temporal)" = "expo_len",    
-         "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
-         "Nugget variance" = "nugget_var",
+  rename("Lengthscale (spatial)" = "gneiting_len",
+         "Std Deviation (spatiotemporal)" = "gneiting_sd",
+         "Lengthscale (temporal)" = "gneiting_tim",
+         "Nugget std dev" = "nugget_sd",
          "Beta (intercept)" = "beta[1,1]",
          "Beta (scaled year)" = "beta[2,1]",
          "Beta (PfPR)" = "beta[3,1]")
