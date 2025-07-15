@@ -97,7 +97,9 @@ ggsave("figures/surveillance_effort_all.png",
 pred_time_plot <- function(in_path, 
                            title = "",
                            points_path = "",
-                           pal = iddoPal::iddo_palettes$soft_blues){
+                           pal = iddoPal::iddo_palettes$soft_blues,
+                           zooms = NULL,
+                           zoom_pal = NULL){
   # wrapping up plot of all-Africa posterior meds over times
   preds <- rast(in_path)
   
@@ -134,6 +136,31 @@ pred_time_plot <- function(in_path,
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
   
+  if (!is.null(zooms)){
+    for (i in 1:nrow(zooms)){
+      exte <- ext(unlist(zooms[i,]))
+      tmp <- crop(preds, exte)
+      coords <- xyFromCell(tmp, cells(tmp))
+      vals <- terra::extract(tmp, coords)
+      
+      df <- cbind(coords, vals) %>%
+        pivot_longer(starts_with("2"),
+                     names_to = "lyr",
+                     values_to = "val") %>%
+        mutate(year = substr(lyr, 1, 4),
+               tag = substr(lyr, 11, 14)) %>% # pick out year and thingo
+        filter(tag == "medi") %>%
+        group_by(year) %>%
+        summarise(med = median(val)) %>%
+        ungroup() %>%
+        mutate(year = as.numeric(year))
+      
+      p <- p + geom_line(df, mapping = aes(x = year, y = med), colour = case_pal[i])
+    }
+  }
+  
+  
+  
   if (points_path != ""){
     message("Watch out! I set limits manually!")
     mut_data <- setup_mut_data(points_path, min_year = 2000)
@@ -151,42 +178,77 @@ pred_time_plot <- function(in_path,
 }
 
 
-p1 <- pred_time_plot("output/circmat_k13/preds_all.grd",
+p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
                title = "(a) Pfkelch13")
-p2 <- pred_time_plot("output/circmat_crt/preds_all.grd",
+p2 <- pred_time_plot("output/crt76/preds_all.grd",
                title = "(b) Pfcrt K76T")
-p3 <- pred_time_plot("output/circmat_pfmdr86/preds_all.grd",
+p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
                title = "(c) Pfmdr1 N86Y")
-p4 <- pred_time_plot("output/circmat_pfmdr184/preds_all.grd",
+p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
                title = "(d) Pfmdr1 Y184F")
-p5 <- pred_time_plot("output/circmat_pfmdr1246/preds_all.grd",
+p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
                title = "(e) Pfmdr1 D1246Y")
 
 library(patchwork)
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time.png", scale = 1.5, height = 7, width = 6)
 
-p1 <- pred_time_plot("output/circmat_k13/preds_all.grd",
+
+p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
                      title = "(a) Pfkelch13",
-                     points_path = "data/moldm_k13_nomarker.csv")
-p2 <- pred_time_plot("output/circmat_crt/preds_all.grd",
+                     points_path = "data/clean/moldm_k13_nomarker.csv")
+p2 <- pred_time_plot("output/crt76/preds_all.grd",
                      title = "(b) Pfcrt K76T",
-                     points_path = "data/moldm_crt76.csv")
-p3 <- pred_time_plot("output/circmat_pfmdr86/preds_all.grd",
+                     points_path = "data/clean/moldm_crt76.csv")
+p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
                      title = "(c) Pfmdr1 N86Y",
                      points_path = "../moldm/clean/pfmdr_single_86.csv")
-p4 <- pred_time_plot("output/circmat_pfmdr184/preds_all.grd",
+p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
                      title = "(d) Pfmdr1 Y184F",
                      points_path = "../moldm/clean/pfmdr_single_184.csv")
-p5 <- pred_time_plot("output/circmat_pfmdr1246/preds_all.grd",
+p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
                      title = "(e) Pfmdr1 D1246Y",
+                     points_path = "../moldm/clean/pfmdr_single_1246.csv")
+
+p1 + p2 + p3 + p4 + p5 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_pts.png", scale = 1.5, height = 7, width = 6)
+
+
+# make a version of this with highlights to k13 panel, highlights to other pred panels?
+# after all that, not sure this adds much?
+zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
+victoria <- list(xmin = 27, xmax = 35, ymin = -6, ymax = 2)
+eswatini <- list(xmin = 34, xmax = 41, ymin = 12, ymax = 19)
+
+zoom_df <- rbind(zambezi, victoria, eswatini) %>%
+  as.data.frame() %>%
+  unnest() %>%
+  suppressWarnings()
+
+p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
+                     title = "(a) Pfkelch13",
+                     zooms = zoom_df, zoom_pal = case_pal,
+                     points_path = "data/clean/moldm_k13_nomarker.csv")
+p2 <- pred_time_plot("output/crt76/preds_all.grd",
+                     title = "(b) Pfcrt K76T",
+                     zooms = zoom_df, zoom_pal = case_pal,
+                     points_path = "data/clean/moldm_crt76.csv")
+p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
+                     title = "(c) Pfmdr1 N86Y",
+                     zooms = zoom_df, zoom_pal = case_pal,
+                     points_path = "../moldm/clean/pfmdr_single_86.csv")
+p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
+                     title = "(d) Pfmdr1 Y184F",
+                     zooms = zoom_df, zoom_pal = case_pal,
+                     points_path = "../moldm/clean/pfmdr_single_184.csv")
+p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
+                     title = "(e) Pfmdr1 D1246Y",
+                     zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "../moldm/clean/pfmdr_single_1246.csv")
 
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_pts.png", scale = 1.5, height = 7, width = 6)
-
-
-  
 
 #########################################################################
 # wrap up model predictions for pfcrt/pfmdr1:

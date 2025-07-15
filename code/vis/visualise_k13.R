@@ -311,7 +311,7 @@ p <- p +
                            label = lab), angle = 90)
   
 df <- data.frame(xmin = c(0.04, 0.525),
-                 xmax = c(0.5, 0.87),
+                 xmax = c(0.5, 0.873),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.02, 1),
                  lab = c("Median", "Standard deviation"))
