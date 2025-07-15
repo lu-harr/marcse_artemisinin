@@ -1,8 +1,16 @@
 # do some visualisation in here ... 
 setwd("~/Desktop/MARCSE/k13_seafrica")
 source("code/setup.R")
-library(viridisLite)
 library(sf)
+
+library(viridisLite)
+library(RColorBrewer)
+library(iddoPal)
+oranges <- brewer.pal(9, "Oranges")
+blrd <- iddoPal::iddo_palettes$BlGyRd
+iddoblue <- iddo_palettes_discrete$iddo[1]
+# taking some bright colours that don't coincide with viridis:
+case_pal <- c("#E37210", iddoblue, "#c7047c")
 
 # mask
 afr <- world %>%
@@ -183,9 +191,7 @@ ggsave("figures/all_markers_time_pts.png", scale = 1.5, height = 7, width = 6)
 #########################################################################
 # wrap up model predictions for pfcrt/pfmdr1:
 
-library(RColorBrewer)
-oranges <- brewer.pal(9, "Oranges")
-blrd <- iddoPal::iddo_palettes$BlGyRd
+
 
 map_pred_row <- function(in_path,
                          years,

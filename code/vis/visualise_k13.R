@@ -7,8 +7,13 @@ source("code/setup.R")
 source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv")
-preds <- rast("output/circmat_k13/preds_all.grd")
-test_dens <- rast("output/circmat_k13/surveillance_effort_k13.grd")
+preds <- rast("output/k13/circmat_sparse/preds_all.grd")
+test_dens <- rast("output/k13/surveillance_effort_k13.grd")
+
+library(iddoPal)
+iddoblue <- iddo_palettes_discrete$iddo[1]
+# taking some bright colours that don't coincide with viridis:
+case_pal <- c("#E37210", iddoblue, "#c7047c")
 
 # mask
 afr <- world %>%
@@ -125,7 +130,7 @@ legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
 # add priors to hists ...?
 
 ###############################################################################
-preds <- rast("output/circmat_k13/preds_all.grd")
+preds <- rast("output/k13/circmat_sparse/preds_all.grd")
 # require common colour palette between years !
 
 zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
@@ -191,9 +196,9 @@ zoom_pan <- function(bits,
           legend.position = "none",
           axis.text = element_blank(),
           axis.ticks = element_blank(),
-          plot.margin = unit(rep(0,4), "cm"),
+          plot.margin = unit(rep(0.2,4), "cm"),
           panel.border = element_rect(colour = panel_col,
-                                      linewidth = 1))
+                                      linewidth = 1.5))
 }
 
 
@@ -214,7 +219,10 @@ medians <- ggplot() +
             mapping = aes(xmin = xmin,
                 xmax = xmax,
                 ymin = ymin,
-                ymax = ymax), colour = pcols, linewidth = 1, fill = NA) +
+                ymax = ymax), colour = case_pal, linewidth = 1, fill = NA) +
+  geom_text(data = data.frame(lab = c("a", "b", "c"), 
+                              year = c("2014", "2018", "2022")), 
+            mapping = aes(x = 0, y = 0, label = lab)) +
   theme_bw() +
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
@@ -223,28 +231,39 @@ medians <- ggplot() +
         legend.justification = "top") 
 medians
 
-library(iddoPal)
-pcols <- iddo_palettes_discrete$iddo_new[c(1, 3, 5)]
+# yr1 <- plot_grid(zoom_pan(zambezi_bits, "2014", panel_col = case_pal[1]),
+#                  zoom_pan(victoria_bits, "2014", panel_col = case_pal[2]),
+#                  NULL,
+#                  zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3])) +
+#   theme(plot.margin = unit(rep(0.2,4), "cm"))
+# 
+# yr2 <- plot_grid(zoom_pan(zambezi_bits, "2018", panel_col = case_pal[1]),
+#                  zoom_pan(victoria_bits, "2018", panel_col = case_pal[2]),
+#                  NULL,
+#                  zoom_pan(eswatini_bits, "2018", panel_col = case_pal[3])) +
+#   theme(plot.margin = unit(rep(0.2,4), "cm"))
+# 
+# yr3 <- plot_grid(zoom_pan(zambezi_bits, "2022", panel_col = case_pal[1]),
+#                  zoom_pan(victoria_bits, "2022", panel_col = case_pal[2]),
+#                  NULL,
+#                  zoom_pan(eswatini_bits, "2022", panel_col = case_pal[3])) +
+#   theme(plot.margin = unit(rep(0.2,4), "cm"))
+# zooms <- plot_grid(yr1, yr2, yr3, ncol = 1)
 
-yr1 <- plot_grid(zoom_pan(zambezi_bits, "2014", panel_col = pcols[1]),
-                 zoom_pan(victoria_bits, "2014", panel_col = pcols[2]),
-                 NULL,
-                 zoom_pan(eswatini_bits, "2014", panel_col = pcols[3])) +
-  theme(plot.margin = unit(rep(0.2,4), "cm"))
 
-yr2 <- plot_grid(zoom_pan(zambezi_bits, "2018", panel_col = pcols[1]),
-                 zoom_pan(victoria_bits, "2018", panel_col = pcols[2]),
-                 NULL,
-                 zoom_pan(eswatini_bits, "2018", panel_col = pcols[3])) +
-  theme(plot.margin = unit(rep(0.2,4), "cm"))
+zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
+                   zoom_pan(victoria_bits, "2014", panel_col = case_pal[2]),
+                   zoom_pan(zambezi_bits, "2014", panel_col = case_pal[1]),
+                   zoom_pan(eswatini_bits, "2018", panel_col = case_pal[3]),
+                   zoom_pan(victoria_bits, "2018", panel_col = case_pal[2]),
+                   zoom_pan(zambezi_bits, "2018", panel_col = case_pal[1]),
+                   zoom_pan(eswatini_bits, "2022", panel_col = case_pal[3]),
+                   zoom_pan(victoria_bits, "2022", panel_col = case_pal[2]),
+                   zoom_pan(zambezi_bits, "2022", panel_col = case_pal[1]),
+                   ncol = 1) +
+  theme(plot.margin = unit(rep(0.1,4), "cm"))
 
-yr3 <- plot_grid(zoom_pan(zambezi_bits, "2022", panel_col = pcols[1]),
-                 zoom_pan(victoria_bits, "2022", panel_col = pcols[2]),
-                 NULL,
-                 zoom_pan(eswatini_bits, "2022", panel_col = pcols[3])) +
-  theme(plot.margin = unit(rep(0.2,4), "cm"))
 
-zooms <- plot_grid(yr1, yr2, yr3, ncol = 1)
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -271,18 +290,89 @@ sds <- ggplot() +
         plot.title = element_blank(), # element_text(hjust = 0.5),
         legend.justification = "top") 
 
-plot_grid(zooms, 
-          medians + theme(legend.position = "none"), 
+legs <- plot_grid(get_legend(medians),
+                  get_legend(sds),
+                  # this is a bit hacky
+                  NULL,
+                  NULL,
+                  ncol = 1)
+
+df <- data.frame(xmin = rep(0.001, 3),
+                 xmax = rep(0.028, 3),
+                 ymin = c(0.0155, 0.337, 0.663),
+                 ymax = c(0.315, 0.639, 0.965),
+                 lab = c("D1246Y", "Y184F", "N86Y"))
+p <- p + 
+  # tried adding outer margin but that didn't do anything
+  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+                           ymax=ymax), 
+            colour="grey10", fill="grey85", linewidth=0.3) +
+  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+                           label = lab), angle = 90)
+  
+df <- data.frame(xmin = c(0.04, 0.525),
+                 xmax = c(0.5, 0.87),
+                 ymin = rep(0.992, 2),
+                 ymax = rep(1.02, 1),
+                 lab = c("Median", "Standard deviation"))
+
+plot_grid(medians + theme(legend.position = "none"), 
+          zooms, 
           sds + theme(legend.position = "none"), 
-          ncol = 3, rel_widths = c(0.5,1,0.9))
+          legs,
+          ncol = 4, rel_widths = c(1,0.3,0.933,0.3)) +
+  theme(plot.margin = unit(c(0.7,0,0,0), "cm")) +
+  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+                           ymax=ymax), 
+            colour="grey10", fill="grey85", linewidth=0.3) +
+  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+                           label = lab))
 
-#p1 + plot_spacer() + p2 + plot_layout(ncol = 3, widths = c(4, -0.9, 4), guides = "collect")
-
-ggsave("figures/k13_out.png", height = 5, width = 4, scale = 2)
+ggsave("figures/k13_out.png", height = 5.2, width = 4.5, scale = 2)
 
 
 
+################################################################################
+# WITHOUT ZOOM PANS
 
+medians <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "medi"),
+            mapping = aes(x = x, y = y, fill = val)) +
+  facet_wrap(~year, ncol = 1, strip.position = "left") +
+  scale_fill_viridis_c(na.value = NA, "Prevalence") +theme_bw() +
+  labs(title = "Median") +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        #plot.title = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "top")
 
+medians
+
+sds <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "sd"), 
+            mapping = aes(x = x, y = y, fill = val)) +
+  facet_wrap(~year, ncol = 1) +
+  scale_fill_distiller(palette = "Oranges", 
+                       na.value = NA, 
+                       "Uncertainty", 
+                       direction = 1,
+                       trans = "sqrt") +
+  labs(title = "Standard deviation") +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        #plot.title = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "top") 
+sds
 
 

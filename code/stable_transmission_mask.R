@@ -52,6 +52,6 @@ writeRaster(ras_mask,
             overwrite = TRUE)
 
 
-
-
+ras <- rast("data/stable_transmission_mask.grd")
+plot(ras)
 

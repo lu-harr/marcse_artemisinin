@@ -3,9 +3,11 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-out_dir <- "k13/gneiting_sparse/"
+snp <- 86
 
-mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv", min_year = 2000)
+out_dir <- paste0("mdr",snp,"/gneiting_sparse/")
+
+mut_data <- setup_mut_data(paste0("data/clean/pfmdr_single_", snp, ".csv"))
 
 out <- build_design_matrix(covariates,
                            coords = mut_data,
@@ -78,49 +80,4 @@ write_rds(kernel, paste0("output/", out_dir, "kernel.rds"))
 write_rds(random_field, paste0("output/", out_dir, "random_field.rds"))
 write_rds(m, paste0("output/", out_dir, "m.rds"))
 write_rds(draws, paste0("output/", out_dir, "draws.rds"))
-
-# quick little visualisation + prediction script to one year:
-# ras_agg <- covariates$pfpr_2019 %>%
-#   aggregate(fact = 10)
-# # could write this into `build_design_matrix` ...
-# X_pixel <- ras_agg %>%
-#   xyFromCell(terra::cells(ras_agg)) %>%
-#   as.data.frame() %>%
-#   mutate(pfpr = unlist(extract(ras_agg, terra::cells(ras_agg))),
-#          year = 2019,
-#          year_scaled = scaled_years$`2019`,
-#          x_rd = degrees_to_radians(x),
-#          y_rd = degrees_to_radians(y),
-#          intercept = 1)
-# ras_agg_rd <- ras_agg
-# ext(ras_agg_rd) <- degrees_to_radians(as.vector(ext(ras_agg)))
-# 
-# plot(ras_agg)
-# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-# 
-# plot(ras_agg_rd)
-# points(X_obs[X_obs$present == 0,c("x_rd", "y_rd")], col="red", cex=0.5)
-# points(X_obs[,c("x_rd", "y_rd")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-# f_plot <- greta.gp::project(random_field, X_pixel[,coord_cols])
-# mut_freq_plot <- X_pixel[,design_cols] %*% beta + f_plot
-# y_plot <- greta::calculate(mut_freq_plot,
-#                            values = draws)
-# med_vals <- apply(y_plot[[1]], 2, median)
-# sd_vals <- apply(y_plot[[1]], 2, sd)
-# 
-# med_ras <- ras_agg
-# med_ras[cells(med_ras)] <- unlist(calculate(ilogit(med_vals)))
-# sd_ras <- ras_agg
-# sd_ras[cells(sd_ras)] <- sd_vals
-# 
-# par(mfrow=c(1,2))
-# plot(med_ras, main="Median posterior samp")
-# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-# 
-# plot(sd_ras, main="SD posterior samp")
-# points(X_obs[X_obs$present == 0,c("x", "y")], col="red", cex=0.5)
-# points(X_obs[,c("x", "y")], cex = X_obs$present / X_obs$tested * 20, col="orange")
-
 
