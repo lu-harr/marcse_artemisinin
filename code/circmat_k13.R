@@ -1,8 +1,11 @@
-# Fit K13 model and write outputs to output/circmat_k13/directory
+# Fit K13 model and write outputs to output/k13/circmat_sparse/
+# Have this running on the cluster to fit and write to output/k13/circmat_full/
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv", min_year = 2000)
+out_dir <- "k13/circmat_full/"
+
+mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv", min_year = 2000)
 
 out <- build_design_matrix(covariates,
                              coords = mut_data,
@@ -29,10 +32,12 @@ kernel <- circmat(circmat_len, variance = circmat_var, columns = 1:2) +
   rbf(lengthscales = expo_len, variance = expo_var, columns = 3) +
   constant(nugget_var)
 
+message("fitting sparse GP")
+message("fitting full GP")
 #kmn <- kmeans(X_obs[,coord_cols], centers = 40)
 random_field <- gp(x = X_obs[,coord_cols], 
-                   kernel = kernel)#,
-                   #inducing = kmn$centers)
+                   kernel = kernel,
+                   inducing = kmn$centers)
 
 beta <- normal(0, 1, dim = 3)
 gp_mean_obs <- X_obs[,design_cols] %*% beta + random_field
@@ -47,15 +52,13 @@ m <- model(circmat_len, circmat_var, expo_len, expo_var, nugget_var, beta)
 # this will take around 2h
 set.seed(0748)
 draws <- mcmc(m, 
-              n_samples = 3000,
+              n_samples = 10000,
               initial_values = initials(circmat_len = 0.02,
                                         circmat_var = 0.5,
                                         expo_var = 0.5,
                                         expo_len = 0.5,
                                         nugget_var = 0.5,
                                         beta = rep(0, 3)))
-
-draws <- extra_samples(draws, 3000)
 
 bayesplot::mcmc_trace(draws)
 
@@ -69,12 +72,12 @@ names(parameters) <- c("circmat_len", "circmat_var", "expo_len", "expo_var",
                        "nugget_var", "beta")
 
 # save everything and do the prediction in a separate script
-write_rds(mut_data, "output/circmat_k13/mut_data.rds")
-write_rds(parameters, "output/circmat_k13/parameters.rds")
-write_rds(kernel, "output/circmat_k13/kernel.rds")
-write_rds(random_field, "output/circmat_k13/random_field.rds")
-write_rds(m, "output/circmat_k13/m.rds")
-write_rds(draws, "output/circmat_k13/draws.rds")
+write_rds(mut_data, paste("output/", out_dir, "mut_data.rds"))
+write_rds(parameters, paste("output/", out_dir, "parameters.rds"))
+write_rds(kernel, paste("output/", out_dir, "kernel.rds"))
+write_rds(random_field, paste("output/", out_dir, "random_field.rds"))
+write_rds(m, paste("output/", out_dir, "m.rds"))
+write_rds(draws, paste("output/", out_dir, "draws.rds"))
 
 # quick little visualisation + prediction script to one year:
 # ras_agg <- covariates$pfpr_2019 %>%

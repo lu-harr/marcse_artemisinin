@@ -3,8 +3,9 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-# note that this is all out of date now I've messed with my data directory
-mut_data <- setup_mut_data("data/moldm_k13_nomarker.csv", min_year = 2000)
+out_dir <- "k13/gneiting_sparse/"
+
+mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv", min_year = 2000)
 
 out <- build_design_matrix(covariates,
                            coords = mut_data,
@@ -47,34 +48,17 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 # fit the model by Hamiltonian Monte Carlo
 m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
-set.seed(0748)
+set.seed(123)
 draws <- mcmc(m,
-              n_samples = 1000,
+              n_samples = 10000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
                                         nugget_sd = 0.5,
                                         beta = c(-0.8, 1.5, 0.5)))
-# doesn't look like I can read things back in and ask for extra_samples
-# parameters <- readRDS("output/gneiting_k13/parameters.rds")
-# kernel <- readRDS("output/gneiting_k13/kernel.rds")
-# m <- readRDS("output/gneiting_k13/m.rds")
-# random_field <- readRDS("output/gneiting_k13/random_field.rds")
-# draws <- readRDS("output/gneiting_k13/draws.rds")
-# 
-# gneiting_len <- parameters$gneiting_len
-# gneiting_tim <- parameters$gneiting_tim
-# gneiting_sd <- parameters$gneiting_sd
-# nugget_sd <- parameters$nugget_sd
-# beta <- parameters$beta
 
 
-draws <- extra_samples(draws, 3000)
-draws <- extra_samples(draws, 3000)
-draws <- extra_samples(draws, 3000)
-draws <- extra_samples(draws, 3000)
-draws <- extra_samples(draws, 3000)
-draws <- extra_samples(draws, 3000)
+draws <- extra_samples(draws, 10000)
 
 #bayesplot::mcmc_trace(draws)
 
@@ -88,12 +72,12 @@ names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
                        "nugget_sd", "beta")
 
 # save everything and do the prediction in a separate script
-write_rds(mut_data, "output/gneiting_k13/mut_data.rds")
-write_rds(parameters, "output/gneiting_k13/parameters.rds")
-write_rds(kernel, "output/gneiting_k13/kernel.rds")
-write_rds(random_field, "output/gneiting_k13/random_field.rds")
-write_rds(m, "output/gneiting_k13/m.rds")
-write_rds(draws, "output/gneiting_k13/draws.rds")
+write_rds(mut_data, paste("output/", out_dir, "mut_data.rds"))
+write_rds(parameters, paste("output/", out_dir, "parameters.rds"))
+write_rds(kernel, paste("output/", out_dir, "kernel.rds"))
+write_rds(random_field, paste("output/", out_dir, "random_field.rds"))
+write_rds(m, paste("output/", out_dir, "m.rds"))
+write_rds(draws, paste("output/", out_dir, "draws.rds"))
 
 # quick little visualisation + prediction script to one year:
 # ras_agg <- covariates$pfpr_2019 %>%

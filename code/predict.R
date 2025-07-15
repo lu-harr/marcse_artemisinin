@@ -6,7 +6,7 @@ source("code/predict_to_raster.R")
 AGG_FACTOR = 1
 
 # set this to the location where all the inference outputs are at:
-out_dir <- "output/circmat_k13/"
+out_dir <- "output/k13/circmat_full/"
 
 scaled_years <- scale_years(range(pfpr_years))
 
@@ -18,9 +18,7 @@ random_field <- read_rds(paste0(out_dir, "random_field.rds"))
 parameters <- read_rds(paste0(out_dir, "parameters.rds"))
 draws <- read_rds(paste0(out_dir, "draws.rds"))
 
-pfpr_years = 2000:2022
-
-pfpr_years = c(2000, 2008, 2012, 2016, 2020)
+pfpr_years = 2020:2022
 
 set.seed(0748)
 preds <- lapply(pfpr_years, function(year){

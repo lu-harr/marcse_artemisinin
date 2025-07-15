@@ -26,7 +26,8 @@ ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
 # k13 has popped up there but that info isn't in the Surveyor (right?)
 
 ras_mask <- ras
-ras_mask[ras_mask < -0.65] <- NA
+# this is about as much as we're going to squeeze out of this ...
+ras_mask[ras_mask < -0.726] <- NA
 
 plot(ras_mask)
 
@@ -43,6 +44,8 @@ afr <- world %>%
 
 ras_mask <- mask(ras_mask,
                  afr)
+plot(ras_mask)
+plot(st_geometry(st_as_sf(afr)), add=TRUE)
 
 writeRaster(ras_mask,
             "data/stable_transmission_mask.grd",
