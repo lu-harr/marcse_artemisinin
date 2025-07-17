@@ -6,7 +6,7 @@ library(brms)
 library(bayesplot)
 
 output_dir <- "output/mdr1246/gneiting_sparse/"
-out_tag <- "mdr1246_gneiting_sparse"
+out_tag <- "k13_gneiting_sparse"
 
 draws <- read_rds(paste0(output_dir, "draws.rds"))
 
@@ -15,15 +15,15 @@ r_hats <- coda::gelman.diag(draws,
                             multivariate = FALSE)
 summary(r_hats$psrf)
 
-post <- as_draws_df(draws) %>%
-  rename("Lengthscale (spatial)" = "circmat_len",
-         "Variance (spatial)" = "circmat_var",
-         "Lengthscale (temporal)" = "expo_len",
-         "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
-         "Nugget variance" = "nugget_var",
-         "Beta (intercept)" = "beta[1,1]",
-         "Beta (scaled year)" = "beta[2,1]",
-         "Beta (PfPR)" = "beta[3,1]")
+# post <- as_draws_df(draws) %>%
+#   rename("Lengthscale (spatial)" = "circmat_len",
+#          "Variance (spatial)" = "circmat_var",
+#          "Lengthscale (temporal)" = "expo_len",
+#          "Variance (temporal)" = "expo_var", # (years are scaled - unscale relevant params?)
+#          "Nugget variance" = "nugget_var",
+#          "Beta (intercept)" = "beta[1,1]",
+#          "Beta (scaled year)" = "beta[2,1]",
+#          "Beta (PfPR)" = "beta[3,1]")
 
 post <- as_draws_df(draws) %>%
   rename("Lengthscale (spatial)" = "gneiting_len",
