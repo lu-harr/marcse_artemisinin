@@ -40,24 +40,28 @@ afr <- world %>%
 #   filter(Continent == "Africa") %>%
 #   suppressWarnings()
 
-moldm <- read.csv("data/raw/db_20250616/novartis.csv") %>%
-  mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
-  filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
-  filter(End.Year > 1960 & End.Year < 2500) %>%
-  filter(Start.Year > 1960 & Start.Year < 2500) %>%
-  filter(grepl("[k|K]13", Marker)) %>%
-  mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% # strip k13
-  left_join(marker_reference, 
-            by = join_by(strip_marker == marker)) %>%
-  mutate(year = round((Start.Year + End.Year) / 2, 0),
-         # if one or the other is not complete, populate with the value we have:
-         year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
-                          is.na(year) & !is.na(End.Year) ~ End.Year,
-                          TRUE ~ year),
-         mutant = !is.na(status) & status != "Not associated") %>%
-  filter(Continent == "Africa") %>%
-  filter(year >= YEAR_LOWER_BOUND) %>%
-  suppressWarnings()
+raw_moldm <- function(path){
+  read.csv(path) %>%
+    mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
+    filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
+    filter(End.Year > 1960 & End.Year < 2500) %>%
+    filter(Start.Year > 1960 & Start.Year < 2500) %>%
+    filter(grepl("[k|K]13", Marker)) %>%
+    mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% # strip k13
+    left_join(marker_reference, 
+              by = join_by(strip_marker == marker)) %>%
+    mutate(year = round((Start.Year + End.Year) / 2, 0),
+           # if one or the other is not complete, populate with the value we have:
+           year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
+                            is.na(year) & !is.na(End.Year) ~ End.Year,
+                            TRUE ~ year),
+           mutant = !is.na(status) & status != "Not associated") %>%
+    filter(Continent == "Africa") %>%
+    filter(year >= YEAR_LOWER_BOUND) %>%
+    suppressWarnings()
+}
+
+moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
 
 # notes:
 # S446I possible typo?
