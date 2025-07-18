@@ -77,6 +77,11 @@ message(paste("Number of rows indicating haplotypes:",
 
 # plot(moldm$Start.Year, moldm$End.Year)
 
+write.csv(moldm %>%
+            filter(Present / Tested <= 1 & Tested > 5), 
+          # the Tested filter should make a difference but the Prevalence shouldn't
+          "data/clean/moldm_with_markers.csv")
+
 mutants <- moldm %>%
   filter(mutant) %>%
   group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
@@ -146,6 +151,8 @@ message(paste("Number of testees:",
 
 ###############################################################################
 # all vis down here
+with_wildtypes <- read.csv("data/clean/moldm_k13_nomarker.csv")
+moldm <- read.csv("data/clean/moldm_with_markers.csv")
 
 plot(with_wildtypes$year, with_wildtypes$Present/with_wildtypes$Tested, 
      xlab="Year", ylab="Prevalence")

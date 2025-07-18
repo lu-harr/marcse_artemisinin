@@ -1,6 +1,6 @@
 # combine preds
 
-markers <- c("mdr86", "mdr184", "mdr1246")
+markers <- c("mdr86", "mdr184", "mdr1246", "k13", "crt76")
 models <- c("gneiting_sparse")
 
 preds <- apply(expand.grid(markers, models), 1, function(row){
