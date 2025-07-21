@@ -18,7 +18,10 @@ in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
                  ifelse(snp == "crt76",
                         "data/clean/moldm_crt76.csv",
-                        paste0(paste0("data/clean/pfmdr_single_", snp, ".csv"))))
+                        ifelse(snp == "k13_marcse",
+                               "data/clean/moldm_marcse_k13_nomarker.csv",
+                               paste0(paste0("data/clean/pfmdr_single_", snp, ".csv")))))
+                        
 
 message(paste0("Reading in from: ", in_dat))
 

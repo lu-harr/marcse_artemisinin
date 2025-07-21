@@ -10,7 +10,7 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-out_dir <- paste0(snp, "/gneiting_sparse/")
+out_dir <- paste0(snp, "/circmat/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",

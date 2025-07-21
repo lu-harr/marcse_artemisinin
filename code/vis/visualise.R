@@ -19,7 +19,7 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
-output_dir <- "output/circmat_pfmdr86/"
+#output_dir <- "output/circmat_pfmdr86/"
 
 ###############################################################################
 # surveillance effort
@@ -67,9 +67,9 @@ survey_effort_panel <- function(in_path,
   p
 }
 
-survey_effort_panel(c("output/circmat_k13/surveillance_effort_k13.grd",
-                      "output/circmat_crt/surveillance_effort_crt.grd",
-                      "output/circmat_pfmdr86/surveillance_effort_pfmdr86.grd"),
+survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
+                      "output/crt76/surveillance_effort_crt.grd",
+                      "output/mdr86/surveillance_effort_pfmdr86.grd"),
                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 
 # p1 <- survey_effort_panel("output/circmat_k13/surveillance_effort_k13.grd", 
@@ -86,6 +86,12 @@ survey_effort_panel(c("output/circmat_k13/surveillance_effort_k13.grd",
 ggsave("figures/surveillance_effort_all.png", 
         height = 5, width=10, scale = 0.8)
 
+survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
+                      "output/crt76/surveillance_effort_crt.grd",
+                      "output/mdr86/surveillance_effort_pfmdr86.grd"),
+                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
+ggsave("figures/surveillance_effort_all_marcse.png", 
+       height = 5, width=10, scale = 0.8)
 
 # after all that, I might just facet_wrap ....
 
@@ -178,41 +184,41 @@ pred_time_plot <- function(in_path,
 }
 
 
-p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
+p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",
                title = "(a) Pfkelch13")
-p2 <- pred_time_plot("output/crt76/preds_all.grd",
+p2 <- pred_time_plot("output/crt76/gneiting_sparse/preds_all.grd",
                title = "(b) Pfcrt K76T")
-p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
+p3 <- pred_time_plot("output/mdr86/gneiting_sparse/preds_all.grd",
                title = "(c) Pfmdr1 N86Y")
-p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
+p4 <- pred_time_plot("output/mdr184/gneiting_sparse/preds_all.grd",
                title = "(d) Pfmdr1 Y184F")
-p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
+p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/preds_all.grd",
                title = "(e) Pfmdr1 D1246Y")
 
 library(patchwork)
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_gneiting.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
+p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",
                      title = "(a) Pfkelch13",
                      points_path = "data/clean/moldm_k13_nomarker.csv")
-p2 <- pred_time_plot("output/crt76/preds_all.grd",
+p2 <- pred_time_plot("output/crt76/gneiting_sparse/preds_all.grd",
                      title = "(b) Pfcrt K76T",
                      points_path = "data/clean/moldm_crt76.csv")
-p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
+p3 <- pred_time_plot("output/mdr86/gneiting_sparse/preds_all.grd",
                      title = "(c) Pfmdr1 N86Y",
                      points_path = "../moldm/clean/pfmdr_single_86.csv")
-p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
+p4 <- pred_time_plot("output/mdr184/gneiting_sparse/preds_all.grd",
                      title = "(d) Pfmdr1 Y184F",
                      points_path = "../moldm/clean/pfmdr_single_184.csv")
-p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
+p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/preds_all.grd",
                      title = "(e) Pfmdr1 D1246Y",
                      points_path = "../moldm/clean/pfmdr_single_1246.csv")
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_pts.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_pts_gneiting.png", scale = 1.5, height = 7, width = 6)
 
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
@@ -226,29 +232,29 @@ zoom_df <- rbind(zambezi, victoria, eswatini) %>%
   unnest() %>%
   suppressWarnings()
 
-p1 <- pred_time_plot("output/k13/circmat_sparse/preds_all.grd",
+p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",
                      title = "(a) Pfkelch13",
                      zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "data/clean/moldm_k13_nomarker.csv")
-p2 <- pred_time_plot("output/crt76/preds_all.grd",
+p2 <- pred_time_plot("output/crt76/gneiting_sparse/preds_all.grd",
                      title = "(b) Pfcrt K76T",
                      zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "data/clean/moldm_crt76.csv")
-p3 <- pred_time_plot("output/mdr86/circmat/preds_all.grd",
+p3 <- pred_time_plot("output/mdr86/gneiting_sparse/preds_all.grd",
                      title = "(c) Pfmdr1 N86Y",
                      zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "../moldm/clean/pfmdr_single_86.csv")
-p4 <- pred_time_plot("output/mdr184/circmat/preds_all.grd",
+p4 <- pred_time_plot("output/mdr184/gneiting_sparse/preds_all.grd",
                      title = "(d) Pfmdr1 Y184F",
                      zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "../moldm/clean/pfmdr_single_184.csv")
-p5 <- pred_time_plot("output/mdr1246/circmat/preds_all.grd",
+p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/preds_all.grd",
                      title = "(e) Pfmdr1 D1246Y",
                      zooms = zoom_df, zoom_pal = case_pal,
                      points_path = "../moldm/clean/pfmdr_single_1246.csv")
 
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_pts.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_pts_zoom_gneiting.png", scale = 1.5, height = 7, width = 6)
 
 #########################################################################
 # wrap up model predictions for pfcrt/pfmdr1:
@@ -317,28 +323,28 @@ map_pred_row <- function(in_path,
 }
 
 years_to_plot <- c("2006","2010", "2014", "2018", "2022")
-p1 <- map_pred_row("output/circmat_crt/preds_all.grd", 
+p1 <- map_pred_row("output/crt76/gneiting_sparse/preds_all.grd", 
              years = years_to_plot, field = "medi", pal = blrd,
              legend_lim = c(0,1), ylab = "", top_pan = TRUE)#
-p2 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+p2 <- map_pred_row("output/mdr86/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
                    legend_lim = c(0,1), xlab = "", ylab = "", top_pan = TRUE)# ylab = "(a)")
-p3 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
+p3 <- map_pred_row("output/mdr184/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
                    legend_lim = c(0,1), xlab = "", ylab = "")#  ylab = "(c)")
-p4 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
+p4 <- map_pred_row("output/mdr1246/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
                    legend_lim = c(0,1), xlab = "",ylab = "")#  ylab = "(e)")
-p5 <- map_pred_row("output/circmat_crt/preds_all.grd", 
+p5 <- map_pred_row("output/crt76/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
                    legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(b)")
-p6 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+p6 <- map_pred_row("output/mdr86/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
                    legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(b)")
-p7 <- map_pred_row("output/circmat_pfmdr184/preds_all.grd", 
+p7 <- map_pred_row("output/mdr184/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
                    legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(d)")
-p8 <- map_pred_row("output/circmat_pfmdr1246/preds_all.grd", 
+p8 <- map_pred_row("output/mdr1246/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "sd", pal = oranges,
                    legend_lim = c(0,0.1), xlab = "",ylab = "")#  ylab = "(f)")
 
@@ -396,11 +402,11 @@ p <- p +
 p
 
 # gave up on add_sub
-ggsave("figures/mdr_out.png", height = 9, width = 8.5)
+ggsave("figures/mdr_out_gneiting.png", height = 9, width = 8.5)
 
 ########################################################################
 # can I fit crt in too?
-p2 <- map_pred_row("output/circmat_pfmdr86/preds_all.grd", 
+p2 <- map_pred_row("output/mdr86/gneiting_sparse/preds_all.grd", 
                    years = years_to_plot, field = "medi", pal = blrd,
                    legend_lim = c(0,1), xlab = "", ylab = "")# ylab = "(a)")
 
@@ -454,7 +460,7 @@ p <- p +
 
 p
 
-ggsave("figures/crt_mdr_out.png", height = 9, width = 7)
+ggsave("figures/crt_mdr_out_gneiting.png", height = 9, width = 7)
 
 
 

@@ -1,8 +1,7 @@
-
-
 survey_effort <- function(coords, # a df
-                          mask, # a SpatRaster
                           sigma,
+                          mask, # a SpatRaster
+                          actually_really_apply_mask = TRUE,
                           xy = c("x", "y"), # where the coords are
                           field = "tested", # where the counts are
                           crs = "epsg:4326"){
@@ -26,44 +25,72 @@ survey_effort <- function(coords, # a df
   # need na.rm=TRUE or we lose edges
   test_dens <- focal(ras, gf, pad = TRUE, na.rm = TRUE)
   
-  mask(test_dens, mask)
+  if (!is.null(mask)){test_dens <- mask(test_dens, mask)}
+  
+  test_dens
 }
 
 
 
 wrap_survey_effort <- function(mut_data_path,
                                out_path,
+                               mask_path = "data/stable_transmission_mask.grd",
+                               apply_mask = FALSE,
                                agg_factor = 1,
                                sigma = 1.5,
                                years = NULL,
+                               bin_years = FALSE,
                                plot_out = NULL){
+  print(out_path)
   # not 100% sure why I'm wrapping a wrapper ...
   # A wrapper for `survey_effort()` that reads in `coords` and `mask`, does optional
   # aggregation of `mask`, optionally separates `coords` by year and makes multiple
   # (annual) calls to `survey_effort()`.
-  stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
-  if (agg_factor > 1){
-    stable_transmission_mask <- aggregate(stable_transmission_mask, agg_factor)
+  if (!is.null(mask_path)){
+    transmission_mask <- rast(mask_path)
+    if (agg_factor > 1){
+      transmission_mask <- aggregate(transmission_mask, agg_factor)
+    }
   }
   
   mut_data <- setup_mut_data(mut_data_path)
   
+  
   if (!is.null(years)){
-    test_dens <- lapply(years, function(z){
-      tmp <- mut_data %>% filter(year == z)
-      survey_effort(tmp, stable_transmission_mask, 1.5)
+    test_dens <- lapply(1:(length(years) - as.numeric(bin_years)), function(i){
+      
+      # tried to do this with an ifelse which was a demoralising waste of time
+      if (bin_years) {
+        tmp <- filter(mut_data, year >= years[i] & year < years[i + 1])
+      } else {
+        tmp <- mut_data %>% filter(year == years[i])
+      }
+      
+      survey_effort(coords = tmp, 
+                    mask = transmission_mask,
+                    actually_really_apply_mask = apply_mask,
+                    sigma = sigma)
+      
     })
     test_dens <- rast(test_dens)
-    names(test_dens) <- paste0("surv_", years)
+    names(test_dens) <- paste0("surv_", years[1:(length(years) - as.numeric(bin_years))])
   } else {
-    test_dens <- survey_effort(mut_data, stable_transmission_mask, sigma)
+    test_dens <- survey_effort(mut_data, 
+                               mask = transmission_mask,
+                               actually_really_apply_mask = apply_mask,
+                               sigma = sigma)
   }
   
   if (!is.null(plot_out)){plot(test_dens)}
+  
   writeRaster(test_dens, out_path, overwrite = TRUE)
 }
 
-
+tmp = wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+                   "output/k13/surveillance_effort_k13.grd",
+                   years = seq(2012, 2024, 3), # watch out for 2025
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
 
 ###############################################################################
 library(terra)
@@ -71,46 +98,69 @@ library(sf)
 source("code/setup.R")
 
 # function calls:
-wrap_survey_effort("data/moldm_k13_nomarker.csv",
-                   "output/circmat_k13/surveillance_effort_k13.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+                   "output/k13/surveillance_effort_k13.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/moldm_k13_nomarker.csv",
-                   "output/circmat_k13/surveillance_effort_k13_2010-23.grd",
-                   years = 2010:2023,
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+                   "output/k13/surveillance_effort_k13_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/moldm_crt76.csv",
-                   "output/circmat_/surveillance_effort_crt.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/moldm_crt76.csv",
+                   "output/crt76/surveillance_effort_crt.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/moldm_crt76.csv",
-                   "output/circmat_crt/surveillance_effort_crt_2010-23.grd",
-                   years = 2010:2023,
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/moldm_crt76.csv",
+                   "output/crt76/surveillance_effort_crt_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/pfmdr_single_86.csv",
-                   "output/circmat_pfmdr86/surveillance_effort_pfmdr86.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/pfmdr_single_86.csv",
+                   "output/mdr86/surveillance_effort_pfmdr86.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/pfmdr_single_184.csv",
-                   "output/circmat_pfmdr184/surveillance_effort_pfmdr184.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/pfmdr_single_184.csv",
+                   "output/mdr184/surveillance_effort_pfmdr184.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/pfmdr_single_1246.csv",
-                   "output/circmat_pfmdr1246/surveillance_effort_pfmdr1246.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/pfmdr_single_1246.csv",
+                   "output/mdr1246/surveillance_effort_pfmdr1246.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 
-wrap_survey_effort("data/pfmdr_single_locus.csv",
-                   "output/circmat_crt/surveillance_effort_pfmdragg.grd",
-                   sigma = 1.5, 
-                   plot_out = TRUE)
+wrap_survey_effort("data/clean/pfmdr_single_86.csv",
+                   "output/mdr86/surveillance_effort_pfmdr86_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
 
-  
+wrap_survey_effort("data/clean/pfmdr_single_184.csv",
+                   "output/mdr184/surveillance_effort_pfmdr184_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
+
+wrap_survey_effort("data/clean/pfmdr_single_1246.csv",
+                   "output/mdr1246/surveillance_effort_pfmdr1246_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
+
+wrap_survey_effort("data/clean/pfmdr_single_locus.csv",
+                   "output/mdr_hier/surveillance_effort_pfmdragg_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)
+
+# now with added unpublished MARCSE data from dashboard paper:
+wrap_survey_effort("data/clean/moldm_marcse_k13_nomarker.csv",
+                   "output/k13_marcse/surveillance_effort_k13.grd",
+                   sigma = 1.5, apply_mask = FALSE)
+
+wrap_survey_effort("data/clean/moldm_marcse_k13_nomarker.csv",
+                   "output/k13_marcse/surveillance_effort_k13_tempo.grd",
+                   years = seq(2012, 2024, 3),
+                   bin_years = TRUE,
+                   sigma = 1.5, apply_mask = FALSE)

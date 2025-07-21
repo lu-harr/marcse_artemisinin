@@ -286,7 +286,7 @@ ggplot() +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_grey() 
-ggsave("figures/abs_grey.png", height=3, width=5, scale=2)
+ggsave("figures/archive/abs_grey.png", height=3, width=5, scale=2)
 # spooky warning here ...
 
 markers <- moldm %>%

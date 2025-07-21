@@ -8,6 +8,7 @@ source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv")
 preds <- rast("output/k13/circmat_sparse/preds_all.grd")
+preds <- rast("output/k13/gneiting_sparse/preds_all.grd")
 test_dens <- rast("output/k13/surveillance_effort_k13.grd")
 
 library(iddoPal)
@@ -130,7 +131,6 @@ legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
 # add priors to hists ...?
 
 ###############################################################################
-preds <- rast("output/k13/circmat_sparse/preds_all.grd")
 # require common colour palette between years !
 
 zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
@@ -180,7 +180,7 @@ zoom_pan <- function(bits,
                      yearr, 
                      tagg = "medi",
                      pal = viridis(100), 
-                     scale_lims = c(0, 0.42),
+                     scale_lims = c(0, 0.64), #c(0, 0.42),
                      panel_col = "black"){
   message(yearr)
   ggplot() +
@@ -188,7 +188,7 @@ zoom_pan <- function(bits,
                 filter(year == yearr & tag == tagg), 
               mapping = aes(x = x, y = y, fill = val)) +
     geom_sf(data = bits$shp, fill = NA, col = "grey") +
-    scale_fill_gradientn(colours = pal, limits = scale_lims) +
+    scale_fill_gradientn(colours = pal, limits = scale_lims, trans = "sqrt") +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5),
           legend.justification = "top",
@@ -211,7 +211,7 @@ medians <- ggplot() +
   # geom_tile(data = df %>%
   #             filter(year =="2022" & tag == "medi"),
   #           mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence") +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
   # xlab("Longitude") +
   # ylab("Latitude") +
   # labs(title = "Median") +
@@ -328,7 +328,7 @@ plot_grid(medians + theme(legend.position = "none"),
   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
                            label = lab))
 
-ggsave("figures/k13_out.png", height = 5.2, width = 4.5, scale = 2)
+ggsave("figures/k13_out_gneiting.png", height = 5.2, width = 4.5, scale = 2)
 
 
 
