@@ -4,9 +4,11 @@
 library(GGally)
 library(brms)
 library(bayesplot)
+library(readr)
+library(dplyr)
 
-output_dir <- "output/mdr1246/circmat/"
-out_tag <- "k13_gneiting_sparse"
+output_dir <- "output/crt76/gneiting_sparse/"
+out_tag <- "crt76_gneiting_sparse"
 
 draws <- read_rds(paste0(output_dir, "draws.rds"))
 

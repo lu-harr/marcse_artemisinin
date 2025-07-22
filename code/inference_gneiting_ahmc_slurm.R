@@ -12,10 +12,7 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-snp = "86"
-seed = 123
-
-out_dir <- paste0(snp, "/gneiting_sparse/")
+out_dir <- paste0(snp, "/gneiting_ahmc/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -24,7 +21,7 @@ in_dat <- ifelse(snp == "k13",
                         ifelse(snp == "k13_marcse",
                                "data/clean/moldm_marcse_k13_nomarker.csv",
                                paste0(paste0("data/clean/pfmdr_single_", snp, ".csv")))))
-                        
+
 
 message(paste0("Reading in from: ", in_dat))
 
@@ -49,7 +46,6 @@ gneiting_len <- normal(0, 3, truncation = c(0, Inf))
 gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
 gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
 nugget_sd <- normal(0, 3, truncation = c(0, Inf))
-# nugget_sd <- greta::lognormal(0, 1)
 
 # kernel & GP
 # could potentially give stricter priors to variance/nugget here - trouble with IDability?
@@ -59,7 +55,7 @@ kernel <- gneiting(lengthscale = gneiting_len,
                    columns = 1:3) + 
   white(nugget_sd ** 2)
 
-kmn <- kmeans(X_obs[,coord_cols], centers = 10)
+kmn <- kmeans(X_obs[,coord_cols], centers = 40)
 random_field <- gp(x = X_obs[,coord_cols], 
                    kernel = kernel,
                    inducing = kmn$centers)
@@ -76,15 +72,16 @@ m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
 set.seed(seed)
 draws <- mcmc(m,
-              n_samples = 3000,
+              n_samples = 10000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
                                         nugget_sd = 0.5,
-                                        beta = rep(0, 3)))
+                                        beta = rep(0, 3)),
+              sampler = adaptive_hmc())
 
 
-# draws <- extra_samples(draws, 20000)
+draws <- extra_samples(draws, 20000)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
