@@ -28,9 +28,8 @@ random_field <- read_rds(paste0(out_dir, "random_field.rds"))
 parameters <- read_rds(paste0(out_dir, "parameters.rds"))
 draws <- read_rds(paste0(out_dir, "draws.rds"))
 
-message(paste(c("AAGG", AGG_FACTOR)))
-
-pfpr_years = 2020:2022
+# was there a reason why we needed this?
+# pfpr_years = 2020:2022
 
 set.seed(0748)
 preds <- predict_to_ras(covariates,

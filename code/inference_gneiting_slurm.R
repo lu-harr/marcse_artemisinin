@@ -12,10 +12,10 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-snp = "86"
-seed = 123
+out_dir <- paste0(snp, "/gneiting_ahmc/")
 
-out_dir <- paste0(snp, "/gneiting_sparse/")
+# snp = "86"
+# seed = 123
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -28,6 +28,8 @@ in_dat <- ifelse(snp == "k13",
 
 message(paste0("Reading in from: ", in_dat))
 
+message(getwd())
+
 message("Enforcing min year for surveyor data - 2000")
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 
@@ -35,7 +37,7 @@ out <- build_design_matrix(covariates,
                            coords = mut_data,
                            scale = FALSE,
                            temporal_var = TRUE,
-                           temporal_range = pfpr_years,
+                           temporal_covt_range = pfpr_years,
                            degs_to_rads = TRUE)
 X_obs <- out$df
 scaled_years <- out$scaled_years
@@ -45,11 +47,15 @@ coord_cols <- c("x_rd", "y_rd", "year_scaled")
 design_cols <- c("intercept", "year_scaled", "pfpr")
 
 # hyperparameters
-gneiting_len <- normal(0, 3, truncation = c(0, Inf))
-gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
-gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
-nugget_sd <- normal(0, 3, truncation = c(0, Inf))
-# nugget_sd <- greta::lognormal(0, 1)
+# gneiting_len <- normal(0, 3, truncation = c(0, Inf))
+# gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
+# gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
+# nugget_sd <- normal(0, 3, truncation = c(0, Inf)) # Median :1.041  Mean   :1.115
+
+gneiting_len <- greta::lognormal(0, 1)
+gneiting_tim <- greta::lognormal(0, 1)
+gneiting_sd <- greta::lognormal(0, 1)
+nugget_sd <- greta::lognormal(0, 1)
 
 # kernel & GP
 # could potentially give stricter priors to variance/nugget here - trouble with IDability?
@@ -59,7 +65,7 @@ kernel <- gneiting(lengthscale = gneiting_len,
                    columns = 1:3) + 
   white(nugget_sd ** 2)
 
-kmn <- kmeans(X_obs[,coord_cols], centers = 10)
+kmn <- kmeans(X_obs[,coord_cols], centers = 40)
 random_field <- gp(x = X_obs[,coord_cols], 
                    kernel = kernel,
                    inducing = kmn$centers)
@@ -76,7 +82,7 @@ m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
 set.seed(seed)
 draws <- mcmc(m,
-              n_samples = 3000,
+              n_samples = 10000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
@@ -84,7 +90,7 @@ draws <- mcmc(m,
                                         beta = rep(0, 3)))
 
 
-# draws <- extra_samples(draws, 20000)
+draws <- extra_samples(draws, 20000)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,

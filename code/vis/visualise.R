@@ -468,5 +468,143 @@ ggsave("figures/crt_mdr_out_gneiting.png", height = 9, width = 7)
 
 
 
+coords <- xyFromCell(pfpr, cells(pfpr))
+vals <- terra::extract(pfpr, coords)
+df <- cbind(coords, vals) %>%
+  mutate(cell = 1:nrow(coords)) %>%
+  pivot_longer(starts_with("pfpr"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = as.numeric(substr(lyr, 6, 9))) # pick out year and thingo
+
+cells_to_plot <- sample(1:nrow(coords), 50, replace = FALSE)
   
+df_summ <- df %>%
+  group_by(year) %>%
+  summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
+  unnest_wider(q) %>%
+  ungroup() %>%
+  mutate(year = as.numeric(year))
+
+pal = iddoPal::iddo_palettes$soft_blues
+
+p <- ggplot(df_summ) +
+  geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
+  geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
+  geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
+  geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
+  geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
+  geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
+  scale_linetype_manual("", values = c("0% - 100%" = 2)) +
+  scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
+  geom_line(data = df %>% filter(cell %in% cells_to_plot), 
+            mapping = aes(x = year, y = val, colour = cell, group = cell)) +
+  ylab("PfPR") +
+  xlab("Year") +
+  theme_bw() +
+  theme(legend.spacing.y = unit(-10, "cm"),
+        legend.background = element_rect(fill = NA))
+
+p
   
+
+##############################################################################
+# compare obs to pred
+# could also plot obs against prediction uncertainty
+
+#mut_data$pred[is.na(mut_data$pred)] = 0.4
+
+obs_prev_panel <- function(data_path, 
+                           pred_path, 
+                           main = "", 
+                           show_nas = FALSE, 
+                           #pal = colorRamp(viridis(10)), 
+                           pal = colorRamp(iddo_palettes$BlGyRd),
+                           xlim = c(0,1), ylim = c(0,1)){
+  mut_data <- setup_mut_data(data_path, min_year = 2000)
+  preds <- rast(pred_path)
+  
+  mut_data$pred <- NA
+  yrs_to_extract <- unique(mut_data$year)
+  for (yr in yrs_to_extract){
+    if (yr %in% pfpr_years){
+      idx <- which(mut_data$year == yr)
+      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
+                            mut_data[idx, c("x", "y")],
+                            ID = FALSE)
+      mut_data[idx, "pred"] <- val
+    }
+  }
+  
+  cex_transform <- function(from){
+    sqrt(from) / sqrt(max(from)) * 4
+    #log10(from) / log10(max(from)) *4
+  }
+  
+  par(mfrow = c(1,2), oma = c(0,0,2,0))
+  
+  mut_data = mut_data[!is.na(mut_data$pred),]
+  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
+  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
+  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+  mut_data <- arrange(mut_data, abs(diffs))
+  mut_data$diffs = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
+  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+  
+  plot(mut_data$present / mut_data$tested, 
+       mut_data$pred, cex = cex_transform(mut_data$tested),
+       xlab = "Observed prevalence", ylab = "Predicted prevalence", 
+       xlim = xlim, ylim = ylim,
+       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+  abline(a = 0, b = 1)
+  
+  plot(st_geometry(afr))
+  points(mut_data$x, mut_data$y, pch = 16,
+       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+  
+  mtext(outer = TRUE, text = main)
+}
+
+obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+               "output/k13/circmat_sparse/preds_all.grd",
+               "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))
+
+obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+               "output/k13/gneiting_sparse/preds_all.grd",
+               "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
+
+obs_prev_panel("data/clean/pfmdr_single_86.csv",
+               "output/mdr86/gneiting_sparse/preds_all.grd",
+               "mdr86 gneiting")
+
+obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+               "output/mdr1246/gneiting_sparse/preds_all.grd",
+               "mdr1246 gneiting")
+
+obs_prev_panel("data/clean/pfmdr_single_184.csv",
+               "output/mdr184/gneiting_sparse/preds_all.grd",
+               "mdr184 gneiting")
+
+obs_prev_panel("data/clean/pfmdr_single_86.csv",
+               "output/mdr86/circmat/preds_all.grd",
+               "mdr86 circmat")
+
+obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+               "output/mdr1246/circmat/preds_all.grd",
+               "mdr1246 circmat")
+
+obs_prev_panel("data/clean/pfmdr_single_184.csv",
+               "output/mdr184/circmat/preds_all.grd",
+               "mdr184 circmat")
+
+# would be nice if I could somehow look at this through time
+
+
+
+
+
+
+
+
+
+

@@ -8,7 +8,9 @@
 #' @param scale Should the covariates be scaled (to mean zero, standard
 #'   deviation 1) before extraction?
 #' @param temporal_var Is there temporal variance in the `covariates`?
-#' @param temporal_range Vector of numerics with length equal or greater than two
+#' @param temporal_range Vector of numerics with length equal or greater than 
+#' two - the years represented in the covariate set. User can specify so they can 
+#' be more or less extreme than what is represented in data
 #' @param degs_to_rads Boolean: are coords in degrees? Would user like to convert 
 #' them to radians? Requires columns `x` and `y` in `coords`.
 #' @param obs_cols Optional argument: names of columns to include in design matrix, 
@@ -17,23 +19,11 @@
 #' @author Nick Golding; edited by Lucy Harrison to account for temporally 
 #' varying covariates et al
 #' @export
-
-scale_years <- function(temporal_range){
-  years <- do.call(seq, as.list(temporal_range))
-  scaled_years <- scale(years)
-  # fiddle with output of scale:
-  scaled_years <- lapply(years, function(x){scaled_years[x - min(temporal_range) + 1]})
-  names(scaled_years) <- years
-  
-  scaled_years
-} 
-
-
 build_design_matrix <- function(covariates, 
                                 coords = NULL, 
                                 scale = TRUE, 
                                 temporal_var = FALSE, 
-                                temporal_range = NULL,
+                                temporal_covt_range = NULL,
                                 degs_to_rads = FALSE,
                                 obs_cols = NULL) {
   
@@ -48,19 +38,20 @@ build_design_matrix <- function(covariates,
   }
   
   if (temporal_var){
-    # this is little silly
-    temporal_range <- range(temporal_range)
-    
     # don't want to cellFromXY loads of times but the functionality is missing to XYZ
-    # pre-treat years ... this is super clunky and I do not like it ... come back
-    coords$year_truncated <- case_when(coords$year < min(temporal_range) ~ min(temporal_range),
-                                       coords$year > max(temporal_range) ~ max(temporal_range),
-                                        .default = coords$year)
+    
+    temporal_covt_range <- range(temporal_covt_range)
     
     # scale years after they are truncated ........ 
-    scaled_years <- scale_years(temporal_range)
-    #coords$year_scaled <- scaled_years[coords$year_truncated - min(temporal_range) + 1]
-    coords$year_scaled <- unlist(scaled_years[as.character(coords$year_truncated)])
+    # no mate, you need to scale them before they're truncated !
+    scaled_years <- scale_years(range(coords$year))
+    # coords$year_scaled <- scaled_years[coords$year_truncated - min(temporal_range) + 1]
+    # coords$year_scaled <- unlist(scaled_years[as.character(coords$year_truncated)])
+    coords$year_scaled <- unlist(scaled_years[as.character(coords$year)])
+    
+    coords$year_truncated <- case_when(coords$year < min(temporal_covt_range) ~ min(temporal_covt_range),
+                                       coords$year > max(temporal_covt_range) ~ max(temporal_covt_range),
+                                       .default = coords$year)
     
     years <- unique(coords$year_truncated)
     covs <- rep(NA, nrow(coords)) 
@@ -118,3 +109,15 @@ build_design_matrix <- function(covariates,
   return(list(df = df,
               scaled_years = scaled_years))
 }
+
+
+scale_years <- function(temporal_range){
+  years <- do.call(seq, as.list(temporal_range))
+  scaled_years <- scale(years)
+  # fiddle with output of scale:
+  scaled_years <- lapply(years, function(x){scaled_years[x - min(temporal_range) + 1]})
+  names(scaled_years) <- years
+  
+  scaled_years
+} 
+

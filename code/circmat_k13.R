@@ -3,6 +3,11 @@
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
+# TODO:
+# improve graphs in here
+# try imputing MIC_50s and MIC_90s?
+# violin plots by decade over top
+
 out_dir <- "k13/circmat_full/"
 
 mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv", min_year = 2000)

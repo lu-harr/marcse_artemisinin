@@ -40,11 +40,22 @@ predict_to_ras <- function(stack,
                            stable_transmission_mask = NULL,
                            coord_cols = c("x", "y", "year"),
                            design_cols = c("year")){
+  cov_years <- names(stack)
+  cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
+  if (year > max(cov_years)){
+    year = max(cov_years)
+  } else if (year < min(cov_years)){
+    year = min(cov_years)
+  }
+  message(year)
   
+  # retrieve raster for `year`
   ras <- stack[[grep(as.character(year), names(stack))]]
   
+  # aggregate covariate raster for `year`
   if(agg_factor != 1){ras <- aggregate(ras, fact = agg_factor)}
   
+  # make up df of coordinates and covariate values
   coords <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
                   rep(year, length(terra::cells(ras)))) %>%
     as.data.frame()
@@ -58,15 +69,27 @@ predict_to_ras <- function(stack,
                              scale = FALSE,
                              degs_to_rads = TRUE)
   
+  # finish off design matrix
   X_pixel <- tmp$df %>%
-    mutate(year_scaled = scaled_year)
-  X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
+    dplyr::mutate(year_scaled = scaled_year)
+  message(scaled_year)
+  # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
+  message(coord_cols) # this is xyyear
+  message(design_cols) # this is interceptyear_scaledpfpr
+  message(paste(names(X_pixel), collapse = ", "))
+  message(dim(X_pixel[,coord_cols]))
+  message(dim(X_pixel[,design_cols]))
   
+  # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
   
-  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + # transform here? Is R taking over?
+  message(dim(t(parameters$beta)))
+  message(dim(random_field_pixel))
+  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + 
+                       # transform here? Is R taking over?
                        random_field_pixel) %>%
     ilogit()
+  message(dim(mut_freq_pixel))
   
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
@@ -90,6 +113,28 @@ predict_to_ras <- function(stack,
   out
 }
 
+# out_dir <- "output/mdr1246/gneiting_ahmc/"
+# source("code/setup.R")
+# source("code/build_design_matrix.R")
+# scaled_years <- scale_years(range(pfpr_years))
+# 
+# # bring in all of the other outputs here too
+# AGG_FACTOR <- 10
+# mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
+# stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
+#   aggregate(AGG_FACTOR)
+# random_field <- read_rds(paste0(out_dir, "random_field.rds"))
+# parameters <- read_rds(paste0(out_dir, "parameters.rds"))
+# draws <- read_rds(paste0(out_dir, "draws.rds"))
+
+# tmp <- predict_to_ras(covariates,
+#                        2023,
+#                        draws,
+#                        parameters,
+#                        random_field,
+#                        agg_factor = AGG_FACTOR,
+#                        stable_transmission_mask = stable_transmission_mask,
+#                       design_cols = c("intercept", "year_scaled", "pfpr"))
 
 
 predict_to_ras_hier <- function(stack, 

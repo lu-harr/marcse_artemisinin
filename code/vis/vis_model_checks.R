@@ -7,7 +7,7 @@ library(bayesplot)
 library(readr)
 library(dplyr)
 
-output_dir <- "output/crt76/gneiting_sparse/"
+output_dir <- "output/k13/gneiting_sparse_short/"
 out_tag <- "crt76_gneiting_sparse"
 
 draws <- read_rds(paste0(output_dir, "draws.rds"))
