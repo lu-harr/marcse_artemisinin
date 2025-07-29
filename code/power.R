@@ -1,3 +1,6 @@
+preds <- rast("output/mdr184/gneiting_sparse/preds_all.grd")
+ras <- rast("output/mdr184/surveillance_effort_pfmdr184.grd")
+
 pwr_binom <- function(n, p){
   # probability k > 0 given n, p
   1 - (1 - p)^n

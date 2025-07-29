@@ -18,10 +18,16 @@ message(paste0("Year: ", year))
 # out_dir <- "output/mdr86/gneiting_sparse/"
 out_dir <- paste0("output/", marker, "/", mod, "/")
 
-scaled_years <- scale_years(range(pfpr_years))
+# message(pfpr_years)
+# scaled_years <- scale_years(range(pfpr_years))
+# message(scale_years)
 
 # bring in all of the other outputs here too
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
+# this is now how I'm calculating scaled_years during inference - 
+# I'm pretty sure we have points in 23 and 24 for all markers ....
+message(range(mut_data$year))
+scaled_years <- scale_years(range(mut_data$year))
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
   aggregate(AGG_FACTOR)
 random_field <- read_rds(paste0(out_dir, "random_field.rds"))

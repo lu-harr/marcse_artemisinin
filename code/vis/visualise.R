@@ -514,7 +514,9 @@ p
 
 #mut_data$pred[is.na(mut_data$pred)] = 0.4
 
-obs_prev_panel <- function(data_path, 
+# convert to gg
+# add option to facet into time windows
+obs_prev_panel_base <- function(data_path, 
                            pred_path, 
                            main = "", 
                            show_nas = FALSE, 
@@ -541,8 +543,6 @@ obs_prev_panel <- function(data_path,
     #log10(from) / log10(max(from)) *4
   }
   
-  par(mfrow = c(1,2), oma = c(0,0,2,0))
-  
   mut_data = mut_data[!is.na(mut_data$pred),]
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
   mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
@@ -565,40 +565,45 @@ obs_prev_panel <- function(data_path,
   mtext(outer = TRUE, text = main)
 }
 
-obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+par(mfrow = c(1,2), oma = c(0,0,2,0))
+
+obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
                "output/k13/circmat_sparse/preds_all.grd",
                "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))
 
-obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
                "output/k13/gneiting_sparse/preds_all.grd",
                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
 
-obs_prev_panel("data/clean/pfmdr_single_86.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
                "output/mdr86/gneiting_sparse/preds_all.grd",
                "mdr86 gneiting")
 
-obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
                "output/mdr1246/gneiting_sparse/preds_all.grd",
                "mdr1246 gneiting")
 
-obs_prev_panel("data/clean/pfmdr_single_184.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
                "output/mdr184/gneiting_sparse/preds_all.grd",
                "mdr184 gneiting")
 
-obs_prev_panel("data/clean/pfmdr_single_86.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
                "output/mdr86/circmat/preds_all.grd",
                "mdr86 circmat")
 
-obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
                "output/mdr1246/circmat/preds_all.grd",
                "mdr1246 circmat")
 
-obs_prev_panel("data/clean/pfmdr_single_184.csv",
+obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
                "output/mdr184/circmat/preds_all.grd",
                "mdr184 circmat")
 
 # would be nice if I could somehow look at this through time
-
+# could do opacity by max(observed, predicted) ? - Grey spots at high 
+# prevalences are more important than grey spots at low prevalences ....
+# could also go back to pch == 1 at right ...
+# could go for purple ... I think that would get more confusing 
 
 
 

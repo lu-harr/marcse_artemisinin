@@ -41,6 +41,7 @@ out <- build_design_matrix(covariates,
                            degs_to_rads = TRUE)
 X_obs <- out$df
 scaled_years <- out$scaled_years
+message(scaled_years)
 
 coord_cols <- c("x_rd", "y_rd", "year_scaled")
 
