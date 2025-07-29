@@ -514,6 +514,11 @@ p
 
 #mut_data$pred[is.na(mut_data$pred)] = 0.4
 
+cex_transform <- function(from){
+  sqrt(from) / sqrt(max(from))
+  #log10(from) / log10(max(from)) *4
+}
+
 # convert to gg
 # add option to facet into time windows
 obs_prev_panel_base <- function(data_path, 
@@ -538,11 +543,6 @@ obs_prev_panel_base <- function(data_path,
     }
   }
   
-  cex_transform <- function(from){
-    sqrt(from) / sqrt(max(from)) * 4
-    #log10(from) / log10(max(from)) *4
-  }
-  
   mut_data = mut_data[!is.na(mut_data$pred),]
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
   mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
@@ -552,7 +552,7 @@ obs_prev_panel_base <- function(data_path,
   message(paste(min(mut_data$diffs), max(mut_data$diffs)))
   
   plot(mut_data$present / mut_data$tested, 
-       mut_data$pred, cex = cex_transform(mut_data$tested),
+       mut_data$pred, cex = cex_transform(mut_data$tested) * 4,
        xlab = "Observed prevalence", ylab = "Predicted prevalence", 
        xlim = xlim, ylim = ylim,
        col = rgb(pal(mut_data$diffs), maxColorValue = 255))
@@ -601,15 +601,129 @@ obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
 
 # would be nice if I could somehow look at this through time
 # could do opacity by max(observed, predicted) ? - Grey spots at high 
-# prevalences are more important than grey spots at low prevalences ....
+# prevalences are more important than grey spots at low prevalences .... for k13
 # could also go back to pch == 1 at right ...
 # could go for purple ... I think that would get more confusing 
 
+library(looseVis)
+library(cowplot)
 
+obs_prev_panel <- function(data_path, 
+                            pred_path, 
+                            main = "", 
+                            show_nas = FALSE, 
+                            #pal = colorRamp(viridis(10)), 
+                            pal = colorRamp(iddo_palettes$BlGyRd),
+                            xlim = c(0,1), 
+                           ylim = c(0,1), 
+                           facet_bins = NULL){
+  mut_data <- setup_mut_data(data_path, min_year = 2000)
+  preds <- rast(pred_path)
+  
+  # get predictions for each row in `mut_data`
+  mut_data$pred <- NA
+  yrs_to_extract <- unique(mut_data$year)
+  for (yr in yrs_to_extract){
+    if (yr %in% pfpr_years){
+      idx <- which(mut_data$year == yr)
+      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
+                            mut_data[idx, c("x", "y")],
+                            ID = FALSE)
+      mut_data[idx, "pred"] <- val
+    }
+  }
+  
+  # tried to write something nice for looseVis but it doesn't work :/
+  cex_transform <- function(from){
+    sqrt(from) / sqrt(max(from)) * 4
+  }
+  
+  mut_data = mut_data[!is.na(mut_data$pred),]
+  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
+  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
+  mut_data <- arrange(mut_data, abs(diffs))
+  mut_data$diffs_scaled = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
+  
+  if (!is.null(facet_bins)){
+    mut_data$year_bin <- cut(mut_data$year, 
+                             c(min(mut_data$year) - 1, facet_bins, max(mut_data$year)))
+  }
+  
+  p1 <- ggplot(mut_data) +
+    geom_point(mapping = aes(x = present / tested, y = pred), 
+               size = cex_transform(mut_data$tested) * 4,
+               col = rgb(pal(mut_data$diffs_scaled), maxColorValue = 255),
+               shape = 1) +
+    geom_abline(slope = 1, intercept = 0) +
+    xlim(xlim) +
+    ylim(ylim) +
+    xlab("Observed prevalence") +
+    ylab("Predicted prevalence") +
+    theme_bw()
+  
+  # this is a bit hacky but I want to constrain the endpoints of my colour scale
+  # so that they mean roughly the same between different markers
+  cols = seq(min(mut_data$diffs_scaled), max(mut_data$diffs_scaled), length.out = 100) %>%
+    pal() %>%
+    rgb(maxColorValue = 255)
+  
+  p2 <- ggplot() +
+    geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
+    geom_point(data = mut_data, 
+               aes(x = x, y = y, col = diffs),
+               shape = 1, size = cex_transform(mut_data$tested) * 4) +
+    scale_color_gradientn(colours = cols, name = "Residuals\n(Observed - Predicted)") + # this needs re-scaling (back to what it was..)
+    theme_bw() +
+    theme(legend.position = "bottom")
+  
+  if (!is.null(facet_bins)){
+    p1 <- p1 + facet_wrap(vars(.data$year_bin), ncol = 1)
+    p2 <- p2 + facet_wrap(vars(.data$year_bin), ncol = 1)
+  }
+  
+  plot_grid(p1, p2, rel_widths = c(0.4, 0.6))
+}
 
+# gosh I prefer how base plotting deals with panels :/
+# manipulate these further when I decide whether I want facetting etc
+obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+               "output/k13/circmat_sparse/preds_all.grd",
+               "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))#,
+               #facet_bins = c(2010, 2014, 2021))
 
+obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+                "output/k13/gneiting_sparse/preds_all.grd",
+                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
 
+obs_prev_panel("data/clean/pfmdr_single_86.csv",
+                "output/mdr86/gneiting_sparse/preds_all.grd",
+                "mdr86 gneiting") #, facet_bins = c(2008, 2012, 2016, 2020))
+ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
 
+obs_prev_panel("data/clean/pfmdr_single_86.csv",
+               "output/mdr86/circmat/preds_all.grd", "mdr86 circmat") 
+               #facet_bins = c(2008, 2012, 2016, 2020) )
+ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
+
+obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+                "output/mdr1246/gneiting_sparse/preds_all.grd",
+               facet_bins = c(2008, 2012, 2016, 2020),
+                "mdr1246 gneiting")
+ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
+
+obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+               "output/mdr1246/circmat/preds_all.grd",
+               facet_bins = c(2008, 2012, 2016, 2020),
+               "mdr1246 circmat")
+ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
+
+obs_prev_panel("data/clean/pfmdr_single_184.csv",
+                "output/mdr184/gneiting_sparse/preds_all.grd",
+                "mdr184 gneiting")
+
+obs_prev_panel("data/clean/pfmdr_single_184.csv",
+               "output/mdr184/circmat/preds_all.grd",
+                "mdr184 circmat")
 
 
 

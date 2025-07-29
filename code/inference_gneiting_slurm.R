@@ -27,9 +27,7 @@ in_dat <- ifelse(snp == "k13",
                         
 
 message(paste0("Reading in from: ", in_dat))
-
 message(getwd())
-
 message("Enforcing min year for surveyor data - 2000")
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 
