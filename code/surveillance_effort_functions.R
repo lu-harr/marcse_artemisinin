@@ -43,7 +43,7 @@ survey_effort <- function(coords, # a df
 }
 
 
-#' Wrap calls to `survey_effort`, e.g. for year binning
+#' Wrap calls to `survey_effort()`, e.g. for year binning
 #'
 #' @param mut_data_path path to mut_data
 #' @param out_path path to where we should put output raster/s
@@ -56,6 +56,7 @@ survey_effort <- function(coords, # a df
 #' @param bin_years boolean: if TRUE, then bin data by year, using years in `years` 
 #' as breaks; if FALSE, then only calculate KDE/s for specific years in `years`
 #' @param plot_out boolean: plot output ?
+#' @param msg_me boolean: message year to std_out before each call to `survey_effort()`
 #'
 #' @returns
 #' @export
@@ -69,7 +70,8 @@ wrap_survey_effort <- function(mut_data_path,
                                sigma = 1.5,
                                years = NULL,
                                bin_years = FALSE,
-                               plot_out = FALSE){
+                               plot_out = FALSE,
+                               msg_me = FALSE){
   
   if (!is.null(mask_path)){
     transmission_mask <- rast(mask_path)
@@ -91,6 +93,8 @@ wrap_survey_effort <- function(mut_data_path,
       } else {
         tmp <- filter(mut_data, year == years[i])
       }
+      
+      if (msg_me) {message(years[i])}
       
       survey_effort(coords = tmp, 
                     mask = transmission_mask,
