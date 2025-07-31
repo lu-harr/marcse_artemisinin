@@ -62,7 +62,7 @@ survey_effort <- function(coords, # a df
 #'
 #' @examples
 wrap_survey_effort <- function(mut_data_path,
-                               out_path,
+                               out_path = NULL,
                                mask_path = "data/stable_transmission_mask.grd",
                                apply_mask = FALSE,
                                agg_factor = 1,
@@ -70,7 +70,6 @@ wrap_survey_effort <- function(mut_data_path,
                                years = NULL,
                                bin_years = FALSE,
                                plot_out = FALSE){
-  print(out_path)
   
   if (!is.null(mask_path)){
     transmission_mask <- rast(mask_path)
@@ -100,7 +99,14 @@ wrap_survey_effort <- function(mut_data_path,
       
     })
     test_dens <- rast(test_dens)
-    names(test_dens) <- paste0("surv_", years[1:(length(years) - as.numeric(bin_years))])
+    
+    # let's make this nice
+    if (!bin_years){
+      names(test_dens) <- paste0("surv_", years)
+    } else {
+      names(test_dens) <- paste0("surv_", years[1:(length(years) - 1)], "_", years[2:length(years)])
+    }
+    
   } else {
     test_dens <- survey_effort(mut_data, 
                                mask = transmission_mask,
@@ -110,15 +116,26 @@ wrap_survey_effort <- function(mut_data_path,
   
   if (plot_out){plot(test_dens)}
   
-  writeRaster(test_dens, out_path, overwrite = TRUE)
+  if (!is.null(out_path)){writeRaster(test_dens, out_path, overwrite = TRUE)}
+  
+  test_dens
 }
 
 # e.g.:
 # tmp = wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
-#                    "output/k13/surveillance_effort_k13.grd",
-#                    years = seq(2012, 2024, 3), # watch out for 2025
-#                    bin_years = TRUE,
-#                    sigma = 1.5, apply_mask = FALSE)
+#                          sigma = 1.5, apply_mask = FALSE, agg_factor = 10)
+# 
+# tmp = wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+#                          years = seq(2012, 2024, 3),
+#                          agg_factor = 10,
+#                          bin_years = TRUE,
+#                          sigma = 1.5, apply_mask = FALSE)
+# 
+# tmp = wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+#                          years = seq(2012, 2024, 3),
+#                          agg_factor = 10,
+#                          bin_years = FALSE,
+#                          sigma = 1.5, apply_mask = FALSE)
 
 ###############################################################################
 # library(terra)
