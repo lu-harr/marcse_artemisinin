@@ -1,15 +1,16 @@
 library(terra)
 library(sf)
 source("code/setup.R")
+source("code/surveillance_effort_functions.R")
 
 
 args <- commandArgs(trailingOnly = TRUE)
-snp <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76"
+snp <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76", "k13_marcse"
 seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-out_dir <- paste0(snp, "/")
+out_dir <- paste0("output/", snp, "/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -23,6 +24,7 @@ in_dat <- ifelse(snp == "k13",
 message(paste0("Reading in from: ", in_dat))
 message(getwd())
 message("Enforcing min year for surveyor data - 2000")
+message(paste("Writing to:", out_dir))
 
 mut_data <- setup_mut_data(in_dat)
 
