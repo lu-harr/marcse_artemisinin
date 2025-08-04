@@ -6,10 +6,10 @@ library(cowplot)
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/clean/moldm_k13_nomarker.csv")
-preds <- rast("output/k13/circmat_sparse/preds_all.grd")
-preds <- rast("output/k13/gneiting_sparse/preds_all.grd")
-test_dens <- rast("output/k13/surveillance_effort_k13.grd")
+mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
+# preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
+preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 library(iddoPal)
 iddoblue <- iddo_palettes_discrete$iddo[1]
@@ -27,50 +27,50 @@ afr <- world %>%
 # surveillance effort
 
 # multipanel: time (hist: number tested, number of points)
-surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
-  as.data.frame() %>%
-  mutate(effort = unlist(extract(test_dens, cells(test_dens))) / 4)
-
-p1 <- ggplot(data = mut_data %>%
-               group_by(year) %>%
-               summarise(n = n())) +
-  geom_bar(stat = "identity", aes(x = year, y = n)) +
-  ylab("Number of locations") +
-  xlab("Year") +
-  ggtitle("(a)")
-
-p2 <- ggplot(data = mut_data %>%
-               group_by(year) %>%
-               summarise(tested = sum(tested))) +
-  geom_bar(stat = "identity", aes(x = year, y = tested)) +
-  ylab("Number of tests") +
-  xlab("Year") +
-  ggtitle("(b)")
-
-# could just go back to totals? As emphasis is on effort?
+# surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
+#   as.data.frame() %>%
+#   mutate(effort = unlist(extract(test_dens, cells(test_dens))) / 4)
+# 
+# p1 <- ggplot(data = mut_data %>%
+#                group_by(year) %>%
+#                summarise(n = n())) +
+#   geom_bar(stat = "identity", aes(x = year, y = n)) +
+#   ylab("Number of locations") +
+#   xlab("Year") +
+#   ggtitle("(a)")
+# 
 # p2 <- ggplot(data = mut_data %>%
 #                group_by(year) %>%
-#                summarise(present = sum(present),
-#                          absent = sum(tested) - present) %>%
-#                pivot_longer(!year, names_to = "Tests", values_to = "Count")) +
-#   geom_bar(stat = "identity", aes(x = year, y = Count, fill = Tests)) +
-#   xlab("Year")
-
-p3 <- ggplot() +
-  geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
-  geom_tile(data = surveil, aes(x, y, fill = effort)) +
-  geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
-  scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  ggtitle("(c)")
-
-library(deeptime)
-
-gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
-ggarrange2(gg1, p3, widths = c(1,2))
-ggsave("figures/surveillance_effort_k13.png", ggarrange2(gg1, p3, widths = c(1,2)),
-       height = 5, width = 7.5, scale = 1.5)
+#                summarise(tested = sum(tested))) +
+#   geom_bar(stat = "identity", aes(x = year, y = tested)) +
+#   ylab("Number of tests") +
+#   xlab("Year") +
+#   ggtitle("(b)")
+# 
+# # could just go back to totals? As emphasis is on effort?
+# # p2 <- ggplot(data = mut_data %>%
+# #                group_by(year) %>%
+# #                summarise(present = sum(present),
+# #                          absent = sum(tested) - present) %>%
+# #                pivot_longer(!year, names_to = "Tests", values_to = "Count")) +
+# #   geom_bar(stat = "identity", aes(x = year, y = Count, fill = Tests)) +
+# #   xlab("Year")
+# 
+# p3 <- ggplot() +
+#   geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
+#   geom_tile(data = surveil, aes(x, y, fill = effort)) +
+#   geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
+#   scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   ggtitle("(c)")
+# 
+# library(deeptime)
+# 
+# gg1 <- ggarrange2(p1, p2, layout = rbind(c(1), c(2)), draw = FALSE)
+# ggarrange2(gg1, p3, widths = c(1,2))
+# ggsave("figures/surveillance_effort_k13.png", ggarrange2(gg1, p3, widths = c(1,2)),
+#        height = 5, width = 7.5, scale = 1.5)
 # don't love that I'm judging vertical stretching by eye
 # It only took me 45 mins to work this out I guess
 
@@ -81,8 +81,9 @@ ggsave("figures/surveillance_effort_k13.png", ggarrange2(gg1, p3, widths = c(1,2
 # axis(xxx, labels = distHaversine(xxx), "Distance (km)")
 library(geosphere)
 library(greta.gp)
+library(greta)
 
-circmat_len <- lognormal(meanlog = 0, sdlog = 1)
+circmat_len <- greta::lognormal(meanlog = 0, sdlog = 1)
 xxx = seq(0, 1, length.out = 100)
 sdlogs = c(2.5, 2, 1.5, 1)
 sdlogs = rep(1, 3)
@@ -220,9 +221,9 @@ medians <- ggplot() +
                 xmax = xmax,
                 ymin = ymin,
                 ymax = ymax), colour = case_pal, linewidth = 1, fill = NA) +
-  geom_text(data = data.frame(lab = c("a", "b", "c"), 
-                              year = c("2014", "2018", "2022")), 
-            mapping = aes(x = 0, y = 0, label = lab)) +
+  # geom_text(data = data.frame(lab = c("a", "b", "c"), 
+  #                             year = c("2014", "2018", "2022")), 
+  #           mapping = aes(x = 0, y = 0, label = lab)) +
   theme_bw() +
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
@@ -330,6 +331,64 @@ plot_grid(medians + theme(legend.position = "none"),
 
 ggsave("figures/k13_out_gneiting.png", height = 5.2, width = 4.5, scale = 2)
 
+################################################################################
+# just doing some fiddling for confab presentation
+
+df <- gg_ras_prep(preds)$df
+
+medians <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "medi"),
+            mapping = aes(x = x, y = y, fill = val)) +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt",
+                       breaks = c(0.1, 0.2, 0.4, 0.6)) +
+  facet_wrap(~year, nrow = 1) +
+  xlab("Longitude") +
+  ylab("Latitude")
+medians
+ggsave("~/Desktop/presentations/MARCSE/k13_medians.png", height = 5, width = 10, scale = 0.9)
+
+sds <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "sd"),
+            mapping = aes(x = x, y = y, fill = val)) +
+  scale_fill_distiller(palette = "Oranges", 
+                       na.value = NA, 
+                       "Uncertainty", 
+                       direction = 1,
+                       trans = "sqrt") +
+  facet_wrap(~year, nrow = 1) +
+  xlab("Longitude") +
+  ylab("Latitude")
+sds
+ggsave("~/Desktop/presentations/MARCSE/k13_sds.png", height = 5, width = 10, scale = 0.9)
+
+tmp <- df %>%
+  filter(year == 2022) %>%
+  dplyr::select(-c(lyr)) %>%
+  pivot_wider(names_from = tag, values_from = val)
+
+# would have been nice to put some histograms in
+ggplot(tmp) +
+  geom_point(aes(x = medi, y = sd),
+             col = "darkgrey", alpha = 0.2) +
+  xlab("Median") +
+  ylab("Std Deviation")
+ggsave("~/Desktop/presentations/MARCSE/sd_over_medi.png", height = 5, width = 5)
+
+xxx <- seq(min(tmp$medi), max(tmp$medi), length.out = 100)
+varb <- data.frame(x = xxx,
+                   y = xxx * (1 - xxx))
+
+ggplot(tmp) +
+  geom_point(aes(x = medi, y = sd),
+             col = "darkgrey", alpha = 0.2) +
+  geom_line(aes(x = x, y = y * 0.6), data = varb) +
+  xlab("Median") +
+  ylab("Std Deviation")
+ggsave("~/Desktop/presentations/MARCSE/sd_over_medi_hypot.png", height = 5, width = 5)
 
 
 ################################################################################

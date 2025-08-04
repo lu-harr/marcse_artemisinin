@@ -387,3 +387,31 @@ ggplot() +
   theme_grey() #+
   #theme(title = element_blank())
 ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 5, width = 5)
+
+
+partners <- partners %>%
+  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2010, 2020, max(year))))
+
+ggplot() + 
+  geom_sf(data = afr, fill = "white") + 
+  geom_point(data = partners, 
+             mapping = aes(x = Longitude, y = Latitude, 
+                           size = Tested, fill = Present/Tested),
+             col = "grey50", pch=21, stroke = 0.2) +
+  scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
+                       "",
+                       breaks = c(0, 0.5, 1), 
+                       labels = c("0  (all WT)", "0.5", "1  (all mutant)"),
+                       limits = c(0,1)) +
+  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  facet_grid(year_bin ~ loc) +
+  # labs(#title = "Pfmdr1 84-186-1246: Surveillance at single loci",
+  #      xlab = "Longitude", ylab = "Latitude") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme_grey() #+
+#theme(title = element_blank())
+ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 5)
+

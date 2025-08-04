@@ -41,6 +41,8 @@ survey_effort_panel <- function(in_path,
   # nasty formula to convert to tests per 100kmsq (ish)
   test_dens <- test_dens * 100 / (res(test_dens)[1] * 111) ** 2
   
+  test_dens <- mask(test_dens, st_as_sf(afr))
+  
   # surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
   #   as.data.frame() %>%
   #   cbind(unlist(extract(test_dens, cells(test_dens))))
@@ -68,8 +70,8 @@ survey_effort_panel <- function(in_path,
 }
 
 survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
-                      "output/crt76/surveillance_effort_crt.grd",
-                      "output/mdr86/surveillance_effort_pfmdr86.grd"),
+                      "output/crt76/surveillance_effort_crt76.grd",
+                      "output/mdr86/surveillance_effort_mdr86.grd"),
                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 
 # p1 <- survey_effort_panel("output/circmat_k13/surveillance_effort_k13.grd", 
@@ -86,16 +88,13 @@ survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
 ggsave("figures/surveillance_effort_all.png", 
         height = 5, width=10, scale = 0.8)
 
-survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
-                      "output/crt76/surveillance_effort_crt.grd",
-                      "output/mdr86/surveillance_effort_pfmdr86.grd"),
-                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
-ggsave("figures/surveillance_effort_all_marcse.png", 
-       height = 5, width=10, scale = 0.8)
+survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
+                      "output/k13_marcse/surveillance_effort_k13_marcse.grd"),
+                    lyr_names = c("moldm", "moldm + unpublished data"))
+ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png", 
+       height = 5, width=8, scale = 0.9)
 
 # after all that, I might just facet_wrap ....
-
-
 
 ###############################################################################
 # time !
@@ -184,7 +183,7 @@ pred_time_plot <- function(in_path,
 }
 
 
-p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",
+p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/preds_all.grd",
                title = "(a) Pfkelch13")
 p2 <- pred_time_plot("output/crt76/gneiting_sparse/preds_all.grd",
                title = "(b) Pfcrt K76T")
@@ -200,7 +199,7 @@ p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = 
 ggsave("figures/all_markers_time_gneiting.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",
+p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/preds_all.grd",
                      title = "(a) Pfkelch13",
                      points_path = "data/clean/moldm_k13_nomarker.csv")
 p2 <- pred_time_plot("output/crt76/gneiting_sparse/preds_all.grd",
@@ -322,6 +321,7 @@ map_pred_row <- function(in_path,
   p
 }
 
+# make sure you've run what's up the top
 years_to_plot <- c("2006","2010", "2014", "2018", "2022")
 p1 <- map_pred_row("output/crt76/gneiting_sparse/preds_all.grd", 
              years = years_to_plot, field = "medi", pal = blrd,
@@ -462,11 +462,55 @@ p
 
 ggsave("figures/crt_mdr_out_gneiting.png", height = 9, width = 7)
 
+##############################################################################
+# need a short version for powerpoint
 
+# chuck the rows together
+# pcol <- plot_grid(p1 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
+#                   p2 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
+#                   p3 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+#                   p4 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")),
+#                   ncol = 1, rel_heights = c(1.22, rep(1, 3))) +
+#   theme(panel.spacing = unit(0, "cm"))
 
+# I'm exhausted by this
+years_to_plot <- c(2006, 2014, 2022)
+preds <- rast(paste0("output/", c("crt76", "mdr86", "mdr184", "mdr1246"), "/gneiting_sparse/preds_all.grd"))
+names(preds) <- paste0(names(preds), "_", rep(c("crt76", "mdr86", "mdr184", "mdr1246"), each = 46))
+coords <- xyFromCell(preds, cells(preds))
+vals <- terra::extract(preds, coords)
+df <- cbind(coords, vals) %>%
+  pivot_longer(starts_with("2"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = substr(lyr, 1, 4),
+         tag = substr(lyr, 11, 14),
+         marker = str_extract(lyr, "[^_]+$")) %>%
+  filter(year %in% years_to_plot & tag == "medi") # pick out year and thingo
 
+df <- df %>% mutate(marker = case_when(marker == "crt76" ~ "Pfcrt K76T",
+                                       marker == "mdr86" ~ "Pfmdr1 N86Y",
+                                       marker == "mdr184" ~ "Pfmdr1 Y184F",
+                                       marker == "mdr1246" ~ "Pfmdr1 D1246Y")) %>%
+  mutate(marker = factor(marker, levels = c("Pfcrt K76T", "Pfmdr1 N86Y", "Pfmdr1 Y184F", "Pfmdr1 D1246Y")))
 
+ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = x, y = y, fill = val), data = df) +
+  scale_fill_gradientn(name = "Prevalence",
+                       colors = blrd, 
+                       breaks = c(0, 0.5, 1), 
+                       labels = c("0  (all wildtype)", "0.5", "1  (all mutant)"),
+                       limits = c(0,1)) +
+  facet_grid(year ~ marker) +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  xlab("Longitude") +
+  ylab("Latitude")
 
+ggsave("~/Desktop/presentations/MARCSE/crt_mdr_out.png", scale = 1.7, height = 3, width = 5)
+
+##############################################################################
 
 coords <- xyFromCell(pfpr, cells(pfpr))
 vals <- terra::extract(pfpr, coords)
@@ -605,6 +649,8 @@ obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
 # could also go back to pch == 1 at right ...
 # could go for purple ... I think that would get more confusing 
 
+##############################################################################
+# the same but ggplot
 library(looseVis)
 library(cowplot)
 
@@ -637,8 +683,9 @@ obs_prev_panel <- function(data_path,
   cex_transform <- function(from){
     sqrt(from) / sqrt(max(from)) * 4
   }
-  
+  message(nrow(mut_data))
   mut_data = mut_data[!is.na(mut_data$pred),]
+  message(nrow(mut_data))
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
   mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
   mut_data <- arrange(mut_data, abs(diffs))
@@ -659,7 +706,8 @@ obs_prev_panel <- function(data_path,
     ylim(ylim) +
     xlab("Observed prevalence") +
     ylab("Predicted prevalence") +
-    theme_bw()
+    theme_bw() +
+    theme(plot.margin = unit(c(0.2,0.2,2.1,0.2), "cm"))
   
   # this is a bit hacky but I want to constrain the endpoints of my colour scale
   # so that they mean roughly the same between different markers
@@ -674,26 +722,33 @@ obs_prev_panel <- function(data_path,
                shape = 1, size = cex_transform(mut_data$tested) * 4) +
     scale_color_gradientn(colours = cols, name = "Residuals\n(Observed - Predicted)") + # this needs re-scaling (back to what it was..)
     theme_bw() +
+    xlab("Longitude") +
+    ylab("Latitude") +
     theme(legend.position = "bottom")
   
   if (!is.null(facet_bins)){
     p1 <- p1 + facet_wrap(vars(.data$year_bin), ncol = 1)
-    p2 <- p2 + facet_wrap(vars(.data$year_bin), ncol = 1)
+    p2 <- p2 + facet_wrap(vars(.data$year_bin), ncol = 1) 
   }
   
-  plot_grid(p1, p2, rel_widths = c(0.4, 0.6))
+  plot_grid(p1, p2, rel_widths = c(0.5, 0.52))
 }
 
 # gosh I prefer how base plotting deals with panels :/
 # manipulate these further when I decide whether I want facetting etc
-obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
-               "output/k13/circmat_sparse/preds_all.grd",
-               "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))#,
-               #facet_bins = c(2010, 2014, 2021))
+# obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+#                "output/k13/circmat_sparse/preds_all.grd",
+#                "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))#,
+#                #facet_bins = c(2010, 2014, 2021))
 
-obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
-                "output/k13/gneiting_sparse/preds_all.grd",
-                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
+# obs_prev_panel("data/clean/moldm_k13_nomarker.csv",
+#                 "output/k13/gneiting_sparse/preds_all.grd",
+#                 "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
+
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/gneiting_sparse/preds_all.grd",
+               "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6))
+ggsave("~/Desktop/presentations/marcse/residuals_k13m.png", height = 3, width = 5, scale = 1.5)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
                 "output/mdr86/gneiting_sparse/preds_all.grd",
@@ -724,6 +779,36 @@ obs_prev_panel("data/clean/pfmdr_single_184.csv",
 obs_prev_panel("data/clean/pfmdr_single_184.csv",
                "output/mdr184/circmat/preds_all.grd",
                 "mdr184 circmat")
+
+
+##############################################################################
+# a plot of all preds in all years
+
+preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+coords <- xyFromCell(preds, cells(preds))
+vals <- terra::extract(preds, coords)
+df <- cbind(coords, vals) %>%
+  pivot_longer(starts_with("2"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = substr(lyr, 1, 4),
+         tag = substr(lyr, 11, 14),
+         marker = str_extract(lyr, "[^_]+$")) %>%
+  filter(tag == "medi") # pick out year and thingo
+
+ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = x, y = y, fill = val), data = df) +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+  facet_wrap(~year, ncol = 6) +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+ggsave("~/Desktop/presentations/MARCSE/k13_all_years.png", scale = 1.7, height = 4, width = 5)
+
+
 
 
 
