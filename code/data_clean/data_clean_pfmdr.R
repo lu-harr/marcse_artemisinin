@@ -358,6 +358,8 @@ crt <- read.csv("data/clean/moldm_crt76.csv") %>%
   mutate(loc = "Pfcrt K76T",
          year_bin = cut(year, breaks = c(1974, 2008, 2013, 2017, 2020, 2024)))
 
+single_loc <- read.csv("data/clean/pfmdr_single_locus.csv")
+
 partners <- bind_rows(crt,
                       single_loc %>%
                         mutate(loc = paste("Pfmdr1", loc))) %>%
@@ -390,7 +392,7 @@ ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 5, width = 5)
 
 
 partners <- partners %>%
-  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2010, 2020, max(year))))
+  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2008, 2018, max(year))))
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -401,7 +403,7 @@ ggplot() +
   scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
                        "",
                        breaks = c(0, 0.5, 1), 
-                       labels = c("0  (all WT)", "0.5", "1  (all mutant)"),
+                       labels = c("0  (all wildtype)", "0.5", "1  (all mutant)"),
                        limits = c(0,1)) +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
   scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +

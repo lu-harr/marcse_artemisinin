@@ -144,7 +144,7 @@ zoom_df <- rbind(zambezi, victoria, eswatini) %>%
   suppressWarnings()
 
 gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
-  # this was annoying me
+  # this was annoying me - add this to looseVis for cryin out loud
   if (!is.null(extent)){
     extent <- ext(unlist(extent))
     ras <- mask(ras, extent) %>%

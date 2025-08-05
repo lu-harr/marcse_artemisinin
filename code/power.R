@@ -1,5 +1,5 @@
-preds <- rast("output/k13/gneiting_sparse/preds_all.grd")
-ras <- rast("output/k13/surveillance_effort_k13.grd")
+preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+ras <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 pwr_binom <- function(n, p){
   # probability k > 0 given n, p
@@ -9,32 +9,42 @@ pwr_binom <- function(n, p){
 p <- preds$`2022_post_median`
 
 # from surveillance_effort
-gf <- focalMat(ras, 1, "Gauss")
-n <- aggregate(ras, fact = 4, sum, na.rm = TRUE) %>%
-  focal(gf, na.rm=TRUE) %>%
-  project(p) %>%
-  mask(p)
-
-plot(n)
+# gf <- focalMat(ras, 0.8, "Gauss")
+# n <- aggregate(ras, fact = 4, sum, na.rm = TRUE) %>%
+#   focal(gf, na.rm=TRUE) %>%
+#   project(p) %>%
+#   mask(p)
 
 # aggregate makes more sense here ....
 # n <- test_dens %>%
 #   aggregate(fact = 4, sum, na.rm=TRUE) %>%
 #   project(p) %>%
 #   mask(p)
-# n <- n + 1
+
+# aggregate, then disaggregate to adjust units to tests per sqkmish
+n <- ras %>%
+  aggregate(fact = 2, sum, na.rm = TRUE) %>%
+  project(p) %>%
+  mask(p)
+
+plot(n)
 
 # could also use extant test_dens + 1?
 
 # shouldn't be a problem ...?
-n[n < 1] <- NA
+# n[n < 1] <- NA
 
 pwr <- pwr_binom(n, p)
 
-plot(p, main="Estimated prevalence")
-plot(sqrt(n), main="Surv intensity")
-plot(pwr, main="Power:\n 'Can we detect if prevalence > 0 | prevalence > 0?'", 
-     mar = c(2,0,3,2))
+mar = c(4, 2, 3, 1)
+{png("~/Desktop/presentations/marcse/power.png", 
+     height = 800, width = 2400, pointsize = 40)
+par(mfrow = c(1,3))
+plot(trim(p), main="Estimated prevalence", mar = mar, plg = list(x = "bottom"))
+plot(trim(n), main="Surv intensity", mar = mar, plg = list(x = "bottom"))
+plot(trim(pwr), main='Statistical power:\n "Pr(detect prevalence > 0 | prevalence > 0)"', 
+     mar = mar, plg = list(x = "bottom"))
+dev.off()}
 # this is higher than I think it should be .... but perhaps this is a function of our n ....
 # or a function of the hypothesis test ... "Can we detect if prev > 0 | prev > 0?"
 # which really only makes sense for k13
@@ -47,27 +57,75 @@ wald_ci <- function(n, p, alpha){
               lower = p - pm))
 }
 
-wilson_ci <- function(n, p, alpha){
+wilson_ci <- function(n, p, alpha, epsilon = 1e-5){
+  n[n == 0] = epsilon
   z <- qnorm(alpha)
-  centre <- p + z**2/(2*n)
-  pm <- (z / (2*n) * sqrt(4*n*p*(1 - p) + z**2))
-  return(list(upper = (1 + z**2/n)**(-1)*(p + z**2/(2*n) + pm),
-              lower = (1 + z**2/n)**(-1)*(p + z**2/(2*n) - pm)))
+  centre <- p + (z**2)/(2*n)
+  scale <- (1 + (z**2)/n)**(-1)
+  
+  pm <- (z / (2*n)) * sqrt(4*n*p*(1 - p) + z**2)
+  
+  # oops had some brackets in the wrong place here >:)
+  return(list(upper = scale*(centre + pm),
+              lower = scale*(centre - pm)))
+  
+  # end up with -ves being given to sqrt?
 }
 
-tmp <- wald_ci(n, p, 0.9)
+n <- n + 0.1
+tmp <- wald_ci(n, p, 0.95)
 # low sample size and low p mean that this struggles ...
 
 tmp <- wilson_ci(n, p, 0.95)
 
-par(mfrow = c(1,3))
+n[n == 0] <- 1e-5
+df <- xyFromCell(p, cell = cells(p))
+ras <- rast(list(rast(tmp), p, n))
+ras$`CI width` <- ras$upper - ras$lower
+# ras$lower[ras$lower <= 0] = NA
+n = n + 1
+ras$inv_eff <- 1/sqrt(n)
+
+df <- cbind(df, terra::extract(ras, df))
+names(df) <- c("Longitude", "Latitude", "CI upper", "CI lower", 
+               "Estimated prevalence", "surveillance intensity", "CI width", "inv_eff")
+df <- df %>%
+  pivot_longer(cols = c("CI upper", "CI lower", 
+                        "Estimated prevalence", "surveillance intensity", 
+                        "CI width", "inv_eff"),
+               names_to = "lyr")
+
+p1 <- ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = Longitude, y = Latitude, fill = value), 
+            data = df %>% filter(!lyr %in% c("surveillance intensity", "inv_eff"))) +
+  scale_fill_viridis_c(name = "Prevalence") +
+  facet_wrap(~lyr)
+p2 <- ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = Longitude, y = Latitude, fill = value), 
+            data = df %>% filter(lyr == "surveillance intensity")) +
+  scale_fill_viridis_c(name = "Tests per\n100sqkm") +
+  labs(title = "Surveillance intensity")
+p3 <- ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = Longitude, y = Latitude, fill = value), 
+            data = df %>% filter(lyr == "inv_eff")) +
+  scale_fill_viridis_c(name = "Inverse effort") +
+  labs(title = "1/sqrt(surveillance intensity)")
+p4 <- plot_grid(p2, p3, ncol = 1)
+plot_grid(p1, p4, rel_widths = c(1, 0.62))
+ggsave("~/Desktop/presentations/marcse/ci_wald.png", height = 4, width = 6, scale = 2)
+
+
+{par(mfrow = c(2,2))
 plot(tmp$lower, main = "Lower")
 plot(tmp$upper, main = "Upper")
 # this is what I'm trying to get to!
 plot(tmp$upper - tmp$lower, main = "Confidence interval width")
 # looks quite a bit like 1/sqrt(n), so p isn't doing too much?
 # would still like to get to the idea that we know *less* where our estimated p is low?
-plot(1/sqrt(n))
+plot(1/sqrt(n), main = "1/sqrt(n)")}
 # confidence interval width is mostly constant! duh! it's in the graph you just looked at!
 
 # no idea what's going on down here I'm cooked but can't trust outputs until I figure it out

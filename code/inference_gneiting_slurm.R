@@ -12,10 +12,10 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-out_dir <- paste0(snp, "/gneiting_sparse/")
+snp = "86"
+seed = 123
 
-# snp = "86"
-# seed = 123
+out_dir <- paste0(snp, "/gneiting_sparse/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -81,7 +81,10 @@ m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
 set.seed(seed)
 draws <- mcmc(m,
-              n_samples = 10000,
+              sampler = hmc(Lmin = 10, Lmax = 15),
+              chains = 6,
+              warmup = 3000,
+              n_samples = 1000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
@@ -89,12 +92,21 @@ draws <- mcmc(m,
                                         beta = rep(0, 3)))
 
 
-draws <- extra_samples(draws, 20000)
+#draws <- extra_samples(draws, 10000)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
                             multivariate = FALSE)
 summary(r_hats$psrf)
+
+# baseline
+# Point est.      Upper C.I.   
+# Median :1.603   Median :2.734  
+# Mean   :1.854   Mean   :3.182  
+
+# a better crack? takes longer ...
+
+
 
 parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
