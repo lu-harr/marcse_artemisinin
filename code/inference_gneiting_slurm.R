@@ -12,10 +12,7 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-snp = "86"
-seed = 123
-
-out_dir <- paste0(snp, "/gneiting_sparse/")
+out_dir <- paste0(snp, "/gneiting_ahmc/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -79,6 +76,7 @@ distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 # fit the model by Hamiltonian Monte Carlo
 m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 
+{start <- Sys.time()
 set.seed(seed)
 draws <- mcmc(m,
               sampler = hmc(Lmin = 10, Lmax = 15),
@@ -90,6 +88,8 @@ draws <- mcmc(m,
                                         gneiting_sd = 13,
                                         nugget_sd = 0.5,
                                         beta = rep(0, 3)))
+end <- Sys.time()
+end - start}
 
 
 #draws <- extra_samples(draws, 10000)
@@ -104,9 +104,26 @@ summary(r_hats$psrf)
 # Median :1.603   Median :2.734  
 # Mean   :1.854   Mean   :3.182  
 
-# a better crack? takes longer ...
+# without meddling with leapfrog, with longer warmup
+# Median :1.786   Median :2.665  
+# Mean   :1.817   Mean   :2.723 
+# Time difference of 2.618456 mins
 
+# Lmin = 10, Lmax = 15, 6 chains, 3000 warmup
+# Median :1.679   Median :2.550  
+# Mean   :1.683   Mean   :2.529  
+# Time difference of 4.182605 mins
 
+# Lmin = 10, Lmax = 15, 8 chains, 3000 warmup
+# Median :1.437   Median :1.949  
+# Mean   :2.063   Mean   :3.078 
+# Time difference of 5.20894 mins
+
+# Lmin = 10, Lmax = 15, 8 chains, 5000 warmup
+# Median : 5.540   Median : 8.881  
+# Mean   : 5.922   Mean   : 9.577  
+# Time difference of 7.839365 mins
+# huh
 
 parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
