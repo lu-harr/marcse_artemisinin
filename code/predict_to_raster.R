@@ -42,12 +42,13 @@ predict_to_ras <- function(stack,
                            design_cols = c("year")){
   cov_years <- names(stack)
   cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
+  lab_year <- year
   if (year > max(cov_years)){
     year = max(cov_years)
   } else if (year < min(cov_years)){
     year = min(cov_years)
   }
-  message(year)
+  # message(year)
   
   # retrieve raster for `year`
   ras <- stack[[grep(as.character(year), names(stack))]]
@@ -61,7 +62,7 @@ predict_to_ras <- function(stack,
     as.data.frame()
   
   names(coords) <- c("x", "y", "year") # this is *not* coord_cols
-  message(names(coords))
+  # message(names(coords))
   
   tmp <- build_design_matrix(ras,
                              coords,
@@ -72,37 +73,41 @@ predict_to_ras <- function(stack,
   # finish off design matrix
   X_pixel <- tmp$df %>%
     dplyr::mutate(year_scaled = scaled_year)
-  message(scaled_year)
-  # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  message(coord_cols) # this is xyyear
-  message(design_cols) # this is interceptyear_scaledpfpr
-  message(paste(names(X_pixel), collapse = ", "))
-  message(dim(X_pixel[,coord_cols]))
-  message(dim(X_pixel[,design_cols]))
-  
+  # message(scaled_year)
+  # # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
+  # message(coord_cols) # this is xyyear
+  # message(design_cols) # this is interceptyear_scaledpfpr
+  # message(paste(names(X_pixel), collapse = ", "))
+  # message(dim(X_pixel[,coord_cols]))
+  # message(dim(X_pixel[,design_cols]))
+  # 
   # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
   
-  message(dim(t(parameters$beta)))
-  message(dim(random_field_pixel))
+  # message(dim(t(parameters$beta)))
+  # message(dim(random_field_pixel))
   mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + 
                        # transform here? Is R taking over?
                        random_field_pixel) %>%
     ilogit()
-  message(dim(mut_freq_pixel))
+  # message(dim(mut_freq_pixel))
   
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
-                                      nsim = 100,
+                                      nsim = 500,
                                       trace_batch_size = 1) # reducing: will take longer, use less mem
-  message("now here")
-  post_pixel_median <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, median)
-  post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, sd)
+  # message("now here")
+  probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
+  post_pixel_quants = apply(post_pixel_sims$mut_freq_pixel[,,1], 2, 
+                             quantile, 
+                             probs = probs)
+  post_pixel_mean <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, mean)
+  post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, sd)
+  post_summary <- cbind(t(post_pixel_quants), post_pixel_mean, post_pixel_sd)
   
-  out <- c(ras, ras) * 0 # assuming we have at least two layers in there ..
-  names(out) <- paste0(year, c("_post_median", "_post_sd"))
-  out[[1]][terra::cells(out[[1]])] <- post_pixel_median
-  out[[2]][terra::cells(out[[2]])] <- post_pixel_sd
+  out <- ras * rep(0, nrow(post_pixel_quants) + 2) # assuming we have at least two layers in there ..
+  names(out) <- paste0(lab_year, "_", c(probs*100, "mean", "sd"))
+  out[terra::cells(out)] <- post_summary
   
   if(!is.null(stable_transmission_mask)){
   #if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
@@ -119,14 +124,14 @@ predict_to_ras <- function(stack,
 # scaled_years <- scale_years(range(pfpr_years))
 # 
 # # bring in all of the other outputs here too
-# AGG_FACTOR <- 10
+# AGG_FACTOR <- 5
 # mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 # stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
 #   aggregate(AGG_FACTOR)
 # random_field <- read_rds(paste0(out_dir, "random_field.rds"))
 # parameters <- read_rds(paste0(out_dir, "parameters.rds"))
 # draws <- read_rds(paste0(out_dir, "draws.rds"))
-
+# 
 # tmp <- predict_to_ras(covariates,
 #                        2023,
 #                        draws,
@@ -135,6 +140,12 @@ predict_to_ras <- function(stack,
 #                        agg_factor = AGG_FACTOR,
 #                        stable_transmission_mask = stable_transmission_mask,
 #                       design_cols = c("intercept", "year_scaled", "pfpr"))
+# 
+# library(tidyterra)
+# ggplot() + 
+#   geom_spatraster(data = tmp) + 
+#   scale_fill_distiller(palette = "RdBu") +
+#   facet_wrap(~lyr)
 
 
 predict_to_ras_hier <- function(stack, 

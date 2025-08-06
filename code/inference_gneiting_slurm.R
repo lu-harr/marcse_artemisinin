@@ -82,7 +82,7 @@ draws <- mcmc(m,
               sampler = hmc(Lmin = 10, Lmax = 15),
               chains = 6,
               warmup = 3000,
-              n_samples = 1000,
+              n_samples = 20000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,
                                         gneiting_sd = 13,
@@ -92,13 +92,15 @@ end <- Sys.time()
 end - start}
 
 
-#draws <- extra_samples(draws, 10000)
+draws <- extra_samples(draws, 10000)
 
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
                             multivariate = FALSE)
 summary(r_hats$psrf)
 
+# fiddling around with mcmc tuning: am now thinking that ramping up chains may
+# be a solution
 # baseline
 # Point est.      Upper C.I.   
 # Median :1.603   Median :2.734  
