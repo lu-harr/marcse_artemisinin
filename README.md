@@ -3,17 +3,29 @@
 
 ### What the code does
 
-There should (eventually) be (at least) three models in here. For now,
-there is a model of *pfkelch13* mutation prevalence and a model of
-*pfcrtK76T* mutation prevalence. All models take as input published data
-from the **IDDO Surveyors** ([kelch
-13](https://visualizer.iddo.org/map/k13); [partner
+There are (more than) five models in here:
+
+- *pfkelch13* mutation prevalence (aggregating a group of WHO- and
+  WWARN-validated markers for partial artemisinin resistance)
+- *pfcrtK76T* prevalence
+- *pfmdr1N86Y* prevalence
+- *pfmdr1Y184F* prevalence
+- *pfmdr1D1246Y* prevalence
+
+All models take as input published data from the **IDDO Surveyors**
+([kelch 13](https://visualizer.iddo.org/map/k13); [partner
 drugs](https://www.iddo.org/wwarn/tracking-resistance/act-partner-drug-molecular-surveyor))
 which collate published records molecular surveillance in *Plasmodium
-falciparum* malaria.
+falciparum* malaria. The Kelch-13 model is supplemented with unpublished
+data from the WHO threats map and other sources, retrieved from the
+MARCSE-Africa
+[dashboard](https://www.marcse-africa.org/antimalarial-resistance-dashboard)
+of Kelch-13 surveillance data (see [this
+repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard) and [this
+preprint](https://doi.org/10.1101/2025.01.07.25320158)).
 
 All the modelling is done in R’s `greta` and `greta.gp`. I’ve added my
-own kernel to `greta.gp` in this
+own kernels to `greta.gp` in this
 [fork](https://github.com/lu-harr/greta.gp.st).
 
 #### Model targets
@@ -22,10 +34,10 @@ The model of *kelch13* mutation prevalence estimates prevalence of any
 WHO or WWARN-validated or -associated markers for artemisinin resistance
 in the propeller region of the *kelch13* gene of *P. falciparum*.
 
-The model of *crtK76T* mutation prevalence estimates the ratio between
-wildtype (*K76*) and mutant (*76T*) genotypes which are inversely
-associated with amodiaquine and lumefantrine resistance (together with
-other markers, e.g. in the *pfmdr1* gene).
+The model of *crtK76T* mutation prevalence (and the equivalent models of
+*mdr1* markers) estimates the ratio between wildtype (*K76*) and mutant
+(*76T*) genotypes which are inversely associated with amodiaquine and
+lumefantrine resistance.
 
 ### What’s in here
 
@@ -33,31 +45,30 @@ There are a number of scripts in `code/`:
 
 - `setup.R` sets up R packages, covariate data and code for prevalence
   data formatting
-- `circmat_*.R` are scripts for model initialisation and fitting
-- `predict.R` takes outputs of model fitting to make predictions
-- `visualise_*.R` generates figures for individual models. (TODO: script
-  to collate models)
+- `inference_gneiting_slurm.R` runs model fitting (written to be called
+  from the command line or bash/slurm scripts with arguments for marker,
+  seed)
+- `predict_slurm.R` makes predictions from outputs of inference (written
+  to be called from the command line or bash/slurm scripts with
+  arguments for marker, seed, model, etc.)
+- `vis/visualise*.R` generate figures… although this could do with some
+  reorganisation
 
 Secondary to these there are:
 
 - `build_design_matrix.R` and `predict_to_raster.R` wrap up some
-  functions for different bits of the workflow
-- `surveillance_effort.R` wraps up the calculation of kernel density
-  estimates for smoothed annual/aggregated surveillance effort rasters
-  for each model.
+  functions for different bits of the workflow.
+- `surveillance_effort_slurm.R` wraps up the calculation of kernel
+  density estimates for smoothed annual/aggregated surveillance effort
+  rasters for each model (intended to be called from the command line or
+  bash/slurm scripts with arguments for marker, model, etc.).
 - `stable_transmission_mask.R` cooks up a mask for prediction using
-  MAP’s estimate of *P. falciparum* parasite rate for 2021 with some
-  smoothing and buffering applied.
+  MAP’s estimate of *P. falciparum* parasite rate for 2021.
 - `power.R`: I was playing around with different metrics for model
   uncertainty, particularly in the context of K13 where the SD of
-  posterior samples is greatest in areas where $\hat p > 0$. Here is
-  some code to calculate pixel-level power-to-detect mutant markers
-  (worked but was unsatisfied about interpretability of units) and
-  pixel-level CIs of estimated prevalence (Wald: didn’t work great due
-  to low $n$ and low $\hat p$ in the Binomial observation model; Wilson:
-  worked okay but basically proportional to $n^{-\frac{1}{2}}$, because
-  $\hat p$ is overall so low and correlated with $n$) TLDR, there’s more
-  to do here.
+  posterior samples is greatest in areas where $\hat p > 0$ …
+
+All manuscript figures can be found in `figures/`
 
 ### See also
 
@@ -68,10 +79,5 @@ Secondary to these there are:
 ### TODOs
 
 - write down equations for existing binomial model and for extensions
-- put some links into README
-- think about partner drugs
 - think about how partner drug outputs combine with K13 outputs to make
   “overall ACT molecular resistance map”
-- fix up stable transmission mask … check if Jen is working with
-  something specific
-- need some figures showing parameter posteriors
