@@ -12,6 +12,9 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
+# snp = "1246"
+# seed = 125
+
 out_dir <- paste0(snp, "/gneiting_ahmc/")
 
 in_dat <- ifelse(snp == "k13",
@@ -62,7 +65,7 @@ kernel <- gneiting(lengthscale = gneiting_len,
   white(nugget_sd ** 2)
 
 kmn <- kmeans(X_obs[,coord_cols], centers = 40)
-random_field <- gp(x = X_obs[,coord_cols], 
+random_field <- greta.gp::gp(x = X_obs[,coord_cols], 
                    kernel = kernel,
                    inducing = kmn$centers)
 
@@ -82,6 +85,7 @@ draws <- mcmc(m,
               sampler = hmc(Lmin = 10, Lmax = 15),
               chains = 6,
               warmup = 3000,
+              #n_samples = 1000,
               n_samples = 20000,
               initial_values = initials(gneiting_len = 1,
                                         gneiting_tim = 3,

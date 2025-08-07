@@ -40,7 +40,9 @@ Secondary to these there are:
 - `stable_transmission_mask.R` cooks up a mask for prediction using MAP's estimate of *P. falciparum* parasite rate for 2021.
 - `power.R`: I was playing around with different metrics for model uncertainty, particularly in the context of K13 where the SD of posterior samples is greatest in areas where $\hat p > 0$ ...
 
-All manuscript figures can be found in `figures/`
+All manuscript figures can be found in `figures/`.
+
+There are no outputs in here yet but I should add compressed versions of those in before I submit the manuscript.
 
 ### See also
 

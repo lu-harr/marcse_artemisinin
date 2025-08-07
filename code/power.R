@@ -177,10 +177,10 @@ pal = c("darkblue", "mediumblue", "royalblue1")
   text(6, 1.1, "No overshoot", col = "red3")}
 
 
-
-
-
-
+plot(n)
+tmp <- n
+tmp[tmp < 0.05] <- NA
+plot(tmp)
 
 
 
