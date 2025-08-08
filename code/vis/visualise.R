@@ -98,13 +98,15 @@ ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png",
 
 ###############################################################################
 # time !
+# to do: alpha? so we can see gridlines underneath
 
 pred_time_plot <- function(in_path, 
                            title = "",
                            points_path = "",
                            pal = iddoPal::iddo_palettes$soft_blues,
                            zooms = NULL,
-                           zoom_pal = NULL){
+                           zoom_pal = NULL, 
+                           alpha = 1){
   # wrapping up plot of all-Africa posterior meds over times
   preds <- rast(in_path)
   
@@ -126,8 +128,8 @@ pred_time_plot <- function(in_path,
   p <- ggplot(df) +
     geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
     geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
-    geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%")) + #fill=pal[6]) +
-    geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%")) + #fill=pal[4]) +
+    geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%"), alpha = alpha) + #fill=pal[6]) +
+    geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%"), alpha = alpha) + #fill=pal[4]) +
     geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
     geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
     scale_linetype_manual("", values = c("0% - 100%" = 2)) +
@@ -651,88 +653,6 @@ obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
 
 ##############################################################################
 # the same but ggplot
-library(looseVis)
-library(cowplot)
-
-obs_prev_panel <- function(data_path, 
-                            pred_path, 
-                            main = "", 
-                            show_nas = FALSE, 
-                            #pal = colorRamp(viridis(10)), 
-                            pal = colorRamp(iddo_palettes$BlGyRd),
-                            xlim = c(0,1), 
-                           ylim = c(0,1), 
-                           facet_bins = NULL){
-  mut_data <- setup_mut_data(data_path, min_year = 2000)
-  preds <- rast(pred_path)
-  
-  # get predictions for each row in `mut_data`
-  mut_data$pred <- NA
-  yrs_to_extract <- unique(mut_data$year)
-  for (yr in yrs_to_extract){
-    if (yr %in% pfpr_years){
-      idx <- which(mut_data$year == yr)
-      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
-                            mut_data[idx, c("x", "y")],
-                            ID = FALSE)
-      mut_data[idx, "pred"] <- val
-    }
-  }
-  
-  # tried to write something nice for looseVis but it doesn't work :/
-  cex_transform <- function(from){
-    sqrt(from) / sqrt(max(from)) * 4
-  }
-  message(nrow(mut_data))
-  mut_data = mut_data[!is.na(mut_data$pred),]
-  message(nrow(mut_data))
-  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
-  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
-  mut_data <- arrange(mut_data, abs(diffs))
-  mut_data$diffs_scaled = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
-  
-  if (!is.null(facet_bins)){
-    mut_data$year_bin <- cut(mut_data$year, 
-                             c(min(mut_data$year) - 1, facet_bins, max(mut_data$year)))
-  }
-  
-  p1 <- ggplot(mut_data) +
-    geom_point(mapping = aes(x = present / tested, y = pred), 
-               size = cex_transform(mut_data$tested) * 4,
-               col = rgb(pal(mut_data$diffs_scaled), maxColorValue = 255),
-               shape = 1) +
-    geom_abline(slope = 1, intercept = 0) +
-    xlim(xlim) +
-    ylim(ylim) +
-    xlab("Observed prevalence") +
-    ylab("Predicted prevalence") +
-    theme_bw() +
-    theme(plot.margin = unit(c(0.2,0.2,2.1,0.2), "cm"))
-  
-  # this is a bit hacky but I want to constrain the endpoints of my colour scale
-  # so that they mean roughly the same between different markers
-  cols = seq(min(mut_data$diffs_scaled), max(mut_data$diffs_scaled), length.out = 100) %>%
-    pal() %>%
-    rgb(maxColorValue = 255)
-  
-  p2 <- ggplot() +
-    geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
-    geom_point(data = mut_data, 
-               aes(x = x, y = y, col = diffs),
-               shape = 1, size = cex_transform(mut_data$tested) * 4) +
-    scale_color_gradientn(colours = cols, name = "Residuals\n(Observed - Predicted)") + # this needs re-scaling (back to what it was..)
-    theme_bw() +
-    xlab("Longitude") +
-    ylab("Latitude") +
-    theme(legend.position = "bottom")
-  
-  if (!is.null(facet_bins)){
-    p1 <- p1 + facet_wrap(vars(.data$year_bin), ncol = 1)
-    p2 <- p2 + facet_wrap(vars(.data$year_bin), ncol = 1) 
-  }
-  
-  plot_grid(p1, p2, rel_widths = c(0.5, 0.52))
-}
 
 # gosh I prefer how base plotting deals with panels :/
 # manipulate these further when I decide whether I want facetting etc
@@ -747,38 +667,63 @@ obs_prev_panel <- function(data_path,
 
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_sparse/preds_all.grd",
-               "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6))
+               "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6), 
+               ave_tag = "_post_median")
 ggsave("~/Desktop/presentations/marcse/residuals_k13m.png", height = 3, width = 5, scale = 1.5)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
                 "output/mdr86/gneiting_sparse/preds_all.grd",
-                "mdr86 gneiting") #, facet_bins = c(2008, 2012, 2016, 2020))
+                "mdr86 gneiting", 
+               ave_tag = "_post_median") #, facet_bins = c(2008, 2012, 2016, 2020))
 ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
-               "output/mdr86/circmat/preds_all.grd", "mdr86 circmat") 
+               "output/mdr86/bb_gne/preds_all.tif",
+               "mdr86 gneiting", 
+               ave_tag = "_post_median")
+
+obs_prev_panel("data/clean/pfmdr_single_86.csv",
+               "output/mdr86/circmat/preds_all.grd", "mdr86 circmat", 
+               ave_tag = "_post_median") 
                #facet_bins = c(2008, 2012, 2016, 2020) )
 ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_1246.csv",
                 "output/mdr1246/gneiting_sparse/preds_all.grd",
-               facet_bins = c(2008, 2012, 2016, 2020),
-                "mdr1246 gneiting")
+               #facet_bins = c(2008, 2012, 2016, 2020),
+                "mdr1246 gneiting", 
+               ave_tag = "_post_median")
 ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+               "output/mdr1246/bb_gne/preds_all.tif",
+               #facet_bins = c(2008, 2012, 2016, 2020),
+               "mdr1246 gneiting", buffer = 100000)
+
+
+obs_prev_panel("data/clean/pfmdr_single_1246.csv",
                "output/mdr1246/circmat/preds_all.grd",
-               facet_bins = c(2008, 2012, 2016, 2020),
-               "mdr1246 circmat")
+               #facet_bins = c(2008, 2012, 2016, 2020),
+               "mdr1246 circmat", 
+               ave_tag = "_post_median")
 ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_184.csv",
                 "output/mdr184/gneiting_sparse/preds_all.grd",
-                "mdr184 gneiting")
+                "mdr184 gneiting", 
+               ave_tag = "_post_median")
+
+# oops got rid of this
+# obs_prev_panel("data/clean/pfmdr_single_184.csv",
+#                "output/mdr184/circmat/preds_all.grd",
+#                 "mdr184 circmat", 
+#                ave_tag = "_post_median")
 
 obs_prev_panel("data/clean/pfmdr_single_184.csv",
-               "output/mdr184/circmat/preds_all.grd",
-                "mdr184 circmat")
+               "output/mdr184/bb_gne/preds_all.tif",
+               "mdr184 gneiting", buffer = 100000)
+
+
 
 
 ##############################################################################

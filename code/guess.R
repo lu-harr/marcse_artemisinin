@@ -153,8 +153,26 @@ plot(preds$`2018_post_sd`)
 plot(preds$`2022_post_median`)
 plot(preds$`2022_post_sd`)
 
+# play around with betabinomial??
+# what does var look like if I turn up rho?
+source("code/betabinomial_p_rho.R")
+# another parameterisation in brms ??
+
+p <- seq(0, 100)
+n <- 100
+
+plot(p, dbbinom(p, n, 10, 1), type = "l")
+lines(p, dbbinom(p, n, 1, 10))
+lines(p, dbbinom(p, n, 0.5, 0.5))
+lines(p, dbbinom(p, n, 2,2))
+lines(p, dbbinom(p, n, 10, 10))
 
 
 
 
-message(end - start)
+
+
+
+
+
+

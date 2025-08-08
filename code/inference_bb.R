@@ -2,6 +2,14 @@
 # marker to command line
 start <- Sys.time()
 
+# need some sort of test for overdispersion to justify going to all of this trouble
+# other than "doy I just gave it a crack"
+
+#################################################################################
+source("code/betabinomial_p_rho.R")
+
+#################################################################################
+
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
@@ -12,10 +20,10 @@ seed <- as.numeric(args[2])
 message(paste0("Marker: ", snp))
 message(paste0("Seed: ", seed))
 
-# snp = "1246"
-# seed = 125
+# snp = "k13_marcse"
+# seed = 834903
 
-out_dir <- paste0(snp, "/gneiting_ahmc/")
+out_dir <- paste0(snp, "/bb_gne/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -39,7 +47,6 @@ out <- build_design_matrix(covariates,
                            degs_to_rads = TRUE)
 X_obs <- out$df
 scaled_years <- out$scaled_years
-message(scaled_years)
 
 coord_cols <- c("x_rd", "y_rd", "year_scaled")
 
@@ -50,11 +57,7 @@ gneiting_len <- normal(0, 3, truncation = c(0, Inf))
 gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
 gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
 nugget_sd <- normal(0, 3, truncation = c(0, Inf)) # Median :1.041  Mean   :1.115
-
-# gneiting_len <- greta::lognormal(0, 1)
-# gneiting_tim <- greta::lognormal(0, 1)
-# gneiting_sd <- greta::lognormal(0, 1)
-# nugget_sd <- greta::lognormal(0, 1)
+rho <- greta::lognormal(0, 1)
 
 # kernel & GP
 # could potentially give stricter priors to variance/nugget here - trouble with IDability?
@@ -74,24 +77,25 @@ gp_mean_obs <- X_obs[,design_cols] %*% beta + random_field
 X_prob_obs <- ilogit(gp_mean_obs)
 
 # likelihood
-distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
+distribution(X_obs$present) <- betabinomial_p_rho(X_obs$tested, X_prob_obs, rho)
+# distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
 
 # fit the model by Hamiltonian Monte Carlo
-m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
+m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta, rho)
 
 {start <- Sys.time()
   set.seed(seed)
   draws <- mcmc(m,
                 sampler = hmc(Lmin = 10, Lmax = 15),
                 chains = 6,
-                warmup = 100,
-                n_samples = 100,
-                #n_samples = 20000,
+                warmup = 1000,
+                n_samples = 10000,
                 initial_values = initials(gneiting_len = 1,
                                           gneiting_tim = 3,
                                           gneiting_sd = 13,
                                           nugget_sd = 0.5,
-                                          beta = rep(0, 3)))
+                                          beta = rep(0, 3),
+                                          rho = 0.5))
   end <- Sys.time()
   end - start}
 
@@ -100,7 +104,7 @@ m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 r_hats <- coda::gelman.diag(draws,
                             autoburnin = FALSE,
                             multivariate = FALSE)
-summary(r_hats$psrf)
+print(summary(r_hats$psrf))
 
 parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
 names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
