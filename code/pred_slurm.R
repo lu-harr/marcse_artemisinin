@@ -3,7 +3,7 @@ source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
 # for prediction raster:
-AGG_FACTOR = 5
+AGG_FACTOR = 1
 
 # this feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)

@@ -1,6 +1,8 @@
 # folding functions for plotting in here
 library(looseVis)
 library(cowplot)
+library(iddoPal)
+library(sf)
 
 obs_prev_panel <- function(data_path, 
                            pred_path, 
@@ -8,11 +10,12 @@ obs_prev_panel <- function(data_path,
                            show_nas = FALSE, 
                            #pal = colorRamp(viridis(10)), 
                            pal = colorRamp(iddo_palettes$BlGyRd),
-                           xlim = c(0,1), 
-                           ylim = c(0,1), 
+                           xlim = c(0,1), # define limits to pred/obs panel
+                           ylim = c(0,1), # define limits to pred/obs panel
                            facet_bins = NULL, # apply facets over time?
-                           ave_tag = "_50", # mean? median?
+                           ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
                            buffer = 1){
+  # 
   mut_data <- setup_mut_data(data_path, min_year = 2000)
   preds <- rast(pred_path)
   
@@ -88,6 +91,7 @@ obs_prev_panel <- function(data_path,
     theme_bw() +
     xlab("Longitude") +
     ylab("Latitude") +
+    labs(title = main) +
     theme(legend.position = "bottom")
   
   if (show_nas){ # not sure how this plays with faceting
@@ -109,21 +113,23 @@ obs_prev_panel <- function(data_path,
 
 
 
-# # e.g.:
-# # might want to re-land some points inside of model fitting
+# e.g.:
+# might want to re-land some points inside of model fitting
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_sparse/preds_all.grd",
-               "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6),
+               main = "k13 gneiting binom", 
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
                ave_tag = "_post_median", show_nas = TRUE, buffer = 100000)
-# 
-# # could try giving it longer ?
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_all.tif",
-#                "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6), 
-#                show_nas = TRUE, buffer = 100000)
-# # bit spooked by the points changing between these two ... 
-# # might be points falling off the mask?
-# # that is so many points !
+
+# could try giving it longer ?
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/bb_gne/preds_all.tif",
+               main = "k13 betabinom gneiting", 
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               show_nas = TRUE, buffer = 100000)
+# bit spooked by the points changing between these two ...
+# might be points falling off the mask?
+# that is so many points !
 
 
 
