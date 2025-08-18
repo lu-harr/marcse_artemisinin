@@ -8,7 +8,8 @@ library(readr)
 library(dplyr)
 
 output_dir <- "output/k13_marcse/bb_gne/"
-#out_tag <- "crt76_gneiting_sparse"
+output_dir <- "output/k13_marcse/gneiting_ahmc/"
+out_tag <- "k13m_binom"
 
 draws <- read_rds(paste0(output_dir, "draws.rds"))
 

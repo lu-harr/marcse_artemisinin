@@ -1,4 +1,5 @@
 preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd") 
+preds <- rast("output/k13_marcse/bb_gne/preds_all.tif") 
 ras <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 # does uncertainty look anything like rate of change?
@@ -28,14 +29,26 @@ tmp = focal(preds$`2006_post_median`, 7, sample_var) %>%
 
 {png("~/Desktop/presentations/marcse/uncertainty.png", 
      height=1600, width=2200, pointsize=40)
-par(mfrow = c(2, 3), oma = c(0,0,2,0))
-plot(preds$`2006_post_median`, main = "Estimated prevalence")
-plot(preds$`2006_post_sd`, main = "Posterior std deviation")
-plot(preds$`2006_post_median`, preds$`2006_post_sd`, xlab = "Posterior median", ylab = "Posterior SD")
-plot(sqrt(tmp), main = "Local sample std dev")
+par(mfrow = c(2, 2), oma = c(0,0,2,0))
+plot(preds$`2006_50`, main = "Estimated prevalence")
+plot(preds$`2006_sd`, main = "Posterior std deviation")
+#plot(preds$`2006_post_median`, preds$`2006_post_sd`, xlab = "Posterior median", ylab = "Posterior SD")
+#plot(sqrt(tmp), main = "Local sample std dev")
+plot(preds$`2006_CI`, main = "CI width")
 plot(ras$sum, main = "Surveillance effort")
 mtext("Uncertainty case study: Pfmdr1 D1246Y, 2006", outer = TRUE, font = 2)
 dev.off()}
+
+{png("~/Desktop/presentations/marcse/uncertainty.png", 
+     height=1600, width=2200, pointsize=40)
+  par(mfrow = c(2, 3), oma = c(0,0,2,0))
+  plot(preds$`2006_post_median`, main = "Estimated prevalence")
+  plot(preds$`2006_post_sd`, main = "Posterior std deviation")
+  plot(preds$`2006_post_median`, preds$`2006_post_sd`, xlab = "Posterior median", ylab = "Posterior SD")
+  plot(sqrt(tmp), main = "Local sample std dev")
+  plot(ras$sum, main = "Surveillance effort")
+  mtext("Uncertainty case study: Pfmdr1 D1246Y, 2006", outer = TRUE, font = 2)
+  dev.off()}
 
 preds <- rast("output/mdr184/gneiting_sparse/preds_all.grd") 
 # does uncertainty look anything like rate of change?

@@ -9,6 +9,7 @@ source("code/build_design_matrix.R")
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 # preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
 preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 library(iddoPal)
@@ -334,25 +335,27 @@ ggsave("figures/k13_out_gneiting.png", height = 5.2, width = 4.5, scale = 2)
 ################################################################################
 # just doing some fiddling for confab presentation
 
-df <- gg_ras_prep(preds)$df
+df <- gg_ras_prep(preds)$df %>%
+  mutate(marker = str_extract(lyr, "[^_]+$"))
 
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "medi"),
+              filter(year %in% years_to_plot & marker == "50"),
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt",
                        breaks = c(0.1, 0.2, 0.4, 0.6)) +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
-  ylab("Latitude")
+  ylab("Latitude") +
+  theme_bw()
 medians
-ggsave("~/Desktop/presentations/MARCSE/k13_medians.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_medians_bb.png", height = 5, width = 10, scale = 0.9)
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sd"),
+              filter(year %in% years_to_plot & marker == "sd"),
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
@@ -361,9 +364,10 @@ sds <- ggplot() +
                        trans = "sqrt") +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
-  ylab("Latitude")
+  ylab("Latitude") +
+  theme_bw()
 sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sds.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_sds_bb.png", height = 5, width = 10, scale = 0.9)
 
 tmp <- df %>%
   filter(year == 2022) %>%

@@ -7,7 +7,9 @@ start <- Sys.time()
 
 library(parallel)
 library(caret)
+library(parallelly)
 print(paste("Cores:", detectCores()))
+print(paste("Cores:", availableCores()))
 
 source("code/setup.R")
 source("code/build_design_matrix.R")
@@ -44,17 +46,26 @@ NFOLD <- 5
 folds <- createFolds(mut_data$present / mut_data$tested, k = NFOLD)
 write_rds(folds, paste0("output/", out_dir, "cv_folds.rds"))
 
-fit_binom(mut_data = mut_data,
-          covariates = covariates,
-          pfpr_years = pfpr_years,
-          out_dir = out_dir,
-          fold = 1,
-          folds = folds)
+print("para?")
+system.time(mclapply(1:NFOLD, function(x){
+  fit_binom(mut_data = mut_data,
+            covariates = covariates,
+            pfpr_years = pfpr_years,
+            out_dir = out_dir,
+            fold = x,
+            folds = folds)
+}, mc.cores = 5))
 
-end <- Sys.time()
-
-print(end - start)
-message(end - start)
+print("serial?")
+system.time(lapply(1:NFOLD, function(x){
+  fit_binom(mut_data = mut_data,
+            covariates = covariates,
+            pfpr_years = pfpr_years,
+            out_dir = out_dir,
+            fold = x,
+            folds = folds) %>%
+    suppressMessages()
+}))
 
 # test <- folds[[fold]] # don't need you yet !
 

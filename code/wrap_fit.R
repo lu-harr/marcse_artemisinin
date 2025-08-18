@@ -18,13 +18,13 @@
 #'
 #' @examples
 #' 
-#' # without CV:
+#' # without CV folds:
 #' fit_binom(mut_data = mut_data,
 #' covariates = covariates,
 #' pfpr_years = pfpr_years,
 #' out_dir = out_dir)
 #' 
-#' # with CV:
+#' # with CV folds:
 #' fit_binom(mut_data = mut_data,
 #' covariates = covariates,
 #' pfpr_years = pfpr_years,

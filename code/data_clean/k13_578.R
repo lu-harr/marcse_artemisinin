@@ -10,7 +10,8 @@ library(iddoPal)
 library(patchwork)
 
 marker_reference <- readxl::read_xlsx("data/marker_index.xlsx") %>%
-  rbind("578", "")
+  rbind(c("A578A/S", "of interest"),
+        c("A578S", "of interest"))
 
 YEAR_LOWER_BOUND <- 2000
 MIN_SAMPLE_SIZE <- 10
@@ -56,7 +57,7 @@ raw_moldm <- function(path){
            year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
                             is.na(year) & !is.na(End.Year) ~ End.Year,
                             TRUE ~ year),
-           mutant = !is.na(status) & status != "Not associated") %>%
+           mutant = !is.na(status) & status != "Not associated" & status != "of interest") %>%
     filter(Continent == "Africa") %>%
     filter(year >= YEAR_LOWER_BOUND) %>%
     suppressWarnings()
@@ -76,13 +77,6 @@ message(paste("Number of studies:", length(unique(moldm$Title))))
 message(paste("Number of rows indicating haplotypes:", 
               nrow(as.data.frame(moldm[grepl(",", moldm$Marker), c("Site.Name", "year", "Marker", "Present", "Tested")]))))
 
-# plot(moldm$Start.Year, moldm$End.Year)
-
-write.csv(moldm %>%
-            filter(Present / Tested <= 1 & Tested > 5), 
-          # the Tested filter should make a difference but the Prevalence shouldn't
-          "data/clean/moldm_with_markers.csv")
-
 mutants <- moldm %>%
   filter(mutant) %>%
   group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
@@ -94,7 +88,14 @@ mutants <- moldm %>%
   ungroup() %>%
   suppressMessages()
 
+moi <- moldm %>%
+  filter(status == "of interest")
+
 message(paste("Number of rows in mutant table:", nrow(mutants)))
+
+# 578 takes off earlier
+# > hist(mutants$year)
+# > hist(moi$year)
 
 plot(mutants$year, mutants$Present/mutants$Tested, xlab="Year", ylab="Prevalence")
 

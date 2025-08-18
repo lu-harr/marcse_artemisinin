@@ -108,7 +108,7 @@ obs_prev_panel <- function(data_path,
   #plot_grid(p1, p3, rel_widths = c(0.5, 0.52))
   
   plot_grid(p1, p2, ncol = 1) %>%
-    plot_grid(p3, rel_widths = c(0.5, 0.52))
+    plot_grid(p3, rel_widths = c(0.4, 0.6))
 }
 
 
@@ -117,9 +117,10 @@ obs_prev_panel <- function(data_path,
 # might want to re-land some points inside of model fitting
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_sparse/preds_all.grd",
-               main = "k13 gneiting binom", 
+               #main = "k13 gneiting binom", 
                xlim = c(0, 0.6), ylim = c(0, 0.6),
-               ave_tag = "_post_median", show_nas = TRUE, buffer = 100000)
+               ave_tag = "_post_median", buffer = 100000)
+ggsave("~/Desktop/presentations/marcse/residuals_k13m_t.png", height = 3.7, width = 5, scale = 1.5)
 
 # could try giving it longer ?
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",

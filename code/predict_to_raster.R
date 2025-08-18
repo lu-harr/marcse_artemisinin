@@ -103,10 +103,11 @@ predict_to_ras <- function(stack,
                              probs = probs)
   post_pixel_mean <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, mean)
   post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, sd)
-  post_summary <- cbind(t(post_pixel_quants), post_pixel_mean, post_pixel_sd)
+  post_pixel_sd_logit <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, function(x){sd(log(x / (1 - x)))})
+  post_summary <- cbind(t(post_pixel_quants), post_pixel_mean, post_pixel_sd, post_pixel_sd_logit)
   
-  out <- ras * rep(0, nrow(post_pixel_quants) + 2) # assuming we have at least two layers in there ..
-  names(out) <- paste0(lab_year, "_", c(probs*100, "mean", "sd"))
+  out <- ras * rep(0, nrow(post_pixel_quants) + 3) # assuming we have at least two layers in there ..
+  names(out) <- paste0(lab_year, "_", c(probs*100, "mean", "sd", "sdscaled"))
   out[terra::cells(out)] <- post_summary
   
   if(!is.null(stable_transmission_mask)){
@@ -118,34 +119,39 @@ predict_to_ras <- function(stack,
   out
 }
 
-# out_dir <- "output/mdr1246/gneiting_ahmc/"
-# source("code/setup.R")
-# source("code/build_design_matrix.R")
-# scaled_years <- scale_years(range(pfpr_years))
-# 
-# # bring in all of the other outputs here too
-# AGG_FACTOR <- 5
-# mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
-# stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
-#   aggregate(AGG_FACTOR)
-# random_field <- read_rds(paste0(out_dir, "random_field.rds"))
-# parameters <- read_rds(paste0(out_dir, "parameters.rds"))
-# draws <- read_rds(paste0(out_dir, "draws.rds"))
-# 
-# tmp <- predict_to_ras(covariates,
-#                        2023,
-#                        draws,
-#                        parameters,
-#                        random_field,
-#                        agg_factor = AGG_FACTOR,
-#                        stable_transmission_mask = stable_transmission_mask,
-#                       design_cols = c("intercept", "year_scaled", "pfpr"))
-# 
-# library(tidyterra)
-# ggplot() + 
-#   geom_spatraster(data = tmp) + 
-#   scale_fill_distiller(palette = "RdBu") +
-#   facet_wrap(~lyr)
+out_dir <- "output/crt76/gneiting_sparse/"
+source("code/setup.R")
+source("code/build_design_matrix.R")
+scaled_years <- scale_years(range(pfpr_years))
+
+# bring in all of the other outputs here too
+AGG_FACTOR <- 5
+mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
+stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
+  aggregate(AGG_FACTOR)
+random_field <- read_rds(paste0(out_dir, "random_field.rds"))
+parameters <- read_rds(paste0(out_dir, "parameters.rds"))
+draws <- read_rds(paste0(out_dir, "draws.rds"))
+
+tmp <- predict_to_ras(covariates,
+                       2023,
+                       draws,
+                       parameters,
+                       random_field,
+                       agg_factor = AGG_FACTOR,
+                       stable_transmission_mask = stable_transmission_mask,
+                      design_cols = c("intercept", "year_scaled", "pfpr"))
+
+plot(tmp)
+
+library(tidyterra)
+ggplot() +
+  geom_spatraster(data = tmp) +
+  scale_fill_distiller(palette = "RdBu") +
+  facet_wrap(~lyr)
+
+library(looseVis)
+looseVis::rast_plot(tmp$`2023_0`)
 
 
 predict_to_ras_hier <- function(stack, 

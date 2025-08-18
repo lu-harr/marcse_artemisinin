@@ -753,6 +753,29 @@ ggplot() +
 
 ggsave("~/Desktop/presentations/MARCSE/k13_all_years.png", scale = 1.7, height = 4, width = 5)
 
+preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
+coords <- xyFromCell(preds, cells(preds))
+vals <- terra::extract(preds, coords)
+df <- cbind(coords, vals) %>%
+  pivot_longer(starts_with("2"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = substr(lyr, 1, 4),
+         tag = substr(lyr, 11, 14),
+         marker = str_extract(lyr, "[^_]+$")) %>%
+  filter(marker == "50") # pick out year and thingo
+
+ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = x, y = y, fill = val), data = df) +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+  facet_wrap(~year, ncol = 6) +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+ggsave("~/Desktop/presentations/MARCSE/k13_all_years_bb.png", scale = 1.7, height = 4, width = 5)
 
 
 

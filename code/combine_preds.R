@@ -2,9 +2,7 @@
 # ugh messing this up - need to make edits at pred step because layer names are wrong
 
 markers <- c("mdr86", "mdr184", "mdr1246", "k13_marcse", "crt76")
-markers <- c("mdr184", "mdr1246", "crt76", "k13_marcse")
-markers <- c("k13_marcse")
-models <- c("bb_gne")
+models <- c("bb_gne", "gneiting_ahmc")
 
 preds <- apply(expand.grid(markers, models), 1, function(row){
   #message(row)
