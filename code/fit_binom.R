@@ -35,7 +35,10 @@ mut_data <- setup_mut_data(in_dat, min_year = 2000)
 fit_binom(mut_data = mut_data,
           covariates = covariates,
           pfpr_years = pfpr_years,
-          out_dir = out_dir)
+          out_dir = out_dir,
+          nchains = 6,
+          warmup = 3000,
+          nsamples = 20000)
 
 # out <- build_design_matrix(covariates,
 #                            coords = mut_data,

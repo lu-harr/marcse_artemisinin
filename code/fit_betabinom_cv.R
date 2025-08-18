@@ -1,5 +1,4 @@
-# gneiting inference slurm - aiming for same model, so should be able to provide
-# marker to command line
+# parallelise model fitting for cross-validation
 
 # with thanks to jerrick:
 # https://dept.stat.lsa.umich.edu/~jerrick/courses/stat506_f24/16-parallel-processing.html
@@ -13,7 +12,9 @@ print(paste("Cores:", availableCores()))
 
 source("code/setup.R")
 source("code/build_design_matrix.R")
+source("code/betabinomial_p_rho.R")
 source("code/wrap_fit.R")
+
 
 # commandArgs feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
@@ -25,7 +26,7 @@ print(paste0("Seed: ", seed))
 # snp = "k13"
 # seed = 123
 
-out_dir <- paste0(snp, "/gneiting_ahmc/")
+out_dir <- paste0(snp, "/bb_gne/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",
@@ -46,26 +47,18 @@ NFOLD <- 5
 folds <- createFolds(mut_data$present / mut_data$tested, k = NFOLD)
 write_rds(folds, paste0("output/", out_dir, "cv_folds.rds"))
 
-print("para?")
+# print("para?")
 system.time(mclapply(1:NFOLD, function(x){
-  fit_binom(mut_data = mut_data,
+  fit_betabinom(mut_data = mut_data,
             covariates = covariates,
             pfpr_years = pfpr_years,
             out_dir = out_dir,
             fold = x,
-            folds = folds)
+            folds = folds,
+            nchains = 6,
+            warmup = 3000,
+            nsamples = 20000)
 }, mc.cores = 5))
-
-print("serial?")
-system.time(lapply(1:NFOLD, function(x){
-  fit_binom(mut_data = mut_data,
-            covariates = covariates,
-            pfpr_years = pfpr_years,
-            out_dir = out_dir,
-            fold = x,
-            folds = folds) %>%
-    suppressMessages()
-}))
 
 # test <- folds[[fold]] # don't need you yet !
 
