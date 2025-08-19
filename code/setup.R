@@ -18,6 +18,8 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 world <- ne_countries(scale="medium", returnclass = "sf")
 
+MIN_YEAR <- 2000
+
 # country shps for plotting/masking
 afr <- world %>%
   filter(continent == "Africa") %>%

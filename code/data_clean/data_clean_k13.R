@@ -61,7 +61,7 @@ raw_moldm <- function(path){
     suppressWarnings()
 }
 
-moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
+moldm <- raw_moldm("raw/db_20250616/novartis.csv")
 
 # notes:
 # S446I possible typo?

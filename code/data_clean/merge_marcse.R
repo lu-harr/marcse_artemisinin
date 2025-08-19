@@ -211,6 +211,10 @@ wildtypes_to_add <- anti_join(
   mutate(Present = 0) %>%
   suppressMessages()
 
+write.csv(wildtypes_to_add,
+          "data/clean/moldm_marcse_wildtypes_to_add.csv",
+          row.names = FALSE)
+
 message(paste("Number of rows of wildtypes to add:", nrow(wildtypes_to_add)))
 # 536 - 413 == 123 added rows
 
@@ -304,7 +308,6 @@ bg <- moldm %>%
   summarise(Tested = sum(Tested))
 
 # I cannot state again how intensely easy this is in base graphics
-
 markers_keep <- markers %>%
   filter(present > 2) %>%
   arrange(present) %>%
@@ -438,6 +441,8 @@ p2 <- ggplot() +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme(plot.background = element_rect(fill='transparent', color=NA))
+
+p2
 
 # p2 +
 #    geom_rect(data = data.frame(xmin = 60, xmax = 80, ymin = 0, ymax = 40, year_bin = "(2015,2018]",

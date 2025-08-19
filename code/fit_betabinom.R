@@ -106,9 +106,9 @@ r_hats <- coda::gelman.diag(draws,
                             multivariate = FALSE)
 print(summary(r_hats$psrf))
 
-parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
+parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta, rho)
 names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
-                       "nugget_sd", "beta")
+                       "nugget_sd", "beta", "rho")
 
 # save everything and do the prediction in a separate script
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
