@@ -8,7 +8,7 @@ source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 # preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
-preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
 preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
@@ -80,57 +80,57 @@ afr <- world %>%
 
 # axis(xxx, labels = degrees_to_radians(xxx), "Distance (degrees)")
 # axis(xxx, labels = distHaversine(xxx), "Distance (km)")
-library(geosphere)
-library(greta.gp)
-library(greta)
-
-circmat_len <- greta::lognormal(meanlog = 0, sdlog = 1)
-xxx = seq(0, 1, length.out = 100)
-sdlogs = c(2.5, 2, 1.5, 1)
-sdlogs = rep(1, 3)
-mulogs = c(-1,-0.5, 0, 0.5)
-
-dist_rads <- seq(0, 0.5, length.out=6)
-dist_degs <- radians_to_degrees(dist_rads)
-dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), dist_degs), ncol = 2))
-
-cand_rads <- c(0, 0.0785, 0.158, 0.235, 0.314, 0.392)#, 0.472)
-cand_degs <- radians_to_degrees(cand_rads)
-dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), cand_degs), ncol = 2))
-dist_ms
-
-draws <- read_rds("output/circmat_k13/draws.rds")
-summ_s <- summary(draws$`11`[,1])
-summ_t <- summary(draws$`11`[,3])
-
-par(mfrow = c(1,2), oma = c(8,0,0,0))
-
-prior_meanlog = -2
-prior_sdlog = 1
-
-scaled_years <- scale_years(range(pfpr_years)) %>%
-  unlist()
-
-# can't really think any more tbh
-plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
-     xlab = "Lengthscale (scaled_years)", ylab = "p(lengthscale)", 
-     main = "Lognormal prior on temporal lengthscale", type="l", xlim = c(0, 5))
-axis(1, 0:5 * 0.147442, 0:5, line = 5)
-
-plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
-     xlab = "Lengthscale (radians)", ylab = "p(lengthscale)", 
-     main = "Lognormal prior on spatial lengthscale", type="l", xlim = c(0, 0.42))
-#axis(1, dist_rads, labels = round(dist_degs, digits=2), line = 5)
-axis(1, degrees_to_radians(seq(0, 25, length.out = 6)), 
-     labels = seq(0, 25, length.out = 6), line = 5)
-mtext(side = 1, "Lengthscale (degrees)", line = 8)
-axis(1, cand_rads, labels = seq(0, 2500, length.out = 6), #round(dist_ms/1000), 
-     line = 10)
-mtext(side = 1, "Lengthscale (km)", line = 13)
-abline(v = summ_s$quantiles[3])
-abline(v = summ_s$quantiles[c(1,5)], lty=2)
-legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
-# add priors to hists ...?
+# library(geosphere)
+# library(greta.gp)
+# library(greta)
+# 
+# circmat_len <- greta::lognormal(meanlog = 0, sdlog = 1)
+# xxx = seq(0, 1, length.out = 100)
+# sdlogs = c(2.5, 2, 1.5, 1)
+# sdlogs = rep(1, 3)
+# mulogs = c(-1,-0.5, 0, 0.5)
+# 
+# dist_rads <- seq(0, 0.5, length.out=6)
+# dist_degs <- radians_to_degrees(dist_rads)
+# dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), dist_degs), ncol = 2))
+# 
+# cand_rads <- c(0, 0.0785, 0.158, 0.235, 0.314, 0.392)#, 0.472)
+# cand_degs <- radians_to_degrees(cand_rads)
+# dist_ms <- distHaversine(c(0,0), matrix(c(rep(0, 6), cand_degs), ncol = 2))
+# dist_ms
+# 
+# draws <- read_rds("output/circmat_k13/draws.rds")
+# summ_s <- summary(draws$`11`[,1])
+# summ_t <- summary(draws$`11`[,3])
+# 
+# par(mfrow = c(1,2), oma = c(8,0,0,0))
+# 
+# prior_meanlog = -2
+# prior_sdlog = 1
+# 
+# scaled_years <- scale_years(range(pfpr_years)) %>%
+#   unlist()
+# 
+# # can't really think any more tbh
+# plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
+#      xlab = "Lengthscale (scaled_years)", ylab = "p(lengthscale)", 
+#      main = "Lognormal prior on temporal lengthscale", type="l", xlim = c(0, 5))
+# axis(1, 0:5 * 0.147442, 0:5, line = 5)
+# 
+# plot(xxx, dlnorm(xxx, meanlog = prior_meanlog, sdlog = prior_sdlog), 
+#      xlab = "Lengthscale (radians)", ylab = "p(lengthscale)", 
+#      main = "Lognormal prior on spatial lengthscale", type="l", xlim = c(0, 0.42))
+# #axis(1, dist_rads, labels = round(dist_degs, digits=2), line = 5)
+# axis(1, degrees_to_radians(seq(0, 25, length.out = 6)), 
+#      labels = seq(0, 25, length.out = 6), line = 5)
+# mtext(side = 1, "Lengthscale (degrees)", line = 8)
+# axis(1, cand_rads, labels = seq(0, 2500, length.out = 6), #round(dist_ms/1000), 
+#      line = 10)
+# mtext(side = 1, "Lengthscale (km)", line = 13)
+# abline(v = summ_s$quantiles[3])
+# abline(v = summ_s$quantiles[c(1,5)], lty=2)
+# legend("topright", lty=1:2, c("Median", "2.5% - 97.5%"), title = "Draws")
+# # add priors to hists ...?
 
 ###############################################################################
 # require common colour palette between years !
@@ -165,7 +165,7 @@ gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
                  names_to = "lyr",
                  values_to = "val") %>%
     mutate(year = substr(lyr, 1, 4),
-           tag = substr(lyr, 11, 14))
+           tag = substr(lyr, 6, 14))
   
   list(df = df,
        shp = shp)
@@ -180,7 +180,7 @@ years_to_plot <- c("2014", "2018", "2022")
 
 zoom_pan <- function(bits, 
                      yearr, 
-                     tagg = "medi",
+                     tagg = "50",
                      pal = viridis(100), 
                      scale_lims = c(0, 0.64), #c(0, 0.42),
                      panel_col = "black"){
@@ -207,7 +207,7 @@ zoom_pan <- function(bits,
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "medi"),
+              filter(year %in% years_to_plot & tag == "50"),
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1, strip.position = "left") +
   # geom_tile(data = df %>%
@@ -270,14 +270,13 @@ zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sd"), 
+              filter(year %in% years_to_plot & tag == "sdscaled"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
                        "Uncertainty", 
-                       direction = 1,
-                       trans = "sqrt") +
+                       direction = 1) +
   # xlab("Longitude") +
   # ylab("") +
   # labs(title = "Standard deviation") +
@@ -304,19 +303,19 @@ df <- data.frame(xmin = rep(0.001, 3),
                  ymin = c(0.0155, 0.337, 0.663),
                  ymax = c(0.315, 0.639, 0.965),
                  lab = c("D1246Y", "Y184F", "N86Y"))
-p <- p + 
-  # tried adding outer margin but that didn't do anything
-  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
-                           ymax=ymax), 
-            colour="grey10", fill="grey85", linewidth=0.3) +
-  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
-                           label = lab), angle = 90)
+# p <- p + 
+#   # tried adding outer margin but that didn't do anything
+#   geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+#                            ymax=ymax), 
+#             colour="grey10", fill="grey85", linewidth=0.3) +
+#   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+#                            label = lab), angle = 90)
   
 df <- data.frame(xmin = c(0.04, 0.525),
                  xmax = c(0.5, 0.873),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.02, 1),
-                 lab = c("Median", "Standard deviation"))
+                 lab = c("Median", "Standard deviation (unscaled)"))
 
 plot_grid(medians + theme(legend.position = "none"), 
           zooms, 
@@ -330,7 +329,7 @@ plot_grid(medians + theme(legend.position = "none"),
   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
                            label = lab))
 
-ggsave("figures/k13_out_gneiting.png", height = 5.2, width = 4.5, scale = 2)
+ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
 
 ################################################################################
 # just doing some fiddling for confab presentation
@@ -350,7 +349,7 @@ medians <- ggplot() +
   ylab("Latitude") +
   theme_bw()
 medians
-ggsave("~/Desktop/presentations/MARCSE/k13_medians_bb.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_medians.png", height = 5, width = 10, scale = 0.9)
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -360,14 +359,29 @@ sds <- ggplot() +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
                        "Uncertainty", 
-                       direction = 1,
-                       trans = "sqrt") +
+                       direction = 1) +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw()
 sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sds_bb.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_sds.png", height = 5, width = 10, scale = 0.9)
+
+sds <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & marker == "sdscaled"),
+            mapping = aes(x = x, y = y, fill = val)) +
+  scale_fill_distiller(palette = "Oranges", 
+                       na.value = NA, 
+                       "Uncertainty", 
+                       direction = 1) +
+  facet_wrap(~year, nrow = 1) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme_bw()
+sds
+ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaled.png", height = 5, width = 10, scale = 0.9)
 
 tmp <- df %>%
   filter(year == 2022) %>%
@@ -426,7 +440,7 @@ sds <- ggplot() +
                        "Uncertainty", 
                        direction = 1,
                        trans = "sqrt") +
-  labs(title = "Standard deviation") +
+  labs(title = "Standard deviation (unscaled)") +
   theme_bw() +
   theme(strip.background = element_blank(),
         strip.text.x = element_blank(),
@@ -438,4 +452,14 @@ sds <- ggplot() +
         legend.justification = "top") 
 sds
 
+
+# surveillance effort
+tmp <- mut_data %>%
+  group_by(year) %>%
+  summarise(n = sum(tested))
+ggplot(tmp %>% filter(year > 2008)) +
+  geom_col(aes(x = year, y = n)) +
+  theme_bw() +
+  xlab("Year") +
+  ylab("Tests")
 

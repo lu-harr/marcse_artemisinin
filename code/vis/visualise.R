@@ -520,52 +520,54 @@ obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
 #                 "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
 
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/gneiting_sparse/preds_all.grd",
+               "output/k13_marcse/gneiting_ahmc/preds_all.tif",
                "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6), 
-               ave_tag = "_post_median")
-ggsave("~/Desktop/presentations/marcse/residuals_k13m.png", height = 3, width = 5, scale = 1.5)
+               ave_tag = "_50")
+ggsave("figures/residuals_k13m_gne.png", height = 3, width = 5, scale = 1.5)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
-                "output/mdr86/gneiting_sparse/preds_all.grd",
+                "output/mdr86/gneiting_ahmc/preds_all.tif",
                 "mdr86 gneiting", 
-               ave_tag = "_post_median") #, facet_bins = c(2008, 2012, 2016, 2020))
-ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
+               ave_tag = "_50") #, facet_bins = c(2008, 2012, 2016, 2020))
+ggsave("figures/residuals_86_gne.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
                "output/mdr86/bb_gne/preds_all.tif",
                "mdr86 gneiting", 
-               ave_tag = "_post_median")
+               ave_tag = "_50")
+ggsave("figures/residuals_86_bb.png", height = 9, width = 5, scale = 2)
 
-obs_prev_panel("data/clean/pfmdr_single_86.csv",
-               "output/mdr86/circmat/preds_all.grd", "mdr86 circmat", 
-               ave_tag = "_post_median") 
-               #facet_bins = c(2008, 2012, 2016, 2020) )
-ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_86.csv",
+#                "output/mdr86/circmat/preds_all.grd", "mdr86 circmat", 
+#                ave_tag = "_post_median") 
+#                #facet_bins = c(2008, 2012, 2016, 2020) )
+# ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_1246.csv",
-                "output/mdr1246/gneiting_sparse/preds_all.grd",
+                "output/mdr1246/gneiting_ahmc/preds_all.tif",
                #facet_bins = c(2008, 2012, 2016, 2020),
                 "mdr1246 gneiting", 
-               ave_tag = "_post_median")
-ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
+               ave_tag = "_50")
+ggsave("figures/residuals_1246_gne.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_1246.csv",
                "output/mdr1246/bb_gne/preds_all.tif",
                #facet_bins = c(2008, 2012, 2016, 2020),
                "mdr1246 gneiting", buffer = 100000)
+ggsave("figures/residuals_1246_bb.png", height = 9, width = 5, scale = 2)
 
-
-obs_prev_panel("data/clean/pfmdr_single_1246.csv",
-               "output/mdr1246/circmat/preds_all.grd",
-               #facet_bins = c(2008, 2012, 2016, 2020),
-               "mdr1246 circmat", 
-               ave_tag = "_post_median")
-ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+#                "output/mdr1246/circmat/preds_all.grd",
+#                #facet_bins = c(2008, 2012, 2016, 2020),
+#                "mdr1246 circmat", 
+#                ave_tag = "_post_median")
+# ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_184.csv",
-                "output/mdr184/gneiting_sparse/preds_all.grd",
+                "output/mdr184/gneiting_ahmc/preds_all.tif",
                 "mdr184 gneiting", 
-               ave_tag = "_post_median")
+               ave_tag = "_50")
+ggsave("figures/residuals_184_gne.png", height = 9, width = 5, scale = 2)
 
 # oops got rid of this
 # obs_prev_panel("data/clean/pfmdr_single_184.csv",
@@ -576,9 +578,12 @@ obs_prev_panel("data/clean/pfmdr_single_184.csv",
 obs_prev_panel("data/clean/pfmdr_single_184.csv",
                "output/mdr184/bb_gne/preds_all.tif",
                "mdr184 gneiting", buffer = 100000)
+ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 
-
-
+# how do I capture clustered data where the model picks somewhere in the middle
+# but there's lots of variance at the same location?
+# rolling window?
+# this is where the CV would be helpful to make my point ...
 
 ##############################################################################
 # a plot of all preds in all years

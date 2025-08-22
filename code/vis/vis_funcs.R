@@ -95,12 +95,19 @@ map_pred_row <- function(in_path,
                          years,
                          pal,
                          field = c("50", "sd"),
+                         buff = NULL,
                          xlab = "Longitude",
                          ylab = "Latitude",
                          legend_lim = waiver(),
                          top_pan = FALSE){
   preds <- rast(in_path)
   preds <- preds[[grep(paste0(field, "$"), names(preds))]]
+  
+  if (!is.null(buff)){
+    preds <- mask(preds, buff) %>%
+      trim()
+  }
+  
   coords <- xyFromCell(preds, cells(preds))
   vals <- terra::extract(preds, coords)
   df <- cbind(coords, vals) %>%
@@ -220,8 +227,8 @@ obs_prev_panel <- function(data_path,
                col = rgb(pal(mut_data$diffs_scaled), maxColorValue = 255),
                shape = 1) +
     geom_hline(yintercept = 0) +
-    xlab("Observed prevalence") +
-    ylab("Predicted prevalence") +
+    xlab("Year") +
+    ylab("Observed - Predicted prevalence") +
     theme_bw()
   
   # this is a bit hacky but I want to constrain the endpoints of my colour scale
@@ -283,6 +290,8 @@ obs_prev_panel <- function(data_path,
 # # that is so many points !
 
 
+
+## country-level plots
 # give me directory where all of the model objects/predictions are ...
 get_output_dir <- function(marker, mod){
   paste0("output/", marker, "/", mod)
@@ -304,8 +313,7 @@ get_input_dir <- function(snp){
 
 
 # for k13:
-plot_k13_markers <- function(shp, 
-                             buff, 
+plot_k13_markers <- function(buff, 
                              markers_keep = NULL, 
                              npal = 7){
   # relies on marcse_merge - need to clean up data workflow at some point ..
@@ -326,13 +334,27 @@ plot_k13_markers <- function(shp,
     summarise(present = sum(Present)) %>%
     rename(marker = Marker)
   
-  # put surveillance intensity in the background
+  wildtypes_to_add <- anti_join(
+    # locations in `wildtypes` that do not occur in `mutants`,
+    # paying attention to `Tested` but NOT to `pubs`
+    moldm %>%
+      filter(Marker == "wildtype") %>%
+      dplyr::select(X, Y, year, Tested, Site.Name, Country) %>%
+      unique(),
+    moldm %>%
+      filter(mutant) %>%
+      dplyr::select(X, Y, year, Tested, Site.Name, Country)) %>%
+    mutate(Present = 0) %>%
+    suppressMessages()
+  
+  # put surveillance intensity in the background of time figure
   bg <- moldm %>%
     group_by(X, Y, year, PubMedID) %>%
     summarise(Tested = sum(unique(Tested))) %>%
     ungroup() %>%
     group_by(year) %>%
-    summarise(Tested = sum(Tested))
+    summarise(Tested = sum(Tested)) %>%
+    filter(year > 2005)
   
   # I cannot state again how intensely easy this is in base graphics
   if (is.null(markers_keep)){
@@ -353,7 +375,8 @@ plot_k13_markers <- function(shp,
   df <- markers %>%
     filter(marker %in% markers_keep$marker) %>%
     left_join(sty, join_by(marker==marker)) %>%
-    mutate(group = interaction(col, linet, sep = " / "))
+    mutate(group = interaction(col, linet, sep = " / ")) %>%
+    filter(year > 2005)
   
   # include slice end as func par?
   markers_keep <- markers %>% 
@@ -364,13 +387,14 @@ plot_k13_markers <- function(shp,
     slice(1:5) %>%
     bind_rows(data.frame(marker = "Others", n=1))
   
-  # wts <- wildtypes_to_add %>%
-  #   dplyr::select(X, Y, year, Tested) %>%
-  #   filter(year > 2008) %>%
-  #   merge(markers_keep, by = NULL) %>%
-  #   #rename(y = marker) %>% # what was I doing with this again?
-  #   rename(Marker = marker) %>%
-  #   mutate(Present = 0)
+  wts <- wildtypes_to_add %>%
+    #rename(Longitude = X, Latitude = Y) %>%
+    dplyr::select(X, Y, year, Tested) %>%
+    filter(year > 2008) %>%
+    merge(markers_keep, by = NULL) %>%
+    #rename(y = marker) %>% # what was I doing with this again?
+    rename(Marker = marker) %>%
+    mutate(Present = 0)
   
   markers_disagg <- moldm %>%
     filter(mutant) %>%
@@ -382,14 +406,65 @@ plot_k13_markers <- function(shp,
     # add back in later?
     # mutate(year_bin = cut(year, breaks = c(min(year)-1, 2012, 2015, 2018, 2021, max(year)))) %>%
     mutate(Marker = factor(Marker, levels = markers_keep$marker))
-    
   
-  pts <- mut_data 
+  p1 <- ggplot() +
+    geom_sf(data = exte, fill = "white") + 
+    geom_point(data = filter(markers_disagg, Present == 0),
+               mapping = aes(x = X, y = Y,
+                             size = Tested, col = "grey50"),
+               fill = "grey70",  pch = 21, alpha = 0.5, stroke = 0.2) +
+    geom_point(data = filter(markers_disagg, Present > 0), 
+               mapping = aes(x = X, y = Y, 
+                             size = Tested,
+                             fill = Present / Tested),
+               col = "grey50", pch=21, stroke = 0.2) +
+    scale_color_manual(name = "", values = c("grey30"), labels=c("Absence")) +
+    scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
+    scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
+    facet_wrap(vars(Marker)) +
+    # labs(title = "(b) Prevalence of k13 markers in Africa") +
+    xlab("Longitude") +
+    ylab("Latitude") #+
+    # scale_x_continuous(breaks = seq(-20, 40, 20)) +
+    # scale_y_continuous(breaks = seq(-20, 40, 20))
   
-  ggplot() +
-    geom_sf(data = exte) +
-    geom_sf(data = pts, aes(col = marker)) +
-    theme_bw()
+  
+  bg_col <- "grey65"
+  present_lims <- c(0, max(df$present) %/% 50 * 50 + 50)
+  bg_scale <- max(bg$Tested) / max(df$present)
+  
+  p2 <- ggplot() +
+    geom_bar(data = bg, aes(x = year, y = Tested / bg_scale), 
+             stat = "identity", fill = "grey75") +
+    geom_line(data = df, size = 0.7,
+              aes(x = year, y = present, group = marker, color = marker, linetype = marker)) +
+    geom_point(data = df, 
+               aes(x = year, y = present, group = marker, color = marker)) +
+    labs(
+      # title = "(a) Detected mutations by year",
+      color = "Marker",
+      linetype = "Marker"
+    ) +
+    scale_color_manual(values = rep(c(viridis(4), "#E37210", iddoblue, "#c7047c"), 2)) +
+    scale_linetype_manual(values = rep(1:2, each = 7)) +
+    scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
+                       limits = present_lims) +
+    theme_minimal() +
+    xlab("Year") +
+    ylab("Mutations detected") +
+    theme_bw() +
+    theme(axis.text = element_text(size = 10),
+          legend.text = element_text(size = 10),
+          legend.key.spacing.y = unit(-0.3, "lines"),
+          legend.box.margin = margin(50, 6, 6, 6),
+          axis.text.y.right = element_text(color = bg_col),
+          axis.title.y.right = element_text(color = bg_col),
+          axis.ticks.y.right = element_line(color = bg_col)) +
+    #legend.justification.right = "bottom") +
+    scale_x_continuous(breaks = 2005:2024) 
+  
+  # could grid things at this point?
+  return(list(p1, p2))
 }
 
 
@@ -407,22 +482,29 @@ plot_partner_markers <- function(shp, buff,
 country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
                             # could be vector? for regional map?
                             mod = c("gneiting_sparse", "bb_gne"), 
-                            marker = c("k13", "partner"),
-                            buff = NULL # option to look at neighbouring countries; in km
-                            ){
+                            marker = c("k13_marcse", "partner"),
+                            buff = NULL, # option to look at neighbouring countries; in km
+                            epsg = 32736){
   # a function to give me country-level plots for a given model/marker?
   # would like:
     # - map of data, hist of survey effort, number of contributing studies, number of testees
     # - map of model outputs for a couple of time-points, ribbon of medians
     # - residuals?
   
-  exte <- afr %>% filter(iso_a3 %in% iso)
+  exte <- afr %>% 
+    filter(iso_a3 %in% iso) %>%
+    st_transform(epsg)
   if (!is.null(buff)){
-    buff <- st_buffer(exte, buff) #%>%
+    buff <- st_buffer(exte, buff)
       # don't do this: introduces "duplicate edges"
       #st_union() # removes internal borders if we're asking for multiple countries
     # could also simplify here ...
+  } else {
+    buff = exte
   }
+  
+  buff <- st_transform(buff, 4326) # back for latlons
+  exte <- st_transform(exte, 4326)
   
   preds <- get_output_dir(marker, mod) %>%
     paste0("/preds_all.tif") %>%
@@ -431,54 +513,47 @@ country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
     mask(vect(buff)) %>%
     trim()
   
-  
-  
   # top panel: data
-  p1 <- ggplot() +
-    geom_sf(data = afr, fill = "white") + 
-    geom_point(data = filter(pts, present == 0),
-               mapping = aes(x = Longitude, y = Latitude,
-                             size = Tested, col = "grey50"),
-               fill = "grey70",  pch = 21, alpha = 0.5, stroke = 0.2) +
-    geom_point(data = filter(pts, present > 0), 
-               mapping = aes(x = Longitude, y = Latitude, 
-                             size = Tested,
-                             fill = Present / Tested),
-               col = "grey50", pch=21, stroke = 0.2) +
-    scale_color_manual(name = "", values = c("grey30"), labels=c("Absence")) +
-    scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
-    scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
-    # allows labelling of rows and columns:
-    facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
-    #facet_wrap(~ year_bin + Marker, drop=FALSE) +
-    labs(title = "(b) Prevalence of k13 markers in Africa") +
-    xlab("Longitude") +
-    ylab("Latitude") +
-    scale_x_continuous(breaks = seq(-20, 40, 20)) +
-    scale_y_continuous(breaks = seq(-20, 40, 20))
-  p2
+  if (marker == "k13_marcse"){
+    dat_plot <- plot_k13_markers(buff)
+    pred_plot <- map_pred_row(get_output_dir(marker, mod) %>%
+                                paste0("/preds_all.tif"),
+                              field = "50",
+                              pal = viridis(10),
+                              years)
+  } else {
+    # partner drugs data
+    dat_plot <- plot_partner_markers(buff, marker)
+    # need to wrap into markers?
+    pred_plot <- map_pred_row()
+  }
+  
   
 }
 
-
-exte = afr %>% filter(iso_a3 %in% c("KEN", "RWA", "UGA"))
-plot(st_geometry(exte))
-buff = st_buffer(exte, 100000)
-plot(st_geometry(buff), add=TRUE)
-plot(preds$`2001_50`, add=TRUE)
-points(st_geometry(pts))
-
-
-
-
-
+# country_profile(iso = c("KEN", "RWA", "UGA"),
+#                 marker = "k13_marcse", mod = "bb_gne")
+# 
+# 
+# exte = afr %>% 
+#   filter(iso_a3 %in% c("KEN", "RWA", "UGA")) %>%
+#   st_transform(32736)
+# plot(st_geometry(exte))
+# buff = st_buffer(exte, 100000)
+# plot(st_geometry(buff), add=TRUE)
 
 
 
 
 
-
-
+# this absolutely came from chatty g
+# | Region                   | UTM Zone | EPSG Code   |
+#   | ------------------------ | -------- | ----------- |
+#   | Kenya/Tanzania           | 36S      | 32736       |
+#   | Uganda/South Sudan       | 36N      | 32636       |
+#   | Ethiopia                 | 37N      | 32637       |
+#   | Zambia/Malawi/Mozambique | 36S–37S  | 32736–32737 |
+#   | South Africa             | 34S–36S  | 32734–32736 |
 
 
 

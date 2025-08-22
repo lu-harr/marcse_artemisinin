@@ -39,6 +39,7 @@ in_dat <- ifelse(snp == "k13",
 
 print(paste0("Reading in from: ", in_dat))
 print("Enforcing min year for surveyor data - 2000")
+print("Fitting betabinom")
 
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))

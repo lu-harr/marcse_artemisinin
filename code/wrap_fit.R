@@ -105,7 +105,8 @@ fit_binom <- function(mut_data,
                                             gneiting_tim = 3,
                                             gneiting_sd = 13,
                                             nugget_sd = 0.5,
-                                            beta = rep(0, 3)))
+                                            beta = rep(0, 3)),
+                  verbose = FALSE)
     end <- Sys.time()
     end - start}
   
@@ -241,7 +242,8 @@ fit_betabinom <- function(mut_data,
                                             gneiting_sd = 13,
                                             nugget_sd = 0.5,
                                             beta = rep(0, 3),
-                                            rho = 0.5))
+                                            rho = 0.5),
+                  verbose = FALSE)
     end <- Sys.time()
     end - start}
   
