@@ -8,7 +8,7 @@ source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 # preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
-preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
+# preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
 preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
@@ -23,6 +23,10 @@ afr <- world %>%
   vect() %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
+
+preds <- preds %>% 
+  aggregate(fact = 2) %>%
+  subset(1:73)
 
 ###############################################################################
 # surveillance effort
@@ -170,6 +174,8 @@ gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
   list(df = df,
        shp = shp)
 }
+
+
 
 df <- gg_ras_prep(preds)$df
 zambezi_bits <- gg_ras_prep(preds, zambezi, afr)
@@ -344,12 +350,13 @@ medians <- ggplot() +
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt",
                        breaks = c(0.1, 0.2, 0.4, 0.6)) +
+  geom_sf(data = afr, fill = NA, col = "grey50") +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw()
 medians
-ggsave("~/Desktop/presentations/MARCSE/k13_medians.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", height = 5, width = 10, scale = 0.9)
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -359,13 +366,14 @@ sds <- ggplot() +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
                        "Uncertainty", 
-                       direction = 1) +
+                       direction = 1, trans="sqrt") +
+  geom_sf(data = afr, fill = NA, col = "grey50") +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw()
 sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sds.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_sdsbb.png", height = 5, width = 10, scale = 0.9)
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -376,12 +384,13 @@ sds <- ggplot() +
                        na.value = NA, 
                        "Uncertainty", 
                        direction = 1) +
+  geom_sf(data = afr, fill = NA, col = "grey50") +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw()
 sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaled.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaledbb.png", height = 5, width = 10, scale = 0.9)
 
 tmp <- df %>%
   filter(year == 2022) %>%

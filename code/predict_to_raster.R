@@ -174,6 +174,7 @@ predict_to_ras_hier <- function(stack,
   coords <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
                   rep(year, length(terra::cells(ras)))) %>%
     as.data.frame()
+  message(names(coords))
   
   names(coords) <- c("x", "y", "year") # this is *not* coord_cols
   
@@ -185,6 +186,8 @@ predict_to_ras_hier <- function(stack,
   
   X_pixel <- tmp$df %>%
     mutate(year_scaled = scaled_year)
+  
+  message(names(X_pixel))
   
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
   

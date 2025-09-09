@@ -3,7 +3,7 @@ source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
 # for prediction raster:
-AGG_FACTOR = 1
+AGG_FACTOR = 10
 
 # this feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
@@ -26,6 +26,12 @@ out_dir <- paste0("output/", marker, "/", mod, "/")
 
 # bring in all of the other outputs here too
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
+folds <- read_rds(paste0(out_dir, "cv_folds.rds"))
+train <- unlist(folds[-c(fold)])
+mut_data <- mut_data[train,]
+message(nrow(mut_data))
+message(names(mut_data))
+
 # this is now how I'm calculating scaled_years during inference - 
 # I'm pretty sure we have points in 23 and 24 for all markers ....
 message(range(mut_data$year))
@@ -54,3 +60,10 @@ preds <- predict_to_ras(covariates,
 # perhaps give me a quick plot here?
 
 writeRaster(preds, paste0(out_dir, year, "_preds_", fold, ".grd"), overwrite = TRUE)
+
+
+
+
+
+
+

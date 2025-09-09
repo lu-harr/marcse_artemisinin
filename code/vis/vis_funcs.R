@@ -13,7 +13,9 @@ pred_time_plot <- function(in_path,
                            zoom_pal = NULL, 
                            alpha = 0.5){
   
-  preds <- rast(in_path)
+  preds <- rast(in_path) %>%
+    aggregate(fact = 10)
+  message("aggregating")
   
   coords <- xyFromCell(preds, cells(preds))
   vals <- terra::extract(preds, coords)
@@ -198,6 +200,11 @@ obs_prev_panel <- function(data_path,
   un_pred <- mut_data[is.na(mut_data$pred),]
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
+  message(paste0("Sites with preds: ", nrow(mut_data)))
+  message(paste0("Goodness of fit: ", 
+                 sum((mut_data$pred*mut_data$tested - mut_data$present)**2 / 
+                          (mut_data$pred*mut_data$tested))))
+  
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
   mut_data$diffs <- mut_data$present / mut_data$tested - mut_data$pred
   mut_data <- arrange(mut_data, abs(diffs))
@@ -265,7 +272,7 @@ obs_prev_panel <- function(data_path,
   #plot_grid(p1, p3, rel_widths = c(0.5, 0.52))
   
   plot_grid(p1, p2, ncol = 1) %>%
-    plot_grid(p3, rel_widths = c(0.4, 0.6))
+    plot_grid(p3, rel_widths = c(0.4, 0.75))
 }
 
 
@@ -280,14 +287,21 @@ obs_prev_panel <- function(data_path,
 # ggsave("~/Desktop/presentations/marcse/residuals_k13m_t.png", height = 3.7, width = 5, scale = 1.5)
 # 
 # # could try giving it longer ?
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_all.tif",
-#                main = "k13 betabinom gneiting", 
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                show_nas = TRUE, buffer = 100000)
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/bb_gne/preds_all.tif",
+               #main = "k13 betabinom gneiting",
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               buffer = 100000)
+ggsave("~/Desktop/presentations/MARCSE/op_bbinom.png", height=3, width=4, scale=2)
 # # bit spooked by the points changing between these two ...
 # # might be points falling off the mask?
 # # that is so many points !
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/gneiting_ahmc/preds_all.tif",
+               main = "",
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               buffer = 100000)
+ggsave("~/Desktop/presentations/MARCSE/op_binom.png", height=3, width=5, scale=1.5)
 
 
 

@@ -1,4 +1,4 @@
-preds <- rast("output/k13_marcse/gneiting_sparse/preds_all.grd")
+preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
 ras <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 pwr_binom <- function(n, p){
@@ -181,6 +181,17 @@ plot(n)
 tmp <- n
 tmp[tmp < 0.05] <- NA
 plot(tmp)
+
+
+# overdispersion:
+# V(Y_i) = \sigma^2 * \mu_i(n_i - \mu_i) / n_i
+# \hat\sigma**2 = X**2 / (N - p), 
+# X**2 is Pearson goodness of fit, 
+# p == number of params, N == number of records
+# e.g.....
+8600 / (680 - p)
+# I would say that's overdispersed ??
+# If I've done this right?
 
 
 

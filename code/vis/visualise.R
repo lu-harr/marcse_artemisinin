@@ -101,41 +101,48 @@ ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png",
 # time !
 # note to self: this has the potential to crash ya laptop
 
-p1 <- pred_time_plot("output/k13_marcse/bb_gne/preds_all.tif",
+p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
                title = "(a) Pfkelch13")
-p2 <- pred_time_plot("output/crt76/bb_gne/preds_all.tif",
+p2 <- pred_time_plot("output/crt76/gneiting_ahmc/preds_all.tif",
                title = "(b) Pfcrt K76T")
-p3 <- pred_time_plot("output/mdr86/bb_gne/preds_all.tif",
+p3 <- pred_time_plot("output/mdr86/gneiting_ahmc/preds_all.tif",
                title = "(c) Pfmdr1 N86Y")
-p4 <- pred_time_plot("output/mdr184/bb_gne/preds_all.tif",
+p4 <- pred_time_plot("output/mdr184/gneiting_ahmc/preds_all.tif",
                title = "(d) Pfmdr1 Y184F")
-p5 <- pred_time_plot("output/mdr1246/bb_gne/preds_all.tif",
+p5 <- pred_time_plot("output/mdr1246/gneiting_ahmc/preds_all.tif",
                title = "(e) Pfmdr1 D1246Y")
 
 library(patchwork)
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_gneiting2.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot("output/k13_marcse/bb_gne/preds_all.tif",
+p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
                      title = "(a) Pfkelch13",
                      points_path = "data/clean/moldm_k13_nomarker.csv")
-p2 <- pred_time_plot("output/crt76/bb_gne/preds_all.tif",
+p2 <- pred_time_plot("output/crt76/gneiting_ahmc/preds_all.tif",
                      title = "(b) Pfcrt K76T",
                      points_path = "data/clean/moldm_crt76.csv")
-p3 <- pred_time_plot("output/mdr86/bb_gne/preds_all.tif",
+p3 <- pred_time_plot("output/mdr86/gneiting_ahmc/preds_all.tif",
                      title = "(c) Pfmdr1 N86Y",
                      points_path = "../moldm/clean/pfmdr_single_86.csv")
-p4 <- pred_time_plot("output/mdr184/bb_gne/preds_all.tif",
+p4 <- pred_time_plot("output/mdr184/gneiting_ahmc/preds_all.tif",
                      title = "(d) Pfmdr1 Y184F",
                      points_path = "../moldm/clean/pfmdr_single_184.csv")
-p5 <- pred_time_plot("output/mdr1246/bb_gne/preds_all.tif",
+p5 <- pred_time_plot("output/mdr1246/gneiting_ahmc/preds_all.tif",
                      title = "(e) Pfmdr1 D1246Y",
                      points_path = "../moldm/clean/pfmdr_single_1246.csv")
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_pts_bb.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_pts_gneiting2.png", scale = 1.5, height = 7, width = 6)
+
+p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
+                     title = "(a) Pfkelch13")
+
+p1 + p1 + p1 + p1 + p1 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("~/Desktop/presentations/test_time2.png", scale = 1.5, height = 7, width = 6)
 
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
@@ -331,8 +338,10 @@ ggsave("figures/crt_mdr_out_bb.png", height = 9, width = 7)
 
 # I'm exhausted by this
 years_to_plot <- c(2006, 2014, 2022)
-preds <- rast(paste0("output/", c("crt76", "mdr86", "mdr184", "mdr1246"), "/gneiting_sparse/preds_all.grd"))
-names(preds) <- paste0(names(preds), "_", rep(c("crt76", "mdr86", "mdr184", "mdr1246"), each = 46))
+preds <- rast(paste0("output/", c("crt76", "mdr86", "mdr184", "mdr1246"), "/gneiting_sparse/preds_all.grd")) %>%
+  aggregate(fact=3)
+preds <- preds[[grep("median", names(preds))]]
+names(preds) <- paste0(names(preds), "_", rep(c("crt76", "mdr86", "mdr184", "mdr1246"), each = 25))
 coords <- xyFromCell(preds, cells(preds))
 vals <- terra::extract(preds, coords)
 df <- cbind(coords, vals) %>%
@@ -362,9 +371,49 @@ ggplot() +
   scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
   scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
   xlab("Longitude") +
-  ylab("Latitude")
+  ylab("Latitude") +
+  theme_bw()
 
 ggsave("~/Desktop/presentations/MARCSE/crt_mdr_out.png", scale = 1.7, height = 3, width = 5)
+
+
+
+# I'm exhausted by this
+years_to_plot <- c(2006, 2014, 2022)
+preds <- rast(paste0("output/", c("crt76", "mdr86", "mdr184", "mdr1246"), "/gneiting_sparse/preds_all.grd")) %>%
+  aggregate(fact=3)
+preds <- preds[[grep("sd", names(preds))]]
+names(preds) <- paste0(names(preds), "_", rep(c("crt76", "mdr86", "mdr184", "mdr1246"), each = 25))
+coords <- xyFromCell(preds, cells(preds))
+vals <- terra::extract(preds, coords)
+df <- cbind(coords, vals) %>%
+  pivot_longer(starts_with("2"),
+               names_to = "lyr",
+               values_to = "val") %>%
+  mutate(year = substr(lyr, 1, 4),
+         tag = substr(lyr, 11, 14),
+         marker = str_extract(lyr, "[^_]+$"))
+df <- filter(df, year %in% years_to_plot) # pick out year and thingo
+
+df <- df %>% mutate(marker = case_when(marker == "crt76" ~ "Pfcrt K76T",
+                                       marker == "mdr86" ~ "Pfmdr1 N86Y",
+                                       marker == "mdr184" ~ "Pfmdr1 Y184F",
+                                       marker == "mdr1246" ~ "Pfmdr1 D1246Y")) %>%
+  mutate(marker = factor(marker, levels = c("Pfcrt K76T", "Pfmdr1 N86Y", "Pfmdr1 Y184F", "Pfmdr1 D1246Y")))
+
+ggplot() +
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
+  geom_tile(aes(x = x, y = y, fill = val), data = df) +
+  scale_fill_gradientn(name = "Uncertainty",
+                       colors = oranges, trans="sqrt") +
+  facet_grid(year ~ marker) +
+  scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+ggsave("~/Desktop/presentations/MARCSE/crt_mdr_out_sd.png", scale = 1.7, height = 3, width = 5)
 
 ##############################################################################
 
@@ -464,40 +513,40 @@ obs_prev_panel_base <- function(data_path,
   
   mtext(outer = TRUE, text = main)
 }
-
-par(mfrow = c(1,2), oma = c(0,0,2,0))
-
-obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
-               "output/k13/circmat_sparse/preds_all.grd",
-               "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))
-
-obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
-               "output/k13/gneiting_sparse/preds_all.grd",
-               "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
-
-obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
-               "output/mdr86/gneiting_sparse/preds_all.grd",
-               "mdr86 gneiting")
-
-obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
-               "output/mdr1246/gneiting_sparse/preds_all.grd",
-               "mdr1246 gneiting")
-
-obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
-               "output/mdr184/gneiting_sparse/preds_all.grd",
-               "mdr184 gneiting")
-
-obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
-               "output/mdr86/circmat/preds_all.grd",
-               "mdr86 circmat")
-
-obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
-               "output/mdr1246/circmat/preds_all.grd",
-               "mdr1246 circmat")
-
-obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
-               "output/mdr184/circmat/preds_all.grd",
-               "mdr184 circmat")
+# 
+# par(mfrow = c(1,2), oma = c(0,0,2,0))
+# 
+# obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
+#                "output/k13/circmat_sparse/preds_all.grd",
+#                "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))
+# 
+# obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
+#                "output/k13/gneiting_sparse/preds_all.grd",
+#                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
+#                "output/mdr86/gneiting_sparse/preds_all.grd",
+#                "mdr86 gneiting")
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
+#                "output/mdr1246/gneiting_sparse/preds_all.grd",
+#                "mdr1246 gneiting")
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
+#                "output/mdr184/gneiting_sparse/preds_all.grd",
+#                "mdr184 gneiting")
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
+#                "output/mdr86/circmat/preds_all.grd",
+#                "mdr86 circmat")
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
+#                "output/mdr1246/circmat/preds_all.grd",
+#                "mdr1246 circmat")
+# 
+# obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
+#                "output/mdr184/circmat/preds_all.grd",
+#                "mdr184 circmat")
 
 # would be nice if I could somehow look at this through time
 # could do opacity by max(observed, predicted) ? - Grey spots at high 
