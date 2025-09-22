@@ -18,8 +18,10 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
-moldm <- read.csv("data/raw/db_20250616/novartis.csv") %>%
-  mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
+moldm <- #read.csv("data/raw/db_20250616/novartis.csv") 
+  read.csv("data/raw/db_20250922/novartis.csv") %>%
+  mutate(across(c(Start.Year, End.Year, Present, Tested, Longitude, Latitude), 
+                as.numeric)) %>% 
   filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
   filter(End.Year > 1960 & End.Year < 2500) %>%
   filter(Start.Year > 1960 & Start.Year < 2500) %>%
@@ -197,7 +199,7 @@ sing_trips <- pfmdr %>%
   filter(n_loci != 2) # there's only one of these .. K at 86 didn't get counted
 
 ggplot() + 
-  geom_sf(data = afr, fill = "white") + 
+  geom_sf(data = st_as_sf(afr), fill = "white") + 
   geom_point(data = sing_trips, 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = year),
@@ -313,7 +315,7 @@ library(iddoPal)
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
-  geom_point(data = single_loc, 
+  geom_point(data = single_loc %>% arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = Present/Tested),
              col = "grey50", pch=21, stroke = 0.2) +
@@ -354,6 +356,9 @@ write.csv(tmp, "data/clean/pfmdr_trip.csv", row.names = FALSE)
 
 ###############################################################################
 # combine with crt to have a "markers for partner drug resistance" figure
+# (need to have already run data_clean_crt - there's no reason for them to be
+# separate other than that I wasn't thinking about mdr when I started thinking
+# about crt)
 crt <- read.csv("data/clean/moldm_crt76.csv") %>%
   mutate(loc = "Pfcrt K76T",
          year_bin = cut(year, breaks = c(1974, 2008, 2013, 2017, 2020, 2024)))
@@ -369,7 +374,7 @@ partners <- bind_rows(crt,
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
-  geom_point(data = partners, 
+  geom_point(data = partners %>% arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = Present/Tested),
              col = "grey50", pch=21, stroke = 0.2) +

@@ -12,7 +12,8 @@ MIN_SAMPLE_SIZE <- 10
 # pfcrt 76: need 76T, K76, 76K/T, 
 # ... not sure what to do about haplotypes? what about 74 and 75
 
-crt <- read.csv("data/raw/db_20250616/novartis.csv") %>%
+crt <- # read.csv("data/raw/db_20250616/novartis.csv")
+  read.csv("data/raw/db_20250922/novartis.csv") %>%
   mutate(Start.Year = as.numeric(Start.Year),
          End.Year = as.numeric(End.Year),
          Present = as.numeric(Present),
