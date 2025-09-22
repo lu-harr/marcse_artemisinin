@@ -16,7 +16,7 @@ message(paste0("Seed: ", seed))
 # snp = "1246"
 # seed = 125
 
-out_dir <- paste0(snp, "/gneiting_ahmc/")
+out_dir <- paste0(snp, "/gneiting_sparse/")
 
 in_dat <- ifelse(snp == "k13",
                  "data/clean/moldm_k13_nomarker.csv",

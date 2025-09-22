@@ -307,9 +307,9 @@ single_loc <- single_loc %>%
 
 write.csv(single_loc, "data/clean/pfmdr_single_locus.csv", row.names = FALSE)
 
-write.csv(single_loc %>% filter(`86`), "data/clean/pfmdr_single_86.csv", row.names = FALSE)
-write.csv(single_loc %>% filter(`184`), "data/clean/pfmdr_single_184.csv", row.names = FALSE)
-write.csv(single_loc %>% filter(`1246`), "data/clean/pfmdr_single_1246.csv", row.names = FALSE)
+write.csv(single_loc %>% filter(`86`), "data/clean/pfmdr_single_mdr86.csv", row.names = FALSE)
+write.csv(single_loc %>% filter(`184`), "data/clean/pfmdr_single_mdr184.csv", row.names = FALSE)
+write.csv(single_loc %>% filter(`1246`), "data/clean/pfmdr_single_mdr1246.csv", row.names = FALSE)
 
 library(iddoPal)
 
