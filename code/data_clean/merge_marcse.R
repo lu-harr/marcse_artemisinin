@@ -4,7 +4,7 @@
 # at this point, ya need to run the top of data_clean_k13.R
 # ... I could put everything in the same place or put the functions somewhere on
 # they're own but I'm going to keep things separate for now
-moldm <- raw_moldm("data/raw/db_20250616/novartis.csv") %>%
+moldm <- raw_moldm("data/raw/db_20250922/novartis.csv") %>%
   mutate(Marker = strip_marker)
 # head(moldm)
 
@@ -105,7 +105,7 @@ pmid_checks <- c(
   as.data.frame() %>%
   setNames(c("from", "to"))
                  
-# filter(marcse, Title == "WHO Threats Map") %>% 
+# filter(marcse, Title == "WHO Threats Map") %>%
 #   dplyr::select(PubMedID) %>% as.data.frame()
 
 # filter(moldm, PubMedID == "null") %>% dplyr::select("Title") %>% unique()
@@ -118,19 +118,33 @@ pmid_checks <- c(
 # (Unpublished - thesis? Or 37349311) UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING
 # (Preprint https://www.medrxiv.org/content/10.1101/2025.01.09.25320247v1.full-text) High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia
 # (38461239) Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021
+# (?) Antimalarial Drug Resistance Marker Prevalence Survey - 2016
+# (doi: 10.61186/rabms.11.1.75) Molecular surveillance of artemisinin resistance-linked PFK13 gene polymorphisms in Adamawa State, Nigeria
 
 # I've pasted this but forgotten what it belongs to "33864801"
+
+# find "unpublished" rows
+marcse %>%
+  left_join(pmid_checks, by = join_by(PubMedID == from)) %>% 
+  filter(PubMedID == "Unpublished_MARCSE") %>% 
+  group_by(Title) %>% 
+  summarise(n=n()) %>%
+  as.data.frame()
 
 marcse <- marcse %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
   # PubMedID == "0":
   mutate(PubMedID = case_when(Title == "SAMEC SCAT Feb 2025" ~ "Unpublished",
+                              Title == "NMCP. Victor Asua" ~ "Unpublished",
+                              Title == "https://www.nicd.ac.za/wp-content/uploads/2022/08/310822-NICD-Monthly-Communique-Aug-NW5.pdf" ~ "Unpublished", # difficult to know if this ended up elsewhere
                               Title == "WHO Threats Map" ~ "WHO Threats Map",
                               Title == "Efficacy of artesunate-amodiaquine and artemether-lumefantrine for uncomplicated Plasmodium falciparum malaria in Madagascar. 2022" ~ "Unpublished", # see 34732201
-                              Title == "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia" ~ "Unpublished", # preprint: https://doi.org/10.1101/2025.02.19.25322554
+                              Title == "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia" ~ "40744006", # preprint: https://doi.org/10.1101/2025.02.19.25322554; AJTMH "ahead of print"?
                               Title == "Detection of Twenty-Four Plasmodium Falciparum Kelch 13 Mutations Including C469Y. P553L. R561H. and A675V Across Kenya" ~ "Unpublished", # preprint: https://dx.doi.org/10.2139/ssrn.5020665
                               Title == "High Prevalence of Molecular Markers Associated with Artemisinin. Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "Already in moldm", # preprint: https://doi.org/10.1101/2025.01.09.25320247
-                              Title == "Antimalarial drug resistance and population structure of Plasmodium falciparum in Mozambique using genomic surveillance at health facilities (2021-2022)" ~ "Unpublished", # preprint: https://doi.org/10.1186/s12936-025-05441-3
+                              Title == "Antimalarial drug resistance and population structure of Plasmodium falciparum in Mozambique using genomic surveillance at health facilities (2021-2022)" ~ "40790052", # now published
+                              Title == "Malaria update: Increase in frequency of Kelch 13 mutations found" ~ "Unpublished", # https://www.nicd.ac.za/wp-content/uploads/2022/08/Malaria-update.pdf
+                              Title == "The E8-led Regional Malaria Molecular Surveillance Initiative: Successes. Challenges. and Opportunities" ~ "Unpublished", # appears to be a presentation given by Dr Jaishree Raman https://www.marcse-africa.org/news/blog/uniting-against-malaria-9th-southern-africa-research-conference
                               TRUE ~ PubMedID)) %>%
   mutate(PubMedID = case_when(!is.na(to) ~ to,
                               TRUE ~ PubMedID)) %>%
@@ -153,8 +167,11 @@ moldm <- moldm %>%
                               Title == "Screening for antifolate and artemisinin resistance in Plasmodium falciparum clinical isolates from three hospitals of Eritrea" ~ "38840941",
                               Title == "Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire" ~ "38440764",
                               Title == "Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021" ~ "38461239",
+                              Title == "Investigation of Markers of Antimalarial Resistance During a Therapeutic Efficacy Study Conducted in Uganda, 2018–2019" ~ "Unpublished", # can't seem to find a trace of it .. maybe it was a conference presentation
                               TRUE ~ PubMedID),
-         from = "moldm") %>%
+         from = "moldm",
+         Longitude = as.numeric(Longitude),
+         Latitude = as.numeric(Latitude)) %>%
   dplyr::select(-c(to))
 
 oldv <- moldm
@@ -223,11 +240,12 @@ with_wildtypes <- full_join(mutants, wildtypes_to_add) %>%
   suppressMessages()
 
 # suspect this is present and tested around the wrong way? Check with Stephanie?
+# (These are all from the same paper)
 with_wildtypes %>%
   filter(Present / Tested > 1)
 marcse %>%
   filter(Present / Tested > 1) %>%
-  dplyr::select(PubMedID, Country, `Site Name`, Present, Tested, Marker, Prevalence) %>%
+  dplyr::select(PubMedID, Country, `Site Name`, Present, Tested, Marker, Prevalence, Title) %>%
   as.data.frame()
 
 write.csv(with_wildtypes %>%
@@ -266,7 +284,8 @@ to_vis <- with_wildtypes %>%
   #                             year <= 2019 ~ "2018-2019",
   #                             year <= 2021 ~ "2020-2021",
   #                             TRUE ~ "2022-2024")) %>%
-  arrange(Present/Tested, Tested)
+  arrange(Present/Tested, Tested) %>%
+  drop_na(Longitude, Latitude)
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -340,7 +359,7 @@ markers_keep <- markers %>%
   group_by(marker) %>%
   summarise(n = sum(present)) %>%
   arrange(desc(n)) %>%
-  slice(1:5) %>%
+  dplyr::slice(1:5) %>%
   bind_rows(data.frame(marker = "Others", n=1))
 
 wts <- wildtypes_to_add %>%
@@ -400,7 +419,7 @@ p1 <-
   scale_color_manual(values = rep(c(viridis(4), "#E37210", iddoblue, "#c7047c"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 300)) +
+                     limits = c(0, 310)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +

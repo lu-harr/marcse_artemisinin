@@ -61,7 +61,9 @@ raw_moldm <- function(path){
     suppressWarnings()
 }
 
-moldm <- raw_moldm("raw/db_20250616/novartis.csv")
+#moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
+moldm <- raw_moldm("data/raw/db_20250922/novartis.csv")
+
 
 # notes:
 # S446I possible typo?
@@ -241,7 +243,7 @@ markers_keep <- markers %>%
   group_by(marker) %>%
   summarise(n = sum(present)) %>%
   arrange(desc(n)) %>%
-  slice(1:5) %>%
+  dplyr::slice(1:5) %>%
   bind_rows(data.frame(marker = "Others", n=1))
 
 wts <- wildtypes_to_add %>%
@@ -260,7 +262,8 @@ markers_disagg <- moldm %>%
   filter(!(Marker == "Others" & Present == 0) & # don't want zeroes for all other markers, just WTs as BG
            Tested > 5) %>% # don't want prevalence == 1, tested < 5 points
   #filter(Marker %in% markers_keep$marker) %>%
-  bind_rows(wts) %>% #  %>% mutate(Marker = "wt")
+  bind_rows(wts %>% mutate(Longitude = as.numeric(Longitude),
+                           Latitude = as.numeric(Latitude))) %>% #  %>% mutate(Marker = "wt")
   mutate(year_bin = cut(year, breaks = c(min(year)-1, 2012, 2015, 2018, 2021, max(year)))) %>%
   filter(Longitude > -30) %>% # remove ocean point that's a bit far away
   mutate(Marker = factor(Marker, levels = markers_keep$marker))

@@ -193,9 +193,16 @@ plot(tmp)
 # I would say that's overdispersed ??
 # If I've done this right?
 
+# rolling window variance in data
+mut_data <- read_rds(paste0("output/k13_marcse/gneiting_ahmc/", "mut_data.rds"))
+# residual deviance / degrees of freedom
+preds
 
-
-
+# residual deviance over degrees of freedom?
+residual_deviance <- function(obs, pred){
+  # there's definitely a built-in function for this
+  
+}
 
 
 

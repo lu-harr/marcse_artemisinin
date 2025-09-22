@@ -477,7 +477,7 @@ obs_prev_panel_base <- function(data_path,
                            #pal = colorRamp(viridis(10)), 
                            pal = colorRamp(iddo_palettes$BlGyRd),
                            xlim = c(0,1), ylim = c(0,1)){
-  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR)
+  <- <- setup_mut_data(data_path, min_year = MIN_YEAR)
   preds <- rast(pred_path)
   
   mut_data$pred <- NA
@@ -570,9 +570,9 @@ obs_prev_panel_base <- function(data_path,
 
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_ahmc/preds_all.tif",
-               "k13 gneiting", xlim = c(0, 0.6), ylim = c(0, 0.6), 
+               "", xlim = c(0, 0.6), ylim = c(0, 0.6), 
                ave_tag = "_50")
-ggsave("figures/residuals_k13m_gne.png", height = 3, width = 5, scale = 1.5)
+ggsave("figures/residuals_k13m_gne.png", height = 3, width = 4, scale = 2)
 
 obs_prev_panel("data/clean/pfmdr_single_86.csv",
                 "output/mdr86/gneiting_ahmc/preds_all.tif",

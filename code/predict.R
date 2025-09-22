@@ -1,3 +1,5 @@
+# see pred_slurm ... leaving this here but should really just rm
+
 source("code/setup.R")
 source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
