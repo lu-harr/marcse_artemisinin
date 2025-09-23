@@ -4,6 +4,9 @@
 markers <- c("mdr86", "mdr184", "mdr1246", "k13_marcse", "crt76")
 models <- c("bb_gne", "gneiting_ahmc")
 
+markers <- c("k13_marcse")
+models <- c("gneiting_ahmc")
+
 preds <- apply(expand.grid(markers, models), 1, function(row){
   #message(row)
   out_dir = paste0("output/", paste0(row, collapse = "/"))#, "/")
@@ -51,6 +54,22 @@ rast_plot(subset(tmp, grep("50", names(tmp))))
 rast_plot(subset(tmp, grep("CI", names(tmp))))
 
 
+# just grab upper_lower to do coverage probs
+preds <- apply(expand.grid(markers, models), 1, function(row){
+  #message(row)
+  out_dir = paste0("output/", paste0(row, collapse = "/"))#, "/")
+  #message(out_dir)
+  to_read <- grep("^20.*\\.grd$", list.files(out_dir), value = TRUE)
+  #message(to_read)
+  tmp = rast(paste0(out_dir, "/", to_read))
+  # perhaps trying to write too many things ??
+  upper = subset(tmp, grepl("97\\.5", names(tmp)))
+  lower = subset(tmp, grepl("2\\.5", names(tmp)))
+  tmp <- c(upper, lower)
+  f <- file.path(out_dir, "preds_upper_lower.tif")
+  terra::writeRaster(tmp, f, overwrite = TRUE, filetype = "GTiff")
+  message("done")
+})
 
 
 

@@ -39,15 +39,15 @@ draws <- read_rds(paste0(out_dir, "draws.rds"))
 
 set.seed(0748)
 preds <- predict_to_ras(covariates,
-                 year,
-                 draws,
-                 parameters,
-                 random_field,
-                 agg_factor = AGG_FACTOR,
-                 scaled_year = scaled_years[[as.character(year)]],
-                 coord_cols = c("x_rd", "y_rd", "year_scaled"),
-                 design_cols = c("intercept", "year_scaled", "pfpr"),
-                 stable_transmission_mask = stable_transmission_mask)
+                        year,
+                        draws,
+                        parameters,
+                        random_field,
+                        agg_factor = AGG_FACTOR,
+                        scaled_year = scaled_years[[as.character(year)]],
+                        coord_cols = c("x_rd", "y_rd", "year_scaled"),
+                        design_cols = c("intercept", "year_scaled", "pfpr"),
+                        stable_transmission_mask = stable_transmission_mask)
 
 # perhaps give me a quick plot here?
 

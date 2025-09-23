@@ -71,13 +71,13 @@ predict_to_ras <- function(stack,
   # finish off design matrix
   X_pixel <- tmp$df %>%
     dplyr::mutate(year_scaled = scaled_year)
-  # message(scaled_year)
-  # # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  # message(coord_cols) # this is xyyear
-  # message(design_cols) # this is interceptyear_scaledpfpr
-  # message(paste(names(X_pixel), collapse = ", "))
-  # message(dim(X_pixel[,coord_cols]))
-  # message(dim(X_pixel[,design_cols]))
+  message(paste0("Scaled year: ", scaled_year))
+  # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
+  message(coord_cols) # this is xyyear
+  message(design_cols) # this is interceptyear_scaledpfpr
+  message(paste(names(X_pixel), collapse = ", "))
+  message(dim(X_pixel[,coord_cols]))
+  message(dim(X_pixel[,design_cols]))
   # 
   # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])

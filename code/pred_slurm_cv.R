@@ -3,7 +3,7 @@ source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
 # for prediction raster:
-AGG_FACTOR = 10
+AGG_FACTOR = 5
 
 # this feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
@@ -61,7 +61,7 @@ preds <- predict_to_ras(covariates,
 
 writeRaster(preds, paste0(out_dir, year, "_preds_", fold, ".grd"), overwrite = TRUE)
 
-
+message(paste0("written to ", out_dir))
 
 
 
