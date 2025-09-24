@@ -37,7 +37,9 @@ predict_to_ras <- function(stack,
                            nsim = 100,
                            stable_transmission_mask = NULL,
                            coord_cols = c("x", "y", "year"),
-                           design_cols = c("year")){
+                           design_cols = c("year"),
+                           coverage = FALSE,
+                           data_path = ""){
   cov_years <- names(stack)
   cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
   lab_year <- year
@@ -71,13 +73,13 @@ predict_to_ras <- function(stack,
   # finish off design matrix
   X_pixel <- tmp$df %>%
     dplyr::mutate(year_scaled = scaled_year)
-  message(paste0("Scaled year: ", scaled_year))
+  # message(paste0("Scaled year: ", scaled_year))
   # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  message(coord_cols) # this is xyyear
-  message(design_cols) # this is interceptyear_scaledpfpr
-  message(paste(names(X_pixel), collapse = ", "))
-  message(dim(X_pixel[,coord_cols]))
-  message(dim(X_pixel[,design_cols]))
+  # message(coord_cols) # this is xyyear
+  # message(design_cols) # this is interceptyear_scaledpfpr
+  # message(paste(names(X_pixel), collapse = ", "))
+  # message(dim(X_pixel[,coord_cols]))
+  # message(dim(X_pixel[,design_cols]))
   # 
   # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
@@ -92,8 +94,18 @@ predict_to_ras <- function(stack,
   
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
-                                      nsim = 500,
+                                      nsim = nsim,
                                       trace_batch_size = 1) # reducing: will take longer, use less mem
+  
+  if (coverage & data_path != ""){
+    coverages <- calculate_coverages(post_pixel_sims,
+                                      data_path,
+                                      year,
+                                      ras)
+  } else {
+    coverages <- NULL
+  }
+  
   # message("now here")
   probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
   post_pixel_quants = apply(post_pixel_sims$mut_freq_pixel[,,1], 2, 
@@ -114,16 +126,16 @@ predict_to_ras <- function(stack,
     # in raster I would have plopped `raster(NA)` in the function definition
     out <- mask(out, stable_transmission_mask)
   }
-  out
+  list(out = out, coverages = coverages)
 }
 
-# out_dir <- "output/crt76/gneiting_sparse/"
+# out_dir <- "output/k13_marcse/gneiting_sparse/"
 # source("code/setup.R")
 # source("code/build_design_matrix.R")
 # scaled_years <- scale_years(range(pfpr_years))
 # 
 # # bring in all of the other outputs here too
-# AGG_FACTOR <- 5
+# AGG_FACTOR <- 10
 # mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 # stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
 #   aggregate(AGG_FACTOR)
@@ -139,7 +151,7 @@ predict_to_ras <- function(stack,
 #                        agg_factor = AGG_FACTOR,
 #                        stable_transmission_mask = stable_transmission_mask,
 #                       design_cols = c("intercept", "year_scaled", "pfpr"))
-# 
+
 # plot(tmp)
 # 
 # library(tidyterra)
@@ -252,3 +264,82 @@ predict_to_ras_hier <- function(stack,
 # preds <- rast(preds)
 # plot(preds[[grepl("median", names(preds))]])
 # # this all looks like PfPR ....
+
+
+#' Calculate coverage probabilities
+#'
+#' @param sims predictions from greta::calculate()
+#' @param path character. Path to mut_data object
+#' @param yr numeric. Year predictions are relevant to.
+#' @param ras SpatRaster. Land mask for predictions.
+#' @param incs numeric. Number of increments in credible interval widths to make in [0,100]
+#'
+#' @returns list of length incs + 3: incs + entries for coverage probabilities; 
+#' `n` for number of entries in `mut_data` for `yr`; `n_landed` for number of entries (of `n`)
+#' that are at non-NA values of `ras`.
+#' @export
+#'
+#' @examples
+calculate_coverages <- function(sims, path, yr, ras, incs = 100){
+  out <- list()
+  
+  dat <- read_rds(paste0(path, "mut_data.rds")) %>%
+    filter(year == yr)
+    
+  # now get indices for matrix
+  dat <- dat %>%
+    mutate(cell = terra::extract(ras, dat[,c("x", "y")], cells = TRUE) %>%
+                  dplyr::select(cell) %>%
+                  unlist()) %>%
+    left_join(data.frame(cell = cells(ras), 
+                         idx = 1:length(cells(ras))),
+                   by = join_by(cell == cell))
+  
+  out$n_pts <- nrow(dat)
+  out$n_landed <- sum(!is.na(dat$idx))
+  
+  # could add a re-landing step
+  dat <- filter(dat, !is.na(idx))
+  
+  widths = seq(0, 100, length.out = incs + 1)
+  probs = unique(c(0.5 - widths / 200, 0.5 + widths / 200))
+  
+  idx <- unique(dat$idx)
+  
+  # add cell IDs into middle index here and save yourself some time
+  bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,
+                  probs = probs) %>% # a nprobs * ncell matrix
+    t() %>%
+    as.data.frame() %>%
+    mutate(idx = idx)
+  
+  dat <- left_join(dat, bounds, by = join_by(idx)) %>%
+    mutate(prevalence = present / tested)
+  
+  coverages <- lapply(widths, function(width){
+    # pick out the upper and lower bound columns for this width ..
+    # this probably a nice way to do this based on column ordering ..
+    lower <- which(names(dat) == paste0(as.character(50 - width / 2), "%"))
+    upper <- which(names(dat) == paste0(as.character(50 + width / 2), "%"))
+    sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper])
+  })
+  names(coverages) <- widths
+  
+  c(out, coverages)
+}
+
+# as in predict_to_ras:
+# calculate_coverages(post_pixel_sims,
+#                     "output/gneiting_sparse/",
+#                     2023,
+#                     ras)
+
+
+
+
+
+
+
+
+
+
