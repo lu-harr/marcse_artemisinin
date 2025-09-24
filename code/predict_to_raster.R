@@ -101,7 +101,8 @@ predict_to_ras <- function(stack,
     coverages <- calculate_coverages(post_pixel_sims,
                                       data_path,
                                       year,
-                                      ras)
+                                      ras,
+                                     incs = 5)
   } else {
     coverages <- NULL
   }
