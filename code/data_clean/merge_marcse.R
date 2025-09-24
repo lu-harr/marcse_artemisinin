@@ -16,14 +16,16 @@ moldm <- raw_moldm("data/raw/db_20250922/novartis.csv") %>%
 # note 578 and 537 not included in WHO lists but included due to prevalence
 
 marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
-  suppressMessages() %>%
+  mutate_at(c("Present", "Tested"), as.numeric) %>%
+  bind_rows(read_xlsx("../MARC_SEA_dashboard/September_25_Lucy.xlsx") %>%
+              dplyr::select(-c("...19", "Site Name"))) %>%
   rename(Notes = "...18",
          Site.Name.District.Country = `Site Name/District/Country`,
          Start.Year = `Start Year`,
          End.Year = `End Year`,
          Year.Published = `Year Published`,
          Prevalence... = `Prevalence (%)`) %>%
-  mutate_at(c("Longitude", "Latitude", "Present", "Tested"), as.numeric) %>%
+  mutate_at(c("Longitude", "Latitude"), as.numeric) %>%
   mutate(year = round((Start.Year + End.Year) / 2, 0),
          Year.Published = as.character(Year.Published) # clashing during bind_rows
          ) %>%
@@ -39,7 +41,8 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
          # for one study, Tested was not provided but Present and Prev were
          Tested = ifelse(Title == "Detection of Low-Frequency Artemisinin Resistance Mutations C469Y. P553L and A675V in Asymptomatic Primary School Children in Kenya",
                          Present / (Prevalence / 100), Tested)) %>%
-  left_join(marker_reference, by = join_by(Marker == marker))
+  left_join(marker_reference, by = join_by(Marker == marker)) %>%
+  suppressMessages()
 # head(marcse)
 # names(marcse)
 
@@ -145,6 +148,10 @@ marcse <- marcse %>%
                               Title == "Antimalarial drug resistance and population structure of Plasmodium falciparum in Mozambique using genomic surveillance at health facilities (2021-2022)" ~ "40790052", # now published
                               Title == "Malaria update: Increase in frequency of Kelch 13 mutations found" ~ "Unpublished", # https://www.nicd.ac.za/wp-content/uploads/2022/08/Malaria-update.pdf
                               Title == "The E8-led Regional Malaria Molecular Surveillance Initiative: Successes. Challenges. and Opportunities" ~ "Unpublished", # appears to be a presentation given by Dr Jaishree Raman https://www.marcse-africa.org/news/blog/uniting-against-malaria-9th-southern-africa-research-conference
+                              Title == "Genomic Surveillance Reveals Clusters of Plasmodium falciparum Antimalarial Resistance Markers in Eswatini, a Low-Transmission Setting" ~ "Unpublished", # preprint - doi doesn't seem to be in moldm https://doi.org/10.1101/2025.07.30.25332463
+                              Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern, Northeastern and Eastern Uganda" ~ "40514714", # published
+                              Title == "Plasmodium falciparum Kelch-13 artemisinin partial resistance markers in Fort Portal, Western Uganda, 2024" ~ "40265952", # published
+                              Title == "A Novel Plasmodium falciparum Kelch13 A675T Mutation and High Levels of Chloroquine and Sulfadoxine-Pyrimethamine Resistance in Burundi" ~ "40666336", # preprint
                               TRUE ~ PubMedID)) %>%
   mutate(PubMedID = case_when(!is.na(to) ~ to,
                               TRUE ~ PubMedID)) %>%
@@ -328,7 +335,7 @@ bg <- moldm %>%
 
 # I cannot state again how intensely easy this is in base graphics
 markers_keep <- markers %>%
-  filter(present > 2) %>%
+  filter(present > 5) %>%
   arrange(present) %>%
   ungroup() %>%
   dplyr::select(marker) %>%
