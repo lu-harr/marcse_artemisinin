@@ -73,13 +73,13 @@ predict_to_ras <- function(stack,
   # finish off design matrix
   X_pixel <- tmp$df %>%
     dplyr::mutate(year_scaled = scaled_year)
-  # message(paste0("Scaled year: ", scaled_year))
+  message(paste0("Scaled year: ", scaled_year))
   # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  # message(coord_cols) # this is xyyear
-  # message(design_cols) # this is interceptyear_scaledpfpr
-  # message(paste(names(X_pixel), collapse = ", "))
-  # message(dim(X_pixel[,coord_cols]))
-  # message(dim(X_pixel[,design_cols]))
+  message(coord_cols) # this is xyyear
+  message(design_cols) # this is interceptyear_scaledpfpr
+  message(paste(names(X_pixel), collapse = ", "))
+  message(dim(X_pixel[,coord_cols]))
+  message(dim(X_pixel[,design_cols]))
   # 
   # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
@@ -102,10 +102,12 @@ predict_to_ras <- function(stack,
                                       data_path,
                                       year,
                                       ras,
-                                     incs = 5)
+                                     incs = 100)
   } else {
     coverages <- NULL
   }
+  
+  message(coverages)
   
   # message("now here")
   probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
@@ -282,10 +284,15 @@ predict_to_ras_hier <- function(stack,
 #'
 #' @examples
 calculate_coverages <- function(sims, path, yr, ras, incs = 100){
+  message("hello")
   out <- list()
   
   dat <- read_rds(paste0(path, "mut_data.rds")) %>%
     filter(year == yr)
+  
+  if (nrow(dat) == 0){
+    return(NULL)
+  }
     
   # now get indices for matrix
   dat <- dat %>%
@@ -307,12 +314,17 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   
   idx <- unique(dat$idx)
   
+  message(length(idx))
+  message(paste("dim", dim(sims$mut_freq_pixel)))
+  
   # add cell IDs into middle index here and save yourself some time
   bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,
                   probs = probs) %>% # a nprobs * ncell matrix
     t() %>%
     as.data.frame() %>%
     mutate(idx = idx)
+  
+  message(dim(bounds))
   
   dat <- left_join(dat, bounds, by = join_by(idx)) %>%
     mutate(prevalence = present / tested)
@@ -326,6 +338,8 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   })
   names(coverages) <- widths
   
+  message(names(coverages))
+  
   c(out, coverages)
 }
 
@@ -336,8 +350,60 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
 #                     ras)
 
 
+#' Concatenate multiple (annual) coverage sheets together
+#'
+#' @param path character
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+concat_coverages <- function(path){
+  files <- path %>%
+    paste0("coverages/") %>%
+    list.files()
+  
+  files <- files[grep(pattern = "\\d{4}", files)] %>%
+    paste0(path, "coverages/", .)
+  
+  # open all of the files and rbind them together
+  coverages <- sapply(files, read.csv) %>%
+    rbind() %>%
+    t() %>%
+    as.data.frame() %>%
+    # retrieve year from rownames
+    mutate(year = str_extract(rownames(.), "\\d{4}")) %>%
+    unnest(cols = everything())
+  
+  write.csv(coverages, paste0(path, "coverages/all_coverages.csv"), row.names = FALSE)
+  message("coverages concatted")
+}
 
 
+concat_preds <- function(path, medians = TRUE, 
+                         sds = FALSE, sdscaled = FALSE, ciwidth = FALSE){
+  to_read <- grep("^20.*\\.grd$", list.files(path), value = TRUE)
+  
+  razzes <- rast(paste0(path, "/", to_read))
+  
+  to_write <- c()
+  
+  if (medians){to_write <- c(to_write, grepl("50", names(razzes)))}
+  if (sds){to_write <- c(to_write, grepl("sd$", names(razzes)))}
+  if (sdscaled){to_write <- c(to_write, grepl("sdscaled", names(razzes)))}
+  
+  if (ciwidth){
+    ci_width = subset(razzes, grepl("97\\.5", names(razzes))) - subset(razzes, grepl("2\\.5", names(razzes)))
+    names(ci_width) = paste0(str_extract(names(ci_width), "\\d{4}"), "_CI")
+    razzes <- c(razzes, ci_width)
+    to_write <- c(to_write, names(ci_width))
+  }
+  
+  razzes <- subset(razzes, to_write)
+  f <- file.path(path, "preds_all.tif")
+  terra::writeRaster(razzes, f, overwrite = TRUE, filetype = "GTiff")
+  message("preds concatted")
+}
 
 
 

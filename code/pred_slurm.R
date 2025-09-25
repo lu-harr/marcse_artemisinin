@@ -3,7 +3,7 @@ source("code/build_design_matrix.R")
 source("code/predict_to_raster.R")
 
 # for prediction raster:
-AGG_FACTOR = 1
+AGG_FACTOR = 10
 
 # this feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
@@ -37,6 +37,8 @@ draws <- read_rds(paste0(out_dir, "draws.rds"))
 # was there a reason why we needed this?
 # pfpr_years = 2020:2022
 
+message("AAA")
+
 set.seed(0748)
 preds <- predict_to_ras(covariates,
                         year,
@@ -47,9 +49,24 @@ preds <- predict_to_ras(covariates,
                         scaled_year = scaled_years[[as.character(year)]],
                         coord_cols = c("x_rd", "y_rd", "year_scaled"),
                         design_cols = c("intercept", "year_scaled", "pfpr"),
-                        stable_transmission_mask = stable_transmission_mask)
+                        stable_transmission_mask = stable_transmission_mask,
+                        nsim = 100,
+                        coverage = TRUE,
+                        data_path = out_dir)
+
+message(length(preds))
 
 # perhaps give me a quick plot here?
 
 writeRaster(preds$out, paste0(out_dir, year, "_preds.grd"), overwrite = TRUE)
-write.csv(preds$coverages, paste0(out_dir, year, "_coverages.csv"), row.names = FALSE)
+message(preds$coverages)
+
+if(!is.null(preds$coverages)){
+  write.csv(preds$coverages, 
+            paste0(out_dir, "coverages/", year, "_coverages.csv"), 
+            row.names = FALSE)
+}
+
+
+
+

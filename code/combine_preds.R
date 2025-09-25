@@ -8,11 +8,14 @@ markers <- c("k13_marcse")
 models <- c("gneiting_ahmc")
 
 preds <- apply(expand.grid(markers, models), 1, function(row){
-  #message(row)
+  
   out_dir = paste0("output/", paste0(row, collapse = "/"))#, "/")
-  #message(out_dir)
+  
+  # haven't tested this yet
+  concat_coverages(out_dir)
+  
   to_read <- grep("^20.*\\.grd$", list.files(out_dir), value = TRUE)
-  #message(to_read)
+  
   tmp = rast(paste0(out_dir, "/", to_read))
   # perhaps trying to write too many things ??
   medians = subset(tmp, grepl("50", names(tmp)))
