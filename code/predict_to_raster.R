@@ -40,6 +40,7 @@ predict_to_ras <- function(stack,
                            design_cols = c("year"),
                            coverage = FALSE,
                            data_path = ""){
+  message("predicting to raster")
   cov_years <- names(stack)
   cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
   lab_year <- year
@@ -48,7 +49,8 @@ predict_to_ras <- function(stack,
   } else if (year < min(cov_years)){
     year = min(cov_years)
   }
-  # message(year)
+  message(year)
+  message(names(stack))
   
   # retrieve raster for `year`
   ras <- stack[[grep(as.character(year), names(stack))]]
@@ -92,6 +94,8 @@ predict_to_ras <- function(stack,
     ilogit()
   # message(dim(mut_freq_pixel))
   
+  message(ncell(ras))
+  
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
                                       nsim = nsim,
@@ -129,6 +133,7 @@ predict_to_ras <- function(stack,
     # in raster I would have plopped `raster(NA)` in the function definition
     out <- mask(out, stable_transmission_mask)
   }
+  message("predicted to raster")
   list(out = out, coverages = coverages)
 }
 
@@ -293,6 +298,8 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   if (nrow(dat) == 0){
     return(NULL)
   }
+  
+  message(ncell(ras))
     
   # now get indices for matrix
   dat <- dat %>%
@@ -305,6 +312,7 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   
   out$n_pts <- nrow(dat)
   out$n_landed <- sum(!is.na(dat$idx))
+  out$n_non_zero <- sum(!is.na(dat$idx) & dat$present > 0)
   
   # could add a re-landing step
   dat <- filter(dat, !is.na(idx))
@@ -329,6 +337,9 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   dat <- left_join(dat, bounds, by = join_by(idx)) %>%
     mutate(prevalence = present / tested)
   
+  dat_non_zero <- dat %>%
+    filter(prevalence > 0)
+  
   message(paste(names(dat)))
   
   ind <<- 9
@@ -340,7 +351,8 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
     #upper <- which(names(dat) == paste0(as.character(50 + width / 2), "%"))
     lower <- ind
     upper <- ind + incs
-    out <- sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper])
+    out <- c(sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper]),
+             sum(dat_non_zero$prevalence >= dat[,lower] & dat_non_zero$prevalence <= dat[,upper]))
     message(paste(width, lower, upper, out, ind))
     ind <<- ind + 1
     out
@@ -388,7 +400,8 @@ concat_coverages <- function(path){
 
 
 concat_preds <- function(path, medians = TRUE, 
-                         sds = FALSE, sdscaled = FALSE, ciwidth = FALSE){
+                         sds = FALSE, sdscaled = FALSE, ciwidth = FALSE,
+                         upper = FALSE, lower = FALSE){
   to_read <- grep("\\d{4}_preds.grd$", list.files(path), value = TRUE)
   
   razzes <- rast(paste0(path, "/", to_read))
@@ -398,6 +411,9 @@ concat_preds <- function(path, medians = TRUE,
   if (medians){to_write <- c(to_write, grepl("50", names(razzes)))}
   if (sds){to_write <- c(to_write, grepl("sd$", names(razzes)))}
   if (sdscaled){to_write <- c(to_write, grepl("sdscaled", names(razzes)))}
+  if (upper){to_write <- c(to_write, grepl("97\\.5", names(razzes)))}
+  if (lower){to_write <- c(to_write, grepl("2\\.5", names(razzes)))}
+  
   
   if (ciwidth){
     ci_width = subset(razzes, grepl("97\\.5", names(razzes))) - subset(razzes, grepl("2\\.5", names(razzes)))
