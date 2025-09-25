@@ -329,25 +329,32 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   dat <- left_join(dat, bounds, by = join_by(idx)) %>%
     mutate(prevalence = present / tested)
   
+  message(paste(names(dat)))
+  
+  ind <<- 9
   coverages <- lapply(widths, function(width){
     # pick out the upper and lower bound columns for this width ..
     # this probably a nice way to do this based on column ordering ..
-    lower <- which(names(dat) == paste0(as.character(50 - width / 2), "%"))
-    upper <- which(names(dat) == paste0(as.character(50 + width / 2), "%"))
-    sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper])
+    if (width == 0){return(0)}
+    #lower <- which(names(dat) == paste0(as.character(50 - width / 2), "%"))
+    #upper <- which(names(dat) == paste0(as.character(50 + width / 2), "%"))
+    lower <- ind
+    upper <- ind + incs
+    out <- sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper])
+    message(paste(width, lower, upper, out, ind))
+    ind <<- ind + 1
+    out
   })
   names(coverages) <- widths
-  
-  message(names(coverages))
   
   c(out, coverages)
 }
 
 # as in predict_to_ras:
-# calculate_coverages(post_pixel_sims,
-#                     "output/gneiting_sparse/",
-#                     2023,
-#                     ras)
+tmp = calculate_coverages(post_pixel_sims,
+                    "output/k13_marcse/gneiting_sparse/",
+                    2022,
+                    ras, incs = 100)
 
 
 #' Concatenate multiple (annual) coverage sheets together
@@ -382,7 +389,7 @@ concat_coverages <- function(path){
 
 concat_preds <- function(path, medians = TRUE, 
                          sds = FALSE, sdscaled = FALSE, ciwidth = FALSE){
-  to_read <- grep("^20.*\\.grd$", list.files(path), value = TRUE)
+  to_read <- grep("\\d{4}_preds.grd$", list.files(path), value = TRUE)
   
   razzes <- rast(paste0(path, "/", to_read))
   
