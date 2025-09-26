@@ -94,7 +94,7 @@ survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
                       "output/mdr86/surveillance_effort_mdr86.grd"),
                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 ggsave("figures/surveillance_effort_all_marcse.png", 
-       height = 5, width=10, scale = 0.8)
+       height = 5, width=10, scale = 1.1)
 
 survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
                       "output/k13_marcse/surveillance_effort_k13_marcse.grd"),

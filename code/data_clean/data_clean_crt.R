@@ -35,6 +35,26 @@ crt <- # read.csv("data/raw/db_20250616/novartis.csv")
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
+message("Number of crt studies")
+length(unique(crt$Title))
+
+message("Publication years")
+sort(unique(crt$Year.Published))
+
+message("Surveillance years")
+min(crt$Start.Year)
+max(crt$End.Year)
+
+message("Number of patients")
+crt %>%
+  group_by(Longitude, Latitude, year) %>%
+  summarise(n = n(), Tested = max(Tested)) %>%
+  ungroup() %>%
+  dplyr::select(Tested) %>%
+  sum()
+
+
+
 plot(crt$Start.Year, crt$Present/crt$Tested, col=as.factor(crt$Marker))
 nrow(crt)
 sum(crt$Start.Year - crt$End.Year == -1)

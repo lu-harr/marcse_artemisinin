@@ -30,6 +30,9 @@ moldm <- #read.csv("data/raw/db_20250616/novartis.csv")
          year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
                           is.na(year) & !is.na(End.Year) ~ End.Year,
                           TRUE ~ year)) %>%
+  filter(!(Longitude < 1 & Longitude > 0 & Latitude > 0 & Latitude < 1)) %>%
+  # this one is in Tanzania and clearly the Longitude is just lost:
+  filter(!(Longitude < -10 & Longitude > -11 & Latitude > -11 & Latitude < -10)) %>%
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
@@ -200,17 +203,20 @@ sing_trips <- pfmdr %>%
 
 ggplot() + 
   geom_sf(data = st_as_sf(afr), fill = "white") + 
-  geom_point(data = sing_trips, 
+  geom_point(data = sing_trips %>%
+               mutate(n_loci = ifelse(n_loci == 1, "Single locus", "Triple loci")) %>%
+               arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = year),
              col = "grey50", pch=21, stroke = 0.2) +
-  scale_fill_viridis_c(name = "year") +
+  scale_fill_viridis_c(name = "Year") +
   scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
   facet_wrap(~ n_loci) +
-  labs(title = "Sequencing at single and triple locus") +
+  #labs(title = "Sequencing at single and triple locus") +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_grey()
+  theme_bw()
+ggsave("figures/mdr_single_triple.png", height=4, width=8)
 
 single_opps <- list("NXX"="YXX", "XXD"="XXY", "XYX"="XFX")
 tmp <- names(single_opps)
@@ -318,7 +324,7 @@ ggplot() +
   geom_point(data = single_loc %>% arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = Present/Tested),
-             col = "grey50", pch=21, stroke = 0.2) +
+             col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
                        "",
                        breaks = c(0, 0.5, 1), 
@@ -377,7 +383,7 @@ ggplot() +
   geom_point(data = partners %>% arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = Present/Tested),
-             col = "grey50", pch=21, stroke = 0.2) +
+             col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
                        "",
                        breaks = c(0, 0.5, 1), 
@@ -391,8 +397,8 @@ ggplot() +
   #      xlab = "Longitude", ylab = "Latitude") +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_grey() #+
-  #theme(title = element_blank())
+  theme_bw()
+#theme(title = element_blank())
 ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 5, width = 5)
 
 
@@ -421,4 +427,3 @@ ggplot() +
   theme_grey() #+
 #theme(title = element_blank())
 ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 5)
-

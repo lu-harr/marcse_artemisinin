@@ -32,7 +32,7 @@ message(getwd())
 message("Enforcing min year for surveyor data - 2000")
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 
-write_rds(mut_data, paste0(out_dir, "mut_data.rds"))
+write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
 
 fit_binom(mut_data = mut_data,
           covariates = covariates,
