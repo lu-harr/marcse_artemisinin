@@ -147,9 +147,9 @@ wrap_survey_effort <- function(mut_data_path,
 # source("code/setup.R")
 # 
 # # function calls:
-# wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
-#                    "output/k13/surveillance_effort_k13.grd",
-#                    sigma = 1.5, apply_mask = FALSE)
+wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
+                   "output/k13/surveillance_effort_k13.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 # 
 # wrap_survey_effort("data/clean/moldm_k13_nomarker.csv",
 #                    "output/k13/surveillance_effort_k13_tempo.grd",
@@ -157,9 +157,9 @@ wrap_survey_effort <- function(mut_data_path,
 #                    bin_years = TRUE,
 #                    sigma = 1.5, apply_mask = FALSE)
 # 
-# wrap_survey_effort("data/clean/moldm_crt76.csv",
-#                    "output/crt76/surveillance_effort_crt.grd",
-#                    sigma = 1.5, apply_mask = FALSE)
+wrap_survey_effort("data/clean/moldm_crt76.csv",
+                   "output/crt76/surveillance_effort_crt.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 # 
 # wrap_survey_effort("data/clean/moldm_crt76.csv",
 #                    "output/crt76/surveillance_effort_crt_tempo.grd",
@@ -167,9 +167,9 @@ wrap_survey_effort <- function(mut_data_path,
 #                    bin_years = TRUE,
 #                    sigma = 1.5, apply_mask = FALSE)
 # 
-# wrap_survey_effort("data/clean/pfmdr_single_86.csv",
-#                    "output/mdr86/surveillance_effort_pfmdr86.grd",
-#                    sigma = 1.5, apply_mask = FALSE)
+wrap_survey_effort("data/clean/pfmdr_single_mdr86.csv",
+                   "output/mdr86/surveillance_effort_pfmdr86.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 # 
 # wrap_survey_effort("data/clean/pfmdr_single_184.csv",
 #                    "output/mdr184/surveillance_effort_pfmdr184.grd",
@@ -204,9 +204,9 @@ wrap_survey_effort <- function(mut_data_path,
 #                    sigma = 1.5, apply_mask = FALSE)
 # 
 # # now with added unpublished MARCSE data from dashboard paper:
-# wrap_survey_effort("data/clean/moldm_marcse_k13_nomarker.csv",
-#                    "output/k13_marcse/surveillance_effort_k13.grd",
-#                    sigma = 1.5, apply_mask = FALSE)
+wrap_survey_effort("data/clean/moldm_marcse_k13_nomarker.csv",
+                   "output/k13_marcse/surveillance_effort_k13.grd",
+                   sigma = 1.5, apply_mask = FALSE)
 # 
 # wrap_survey_effort("data/clean/moldm_marcse_k13_nomarker.csv",
 #                    "output/k13_marcse/surveillance_effort_k13_tempo.grd",

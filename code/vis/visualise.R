@@ -89,6 +89,13 @@ survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
 ggsave("figures/surveillance_effort_all.png", 
         height = 5, width=10, scale = 0.8)
 
+survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
+                      "output/crt76/surveillance_effort_crt76.grd",
+                      "output/mdr86/surveillance_effort_mdr86.grd"),
+                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
+ggsave("figures/surveillance_effort_all_marcse.png", 
+       height = 5, width=10, scale = 0.8)
+
 survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
                       "output/k13_marcse/surveillance_effort_k13_marcse.grd"),
                     lyr_names = c("moldm", "moldm + unpublished data"))
@@ -619,7 +626,6 @@ ggplot() +
   ylab("Latitude")
 
 ggsave("~/Desktop/presentations/MARCSE/k13_all_years_bb.png", scale = 1.7, height = 4, width = 5)
-
 
 
 

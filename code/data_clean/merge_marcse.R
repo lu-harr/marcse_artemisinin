@@ -227,6 +227,19 @@ mutants <- moldm %>%
 message(paste("Number of rows in mutant table:", nrow(mutants)))
 # added 1035 - 967 == 68 rows here
 
+tmp <- moldm %>% 
+  filter(mutant) %>% 
+  group_by(Marker) %>%
+  summarise(n = n(), npres = sum(Present)) %>%
+  filter(npres > 0) %>%
+  filter(npres >= 10) %>%
+  full_join(marker_reference, join_by(Marker == marker))
+
+message(paste("Number of TF-associated mutations:", 
+              ))
+
+
+
 wildtypes <- moldm %>%
   filter(Marker == "wildtype") %>%
   group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%

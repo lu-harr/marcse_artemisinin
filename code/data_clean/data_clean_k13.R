@@ -95,7 +95,7 @@ raw_moldm <- function(path){
 
 #moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
 moldm <- raw_moldm("data/raw/db_20250922/novartis.csv")
-
+# had 240 before filtering this morning ... but that also can't be right
 
 # notes:
 # S446I possible typo?
