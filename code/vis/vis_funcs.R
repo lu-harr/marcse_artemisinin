@@ -162,6 +162,58 @@ map_pred_row <- function(in_path,
 }
 
 
+# convert to gg
+# add option to facet into time windows
+obs_prev_panel_base <- function(data_path, 
+                                pred_path, 
+                                main = "", 
+                                show_nas = FALSE, 
+                                #pal = colorRamp(viridis(10)), 
+                                pal = colorRamp(iddo_palettes$BlGyRd),
+                                xlim = c(0,1), ylim = c(0,1)){
+  <- <- setup_mut_data(data_path, min_year = MIN_YEAR)
+  preds <- rast(pred_path)
+  
+  mut_data$pred <- NA
+  yrs_to_extract <- unique(mut_data$year)
+  for (yr in yrs_to_extract){
+    if (yr %in% pfpr_years){
+      idx <- which(mut_data$year == yr)
+      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
+                            mut_data[idx, c("x", "y")],
+                            ID = FALSE)
+      mut_data[idx, "pred"] <- val
+    }
+  }
+  
+  mut_data = mut_data[!is.na(mut_data$pred),]
+  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
+  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
+  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+  mut_data <- arrange(mut_data, abs(diffs))
+  mut_data$diffs = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
+  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+  
+  plot(mut_data$present / mut_data$tested, 
+       mut_data$pred, cex = cex_transform(mut_data$tested) * 4,
+       xlab = "Observed prevalence", ylab = "Predicted prevalence", 
+       xlim = xlim, ylim = ylim,
+       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+  abline(a = 0, b = 1)
+  
+  plot(st_geometry(afr))
+  points(mut_data$x, mut_data$y, pch = 16,
+         col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+  
+  mtext(outer = TRUE, text = main)
+}
+# here's an e.g.:
+# obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
+#                "output/k13/gneiting_sparse/preds_all.grd",
+#                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
+
+
+
 # observed vs predicted values
 obs_prev_panel <- function(data_path, 
                            pred_path, 

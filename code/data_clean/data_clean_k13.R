@@ -41,11 +41,12 @@ afr <- world %>%
 #   suppressWarnings()
 
 raw_moldm <- function(path){
-  read.csv(path) %>%
+  out <- read.csv(path) %>%
     mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
     filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
     filter(End.Year > 1960 & End.Year < 2500) %>%
     filter(Start.Year > 1960 & Start.Year < 2500) %>%
+    # there definitely aren't any "Kelch 13" left in here are there? Nope
     filter(grepl("[k|K]13", Marker)) %>%
     mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% # strip k13
     left_join(marker_reference, 
@@ -57,8 +58,39 @@ raw_moldm <- function(path){
                             TRUE ~ year),
            mutant = !is.na(status) & status != "Not associated") %>%
     filter(Continent == "Africa") %>%
-    filter(year >= YEAR_LOWER_BOUND) %>%
     suppressWarnings()
+  
+  message(paste0("Number of studies before filtering early records: ", 
+                 length(unique(out$Title))))
+  message(paste0("Publication years: ", 
+                 range(as.numeric(out$Year.Published), na.rm=TRUE) %>%
+                   suppressWarnings()))
+  message(paste("Earliest years:", min(out$year, na.rm=TRUE)))
+  
+  out <- filter(out, year >= YEAR_LOWER_BOUND)
+  
+  message(paste0("Number of studies after filtering early records: ", 
+                 length(unique(out$Title))))
+  # this is a little naive but it's the best estimate we're going to get:
+  message(paste0("Number of people screened: ", 
+                 out %>%
+                   group_by(Longitude, Latitude, year, Title, Tested) %>% 
+                   summarise(n = n()) %>%
+                   ungroup() %>%
+                   dplyr::select(Tested) %>%
+                   sum() %>%
+                   suppressMessages()))
+  
+  message(paste0("Or more conservatively: ", 
+                 out %>%
+                   group_by(Longitude, Latitude, year, Title) %>% 
+                   summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
+                   ungroup() %>%
+                   dplyr::select(Tested) %>%
+                   sum() %>%
+                   suppressMessages()))
+  
+  out
 }
 
 #moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")

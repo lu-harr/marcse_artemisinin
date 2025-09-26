@@ -50,7 +50,7 @@ preds <- predict_to_ras(covariates,
                         coord_cols = c("x_rd", "y_rd", "year_scaled"),
                         design_cols = c("intercept", "year_scaled", "pfpr"),
                         stable_transmission_mask = stable_transmission_mask,
-                        nsim = 100,
+                        nsim = 500,
                         coverage = TRUE,
                         data_path = out_dir)
 

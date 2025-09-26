@@ -183,6 +183,25 @@ moldm <- moldm %>%
 
 oldv <- moldm
 
+to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
+  filter(PubMedID != "Already in moldm")
+message(paste0("Studies: ", length(unique(to_add$Title))))
+message(paste0("Patients: ", to_add %>%
+                 group_by(Longitude, Latitude, year, Title, Tested) %>%
+                 summarise(n = n()) %>%
+                 ungroup() %>%
+                 dplyr::select(Tested) %>%
+                 sum() %>%
+                 suppressMessages()))
+message(paste0("Or more conservatively: ", to_add %>%
+                 group_by(Longitude, Latitude, year, Title) %>%
+                 summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
+                 ungroup() %>%
+                 dplyr::select(Tested) %>%
+                 sum() %>%
+                 suppressMessages()))
+
+
 moldm <- bind_rows(moldm,
                    anti_join(marcse, moldm, by = join_by(PubMedID))) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through

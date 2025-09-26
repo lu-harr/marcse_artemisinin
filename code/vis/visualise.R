@@ -468,91 +468,8 @@ cex_transform <- function(from){
   #log10(from) / log10(max(from)) *4
 }
 
-# convert to gg
-# add option to facet into time windows
-obs_prev_panel_base <- function(data_path, 
-                           pred_path, 
-                           main = "", 
-                           show_nas = FALSE, 
-                           #pal = colorRamp(viridis(10)), 
-                           pal = colorRamp(iddo_palettes$BlGyRd),
-                           xlim = c(0,1), ylim = c(0,1)){
-  <- <- setup_mut_data(data_path, min_year = MIN_YEAR)
-  preds <- rast(pred_path)
-  
-  mut_data$pred <- NA
-  yrs_to_extract <- unique(mut_data$year)
-  for (yr in yrs_to_extract){
-    if (yr %in% pfpr_years){
-      idx <- which(mut_data$year == yr)
-      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
-                            mut_data[idx, c("x", "y")],
-                            ID = FALSE)
-      mut_data[idx, "pred"] <- val
-    }
-  }
-  
-  mut_data = mut_data[!is.na(mut_data$pred),]
-  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
-  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
-  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
-  mut_data <- arrange(mut_data, abs(diffs))
-  mut_data$diffs = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
-  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
-  
-  plot(mut_data$present / mut_data$tested, 
-       mut_data$pred, cex = cex_transform(mut_data$tested) * 4,
-       xlab = "Observed prevalence", ylab = "Predicted prevalence", 
-       xlim = xlim, ylim = ylim,
-       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
-  abline(a = 0, b = 1)
-  
-  plot(st_geometry(afr))
-  points(mut_data$x, mut_data$y, pch = 16,
-       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
-  
-  mtext(outer = TRUE, text = main)
-}
-# 
-# par(mfrow = c(1,2), oma = c(0,0,2,0))
-# 
-# obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
-#                "output/k13/circmat_sparse/preds_all.grd",
-#                "k13 circmat", xlim = c(0, 0.4), ylim = c(0, 0.4))
-# 
-# obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
-#                "output/k13/gneiting_sparse/preds_all.grd",
-#                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
-#                "output/mdr86/gneiting_sparse/preds_all.grd",
-#                "mdr86 gneiting")
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
-#                "output/mdr1246/gneiting_sparse/preds_all.grd",
-#                "mdr1246 gneiting")
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
-#                "output/mdr184/gneiting_sparse/preds_all.grd",
-#                "mdr184 gneiting")
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_86.csv",
-#                "output/mdr86/circmat/preds_all.grd",
-#                "mdr86 circmat")
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_1246.csv",
-#                "output/mdr1246/circmat/preds_all.grd",
-#                "mdr1246 circmat")
-# 
-# obs_prev_panel_base("data/clean/pfmdr_single_184.csv",
-#                "output/mdr184/circmat/preds_all.grd",
-#                "mdr184 circmat")
 
-# would be nice if I could somehow look at this through time
-# could do opacity by max(observed, predicted) ? - Grey spots at high 
-# prevalences are more important than grey spots at low prevalences .... for k13
-# could also go back to pch == 1 at right ...
-# could go for purple ... I think that would get more confusing 
+
 
 ##############################################################################
 # the same but ggplot
@@ -633,6 +550,24 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 # but there's lots of variance at the same location?
 # rolling window?
 # this is where the CV would be helpful to make my point ...
+
+##############################################################################
+# visualise coverages
+
+out_dir <- "output/k13_marcse/gneiting_sparse/"
+coverages <- read.csv("~/Desktop/all_coverages.csv")
+
+coverages_fig <- function(path){
+  coverages <- read.csv(path)
+  cov_sum <- colSums(coverages)
+  covs <- cov_sum[grep("X", names(cov_sum))] / cov_sum["n_landed"] * 100
+  
+  plot(0:100, covs, type = "l")
+  abline(a = 0, b = 1)
+}
+
+# check this again with zeroes removed
+# and have a look at upper and lower bound surfaces?
 
 ##############################################################################
 # a plot of all preds in all years

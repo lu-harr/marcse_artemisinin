@@ -363,10 +363,10 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
 }
 
 # as in predict_to_ras:
-tmp = calculate_coverages(post_pixel_sims,
-                    "output/k13_marcse/gneiting_sparse/",
-                    2022,
-                    ras, incs = 100)
+# tmp = calculate_coverages(post_pixel_sims,
+#                     "output/k13_marcse/gneiting_sparse/",
+#                     2022,
+#                     ras, incs = 100)
 
 
 #' Concatenate multiple (annual) coverage sheets together
