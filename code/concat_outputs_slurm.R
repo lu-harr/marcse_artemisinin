@@ -1,5 +1,7 @@
-source("code/setup.R")
-source("code/predict_to_raster.R")
+start <- Sys.time()
+
+suppressMessages(source("code/setup.R"))
+suppressMessages(source("code/predict_to_raster.R"))
 
 args <- commandArgs(trailingOnly = TRUE)
 marker <- args[1]
@@ -14,3 +16,7 @@ out_dir <- paste0("output/", marker, "/", mod, "/")
 concat_coverages(out_dir)
 concat_preds(out_dir, 
              medians = TRUE, sds = TRUE, sdscaled = TRUE, ciwidth = TRUE)
+
+end <- Sys.time()
+
+print(end - start)

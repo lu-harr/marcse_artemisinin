@@ -32,8 +32,11 @@ crt <- # read.csv("data/raw/db_20250616/novartis.csv")
          year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
                           is.na(year) & !is.na(End.Year) ~ End.Year,
                           TRUE ~ year)) %>%
+  filter(!(Longitude < -10 & Longitude > -11 & Latitude > -11 & Latitude < -10)) %>%
   filter(Continent == "Africa") %>%
   suppressWarnings()
+
+message("filtering some weird coords")
 
 message("Number of crt studies")
 length(unique(crt$Title))

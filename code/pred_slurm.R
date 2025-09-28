@@ -1,6 +1,6 @@
-source("code/setup.R")
-source("code/build_design_matrix.R")
-source("code/predict_to_raster.R")
+suppressMessages(source("code/setup.R"))
+suppressMessages(source("code/build_design_matrix.R"))
+suppressMessages(source("code/predict_to_raster.R"))
 
 # for prediction raster:
 AGG_FACTOR = 1
@@ -36,8 +36,6 @@ draws <- read_rds(paste0(out_dir, "draws.rds"))
 
 # was there a reason why we needed this?
 # pfpr_years = 2020:2022
-
-message("AAA")
 
 set.seed(0748)
 preds <- predict_to_ras(covariates,

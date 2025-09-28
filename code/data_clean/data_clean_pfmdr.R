@@ -36,6 +36,8 @@ moldm <- #read.csv("data/raw/db_20250616/novartis.csv")
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
+message("filtering some weird coords")
+
 pfmdr <- moldm %>%
   filter(grepl("pfmdr1", Marker)) %>%
   mutate(Marker = gsub(pattern = "pfmdr1 ", replacement = "", Marker)) %>%

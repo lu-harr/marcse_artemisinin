@@ -56,7 +56,10 @@ raw_moldm <- function(path){
            year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
                             is.na(year) & !is.na(End.Year) ~ End.Year,
                             TRUE ~ year),
+           Longitude = as.numeric(Longitude),
+           Latitude = as.numeric(Latitude),
            mutant = !is.na(status) & status != "Not associated") %>%
+    filter(!(Longitude < -10 & Latitude < -10)) %>%
     filter(Continent == "Africa") %>%
     suppressWarnings()
   

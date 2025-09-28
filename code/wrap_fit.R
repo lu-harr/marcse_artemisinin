@@ -69,14 +69,14 @@ fit_binom <- function(mut_data,
   gneiting_len <- normal(0, 3, truncation = c(0, Inf))
   gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
   gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
-  nugget_sd <- normal(0, 3, truncation = c(0, Inf))
+  white_sd <- normal(0, 3, truncation = c(0, Inf))
   
   # kernel & GP
   kernel <- gneiting(lengthscale = gneiting_len, 
                      timescale = gneiting_tim,
                      variance = gneiting_sd ** 2, 
                      columns = 1:3) + 
-    white(nugget_sd ** 2)
+    white(white_sd ** 2)
   
   kmn <- kmeans(X_obs[,coord_cols], centers = 40)
   random_field <- gp(x = X_obs[,coord_cols], 
@@ -91,7 +91,7 @@ fit_binom <- function(mut_data,
   distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
   
   # fit the model by Hamiltonian Monte Carlo
-  m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
+  m <- model(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta)
   
   # hardcoding hmc hyperparams - have had a play with these earlier
   {start <- Sys.time()
@@ -104,7 +104,7 @@ fit_binom <- function(mut_data,
                   initial_values = initials(gneiting_len = 1,
                                             gneiting_tim = 3,
                                             gneiting_sd = 13,
-                                            nugget_sd = 0.5,
+                                            white_sd = 0.5,
                                             beta = rep(0, 3)),
                   verbose = FALSE)
     end <- Sys.time()
@@ -115,9 +115,9 @@ fit_binom <- function(mut_data,
                               multivariate = FALSE)
   summary(r_hats$psrf)
   
-  parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta)
+  parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta)
   names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
-                         "nugget_sd", "beta")
+                         "white_sd", "beta")
   
   # save everything and do the prediction separately
   write_rds(parameters, paste0("output/", out_dir, "parameters", fold, ".rds"))
@@ -202,7 +202,7 @@ fit_betabinom <- function(mut_data,
   gneiting_len <- normal(0, 3, truncation = c(0, Inf))
   gneiting_tim <- normal(0, 3, truncation = c(0, Inf))
   gneiting_sd <- normal(0, 2, truncation = c(0, Inf))
-  nugget_sd <- normal(0, 3, truncation = c(0, Inf)) # Median :1.041  Mean   :1.115
+  white_sd <- normal(0, 3, truncation = c(0, Inf)) # Median :1.041  Mean   :1.115
   rho <- greta::lognormal(0, 1)
   
   # kernel & GP
@@ -211,7 +211,7 @@ fit_betabinom <- function(mut_data,
                      timescale = gneiting_tim,
                      variance = gneiting_sd ** 2, 
                      columns = 1:3) + 
-    white(nugget_sd ** 2)
+    white(white_sd ** 2)
   
   kmn <- kmeans(X_obs[,coord_cols], centers = 40)
   random_field <- greta.gp::gp(x = X_obs[,coord_cols], 
@@ -227,7 +227,7 @@ fit_betabinom <- function(mut_data,
   # distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
   
   # fit the model by Hamiltonian Monte Carlo
-  m <- model(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta, rho)
+  m <- model(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta, rho)
   
   # hardcoding hmc hyperparams - have had a play with these earlier
   {start <- Sys.time()
@@ -240,7 +240,7 @@ fit_betabinom <- function(mut_data,
                   initial_values = initials(gneiting_len = 1,
                                             gneiting_tim = 3,
                                             gneiting_sd = 13,
-                                            nugget_sd = 0.5,
+                                            white_sd = 0.5,
                                             beta = rep(0, 3),
                                             rho = 0.5),
                   verbose = FALSE)
@@ -252,9 +252,9 @@ fit_betabinom <- function(mut_data,
                               multivariate = FALSE)
   summary(r_hats$psrf)
   
-  parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, nugget_sd, beta, rho)
+  parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta, rho)
   names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
-                         "nugget_sd", "beta", "rho")
+                         "white_sd", "beta", "rho")
   
   # save everything and do the prediction separately
   write_rds(parameters, paste0("output/", out_dir, "parameters", fold, ".rds"))

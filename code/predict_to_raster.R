@@ -88,7 +88,7 @@ predict_to_ras <- function(stack,
   
   # message(dim(t(parameters$beta)))
   # message(dim(random_field_pixel))
-  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + 
+  mut_freq_pixel <- (X_pixel[,design_cols] %*% t(parameters$beta) + 
                        # transform here? Is R taking over?
                        random_field_pixel) %>%
     ilogit()
@@ -378,9 +378,14 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
 #'
 #' @examples
 concat_coverages <- function(path){
+  message(path)
+  message(paste0(path, "coverages/"))
+
   files <- path %>%
     paste0("coverages/") %>%
     list.files()
+
+  message(paste(files))
   
   files <- files[grep(pattern = "\\d{4}", files)] %>%
     paste0(path, "coverages/", .)
