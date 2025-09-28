@@ -561,17 +561,9 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 ##############################################################################
 # visualise coverages
 
-out_dir <- "output/k13_marcse/gneiting_sparse/"
-coverages <- read.csv("~/Desktop/all_coverages.csv")
+coverages_fig("output/k13_marcse/gneiting_sparse/")
 
-coverages_fig <- function(path){
-  coverages <- read.csv(path)
-  cov_sum <- colSums(coverages)
-  covs <- cov_sum[grep("X", names(cov_sum))] / cov_sum["n_landed"] * 100
-  
-  plot(0:100, covs, type = "l")
-  abline(a = 0, b = 1)
-}
+
 
 # check this again with zeroes removed
 # and have a look at upper and lower bound surfaces?

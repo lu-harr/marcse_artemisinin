@@ -232,11 +232,11 @@ tmp <- moldm %>%
   group_by(Marker) %>%
   summarise(n = n(), npres = sum(Present)) %>%
   filter(npres > 0) %>%
-  filter(npres >= 10) %>%
-  full_join(marker_reference, join_by(Marker == marker))
-
-message(paste("Number of TF-associated mutations:", 
-              ))
+  #filter(npres >= 10) %>%
+  full_join(marker_reference, join_by(Marker == marker)) %>%
+  arrange(desc(npres))
+message("TF-associated mutations in dataset")
+tmp %>% as.data.frame()
 
 
 

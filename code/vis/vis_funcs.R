@@ -164,49 +164,50 @@ map_pred_row <- function(in_path,
 
 # convert to gg
 # add option to facet into time windows
-obs_prev_panel_base <- function(data_path, 
-                                pred_path, 
-                                main = "", 
-                                show_nas = FALSE, 
-                                #pal = colorRamp(viridis(10)), 
-                                pal = colorRamp(iddo_palettes$BlGyRd),
-                                xlim = c(0,1), ylim = c(0,1)){
-  <- <- setup_mut_data(data_path, min_year = MIN_YEAR)
-  preds <- rast(pred_path)
-  
-  mut_data$pred <- NA
-  yrs_to_extract <- unique(mut_data$year)
-  for (yr in yrs_to_extract){
-    if (yr %in% pfpr_years){
-      idx <- which(mut_data$year == yr)
-      val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
-                            mut_data[idx, c("x", "y")],
-                            ID = FALSE)
-      mut_data[idx, "pred"] <- val
-    }
-  }
-  
-  mut_data = mut_data[!is.na(mut_data$pred),]
-  # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
-  mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
-  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
-  mut_data <- arrange(mut_data, abs(diffs))
-  mut_data$diffs = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
-  message(paste(min(mut_data$diffs), max(mut_data$diffs)))
-  
-  plot(mut_data$present / mut_data$tested, 
-       mut_data$pred, cex = cex_transform(mut_data$tested) * 4,
-       xlab = "Observed prevalence", ylab = "Predicted prevalence", 
-       xlim = xlim, ylim = ylim,
-       col = rgb(pal(mut_data$diffs), maxColorValue = 255))
-  abline(a = 0, b = 1)
-  
-  plot(st_geometry(afr))
-  points(mut_data$x, mut_data$y, pch = 16,
-         col = rgb(pal(mut_data$diffs), maxColorValue = 255))
-  
-  mtext(outer = TRUE, text = main)
-}
+# obs_prev_panel_base <- function(data_path, 
+#                                 pred_path, 
+#                                 main = "", 
+#                                 show_nas = FALSE, 
+#                                 #pal = colorRamp(viridis(10)), 
+#                                 pal = colorRamp(iddo_palettes$BlGyRd),
+#                                 xlim = c(0,1), ylim = c(0,1)){
+#   mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR)
+#   preds <- rast(pred_path)
+#   yrs_pred <- str_extract(names(preds), "\\d{4}")
+#   
+#   mut_data$pred <- NA
+#   yrs_to_extract <- unique(mut_data$year)
+#   for (yr in yrs_to_extract){
+#     if (yr %in% yrs_pred){
+#       idx <- which(mut_data$year == yr)
+#       val <- terra::extract(preds[[paste0(yr, "_post_median")]], 
+#                             mut_data[idx, c("x", "y")],
+#                             ID = FALSE)
+#       mut_data[idx, "pred"] <- val
+#     }
+#   }
+#   
+#   mut_data = mut_data[!is.na(mut_data$pred),]
+#   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
+#   mut_data$diffs = mut_data$present / mut_data$tested - mut_data$pred
+#   message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+#   mut_data <- arrange(mut_data, abs(diffs))
+#   mut_data$diffs = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
+#   message(paste(min(mut_data$diffs), max(mut_data$diffs)))
+#   
+#   plot(mut_data$present / mut_data$tested, 
+#        mut_data$pred, cex = cex_transform(mut_data$tested) * 4,
+#        xlab = "Observed prevalence", ylab = "Predicted prevalence", 
+#        xlim = xlim, ylim = ylim,
+#        col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+#   abline(a = 0, b = 1)
+#   
+#   plot(st_geometry(afr))
+#   points(mut_data$x, mut_data$y, pch = 16,
+#          col = rgb(pal(mut_data$diffs), maxColorValue = 255))
+#   
+#   mtext(outer = TRUE, text = main)
+# }
 # here's an e.g.:
 # obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
 #                "output/k13/gneiting_sparse/preds_all.grd",
@@ -219,22 +220,23 @@ obs_prev_panel <- function(data_path,
                            pred_path, 
                            main = "", 
                            show_nas = FALSE, 
-                           #pal = colorRamp(viridis(10)), 
                            pal = colorRamp(iddo_palettes$BlGyRd),
                            xlim = c(0,1), # define limits to pred/obs panel
                            ylim = c(0,1), # define limits to pred/obs panel
                            facet_bins = NULL, # apply facets over time?
                            ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
-                           buffer = 1){
+                           buffer = 1, # option to reland points?
+                           bb = NULL){
   # 
   mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR)
   preds <- rast(pred_path)
+  yrs_pred <- str_extract(names(preds), "\\d{4}")
   
   # get predictions for each row in `mut_data`
   mut_data$pred <- NA
   yrs_to_extract <- unique(mut_data$year)
   for (yr in yrs_to_extract){
-    if (yr %in% pfpr_years){
+    if (yr %in% yrs_pred){
       idx <- which(mut_data$year == yr)
       val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                             mut_data[idx, c("x", "y")],
@@ -260,7 +262,10 @@ obs_prev_panel <- function(data_path,
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
   mut_data$diffs <- mut_data$present / mut_data$tested - mut_data$pred
   mut_data <- arrange(mut_data, abs(diffs))
-  mut_data$diffs_scaled = mut_data$diffs / 2 + 0.5 # hopefully grey ends up where diffs == 0?
+  # grey should end up where diffs == 0:
+  diffs_ext <- max(abs(mut_data$diffs), na.rm=TRUE)
+  mut_data$diffs_scaled = mut_data$diffs / 2 + 0.5
+  mut_data$diffs_scaled = mut_data$diffs / (diffs_ext * 2) + 0.5
   
   if (!is.null(facet_bins)){
     mut_data$year_bin <- cut(mut_data$year, 
@@ -292,8 +297,8 @@ obs_prev_panel <- function(data_path,
   
   # this is a bit hacky but I want to constrain the endpoints of my colour scale
   # so that they mean roughly the same between different markers
-  cols = seq(min(mut_data$diffs_scaled), 
-             max(mut_data$diffs_scaled), length.out = 100) %>%
+  cols = seq(min(mut_data$diffs_scaled, na.rm=T), 
+             max(mut_data$diffs_scaled, na.rm=T), length.out = 100) %>%
     pal() %>%
     rgb(maxColorValue = 255)
   
@@ -307,8 +312,28 @@ obs_prev_panel <- function(data_path,
     theme_bw() +
     xlab("Longitude") +
     ylab("Latitude") +
-    labs(title = main) +
     theme(legend.position = "bottom")
+  
+  if (!is.null(bb)){
+    p4 <- p3 +
+      xlim(bb[1:2]) +
+      ylim(bb[3:4]) +
+      theme(axis.title = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_blank(),
+            legend.position = "none",
+            plot.margin = margin(0, 0, 0, 0)) %>%
+      suppressWarnings()
+    
+    p3 <- ggdraw() +
+      draw_plot(p3 +
+                  geom_rect(aes(xmin = bb[1], xmax = bb[2], 
+                                ymin = bb[3], ymax = bb[4]),
+                            linetype = "dashed",
+                            fill = NA, col = "grey30", lwd=0.2)) +
+      draw_plot(p4, x = 0.15, y = 0.21, width = 0.3, height = 0.3)
+      #draw_plot(p4, x = -20, y = -30, width = 50, height = 50)
+  }
   
   if (show_nas){ # not sure how this plays with faceting
     p3 <- p3 + geom_point(data = un_pred, 
@@ -324,38 +349,35 @@ obs_prev_panel <- function(data_path,
   #plot_grid(p1, p3, rel_widths = c(0.5, 0.52))
   
   plot_grid(p1, p2, ncol = 1) %>%
-    plot_grid(p3, rel_widths = c(0.4, 0.75))
+    plot_grid(p3, rel_widths = c(0.4, 0.7))
 }
 
 
 
 # # e.g.:
 # # might want to re-land some points inside of model fitting
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/gneiting_sparse/preds_all.grd",
-#                #main = "k13 gneiting binom", 
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                ave_tag = "_post_median", buffer = 100000)
-# ggsave("~/Desktop/presentations/marcse/residuals_k13m_t.png", height = 3.7, width = 5, scale = 1.5)
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/gneiting_sparse/preds_medians.tif",
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+ggsave("figures/residuals_k13m.png", height = 3.7, width = 5, scale = 1.5)
 # 
 # # could try giving it longer ?
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/bb_gne/preds_all.tif",
-               #main = "k13 betabinom gneiting",
-               xlim = c(0, 0.6), ylim = c(0, 0.6),
-               buffer = 100000)
-ggsave("~/Desktop/presentations/MARCSE/op_bbinom.png", height=3, width=4, scale=2)
+# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+#                "output/k13_marcse/bb_gne/preds_all.tif",
+#                #main = "k13 betabinom gneiting",
+#                xlim = c(0, 0.6), ylim = c(0, 0.6),
+#                buffer = 100000)
+# ggsave("~/Desktop/presentations/MARCSE/op_bbinom.png", height=3, width=4, scale=2)
 # # bit spooked by the points changing between these two ...
 # # might be points falling off the mask?
 # # that is so many points !
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/gneiting_ahmc/preds_all.tif",
-               main = "",
-               xlim = c(0, 0.6), ylim = c(0, 0.6),
-               buffer = 100000)
-ggsave("~/Desktop/presentations/MARCSE/op_binom.png", height=3, width=5, scale=1.5)
-
-
+# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+#                "output/k13_marcse/gneiting_ahmc/preds_all.tif",
+#                main = "",
+#                xlim = c(0, 0.6), ylim = c(0, 0.6),
+#                buffer = 100000)
+# ggsave("~/Desktop/presentations/MARCSE/op_binom.png", height=3, width=5, scale=1.5)
 
 ## country-level plots
 # give me directory where all of the model objects/predictions are ...
@@ -534,14 +556,48 @@ plot_k13_markers <- function(buff,
 }
 
 
-# unfinished: ...
-plot_partner_markers <- function(shp, buff, 
-                                 markers = c("mdr86", "mdr184", "mdr1246", "crt76")){
-  for (marker in markers){
-    mut_data <- setup_mut_data(get_input_dir(marker), min_year = MIN_YEAR)
-  }
+coverages_fig <- function(path){
+  # wish I had included years here ... wait a sec I did
+  # yrs <- concat_coverages(path)
+  coverages <- read.csv(paste0(path, "coverages/all_coverages.csv"))
+  covs_all <- coverages[seq(1, nrow(coverages), 2),] %>%
+    colSums(na.rm=TRUE)
+  covs_pos <- coverages[seq(2, nrow(coverages), 2),] %>%
+    colSums(na.rm=TRUE)
   
+  covs_all <- covs_all[grep("X", names(covs_all))] / covs_all["n_landed"] * 100
+  covs_pos <- covs_pos[grep("X", names(covs_pos))] / covs_pos["n_non_zero"] * 100
+  widths <- gsub("X", "", names(covs_all))[grep("X", names(covs_all))] %>% as.numeric()
+  
+  dat <- data.frame(w = widths,
+                    pa = covs_all,
+                    po = covs_pos) %>%
+    pivot_longer(cols = c(pa, po), names_to = "group", values_to = "value") %>%
+    mutate(group = ifelse(group == "pa", "All points", "K13 presences only"))
+  
+  plot(widths, covs_pos, type="l", 
+       ylim = c(0, 100), xlim = c(0, 100))
+  lines(widths, covs_all, type = "l")
+  abline(a = 0, b = 1)
+  
+  ggplot(dat) +
+    geom_line(aes(x = w, y = value, color = group)) +
+    geom_abline(slope = 1, intercept = 0, col="darkgrey", linetype = "dashed") +
+    scale_color_manual(values = iddo_palettes$iddo, name="") +
+    coord_cartesian(xlim = c(0, 100), ylim = c(0, 100), expand = FALSE) +
+    xlab("Credible interval width") +
+    ylab("Coverage probability")
 }
+
+
+# unfinished: ...
+# plot_partner_markers <- function(shp, buff, 
+#                                  markers = c("mdr86", "mdr184", "mdr1246", "crt76")){
+#   for (marker in markers){
+#     mut_data <- setup_mut_data(get_input_dir(marker), min_year = MIN_YEAR)
+#   }
+#   
+# }
 
 # perhaps this should be wrapped into its own script ...
 # make calls to ribbon plot, row plot, etc., but provide masked raster

@@ -88,7 +88,7 @@ predict_to_ras <- function(stack,
   
   # message(dim(t(parameters$beta)))
   # message(dim(random_field_pixel))
-  mut_freq_pixel <- (X_pixel[,design_cols] %*% t(parameters$beta) + 
+  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + 
                        # transform here? Is R taking over?
                        random_field_pixel) %>%
     ilogit()
@@ -104,7 +104,7 @@ predict_to_ras <- function(stack,
   if (coverage & data_path != ""){
     coverages <- calculate_coverages(post_pixel_sims,
                                       data_path,
-                                      year,
+                                      lab_year,
                                       ras,
                                      incs = 100)
   } else {
@@ -401,6 +401,8 @@ concat_coverages <- function(path){
   
   write.csv(coverages, paste0(path, "coverages/all_coverages.csv"), row.names = FALSE)
   message("coverages concatted")
+  
+  return(str_extract(files, "\\d{4}"))
 }
 
 
@@ -409,27 +411,59 @@ concat_preds <- function(path, medians = TRUE,
                          upper = FALSE, lower = FALSE){
   to_read <- grep("\\d{4}_preds.grd$", list.files(path), value = TRUE)
   
+  message(paste(to_read))
+
   razzes <- rast(paste0(path, "/", to_read))
   
   to_write <- c()
   
-  if (medians){to_write <- c(to_write, grepl("50", names(razzes)))}
-  if (sds){to_write <- c(to_write, grepl("sd$", names(razzes)))}
-  if (sdscaled){to_write <- c(to_write, grepl("sdscaled", names(razzes)))}
-  if (upper){to_write <- c(to_write, grepl("97\\.5", names(razzes)))}
-  if (lower){to_write <- c(to_write, grepl("2\\.5", names(razzes)))}
-  
-  
+  message("\n")
+  message(paste(names(razzes)))
+
+  if (medians){
+    to_write <- names(razzes)[grep("50", names(razzes))]
+    terra::writeRaster(subset(razzes, to_write), 
+                        file.path(path, "preds_medians.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
+  }
+  if (sds){
+    to_write <- names(razzes)[grep("sd$", names(razzes))]
+    terra::writeRaster(subset(razzes, to_write), 
+                        file.path(path, "preds_sds.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
+  }
+  if (sdscaled){
+    to_write <- names(razzes)[grep("sdscaled", names(razzes))]
+    terra::writeRaster(subset(razzes, to_write), 
+                        file.path(path, "preds_sdscaled.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
+  }
+  if (upper){
+    to_write <- names(razzes)[grep("97\\.5", names(razzes))]
+    terra::writeRaster(subset(razzes, to_write), 
+                        file.path(path, "preds_upper.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
+  }
+  if (lower){
+    to_write <- names(razzes)[grep("2\\.5", names(razzes))]
+    terra::writeRaster(subset(razzes, to_write), 
+                        file.path(path, "preds_lower.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
+  }
   if (ciwidth){
     ci_width = subset(razzes, grepl("97\\.5", names(razzes))) - subset(razzes, grepl("2\\.5", names(razzes)))
     names(ci_width) = paste0(str_extract(names(ci_width), "\\d{4}"), "_CI")
-    razzes <- c(razzes, ci_width)
-    to_write <- c(to_write, names(ci_width))
+    terra::writeRaster(ci_width, 
+                        file.path(path, "preds_ciwidths.tif"), 
+                        overwrite = TRUE, filetype = "GTiff")
   }
+
+  # message("\n")
+  # message(paste(to_write))
   
-  razzes <- subset(razzes, to_write)
-  f <- file.path(path, "preds_all.tif")
-  terra::writeRaster(razzes, f, overwrite = TRUE, filetype = "GTiff")
+  # razzes <- subset(razzes, to_write)
+  # f <- file.path(path, "preds_all.tif")
+  # terra::writeRaster(razzes, f, overwrite = TRUE, filetype = "GTiff")
   message("preds concatted")
 }
 

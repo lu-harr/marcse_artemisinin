@@ -15,7 +15,12 @@ out_dir <- paste0("output/", marker, "/", mod, "/")
 
 concat_coverages(out_dir)
 concat_preds(out_dir, 
-             medians = TRUE, sds = TRUE, sdscaled = TRUE, ciwidth = TRUE)
+             medians = TRUE, 
+             sds = TRUE, 
+             sdscaled = TRUE, 
+             ciwidth = TRUE,
+             upper = TRUE,
+             lower = TRUE)
 
 end <- Sys.time()
 
