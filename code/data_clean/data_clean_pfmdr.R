@@ -387,9 +387,9 @@ ggplot() +
                            size = Tested, fill = Present/Tested),
              col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
-                       "",
+                       "Prevalence",
                        breaks = c(0, 0.5, 1), 
-                       labels = c("0  (all WT)", "0.5", "1  (all mutant)"),
+                       labels = c("0\n(all WT)", "0.5", "1\n(all mutant)"),
                        limits = c(0,1)) +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
   scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
@@ -399,9 +399,14 @@ ggplot() +
   #      xlab = "Longitude", ylab = "Latitude") +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_bw()
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_text(hjust = 0.5),
+        legend.spacing.x = unit(4, "lines")) +
+  guides(fill = guide_colourbar(title.position = "top"),
+         size = guide_legend(title.position = "top"))
 #theme(title = element_blank())
-ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 5, width = 5)
+ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 6.5, width = 5)
 
 
 partners <- partners %>%

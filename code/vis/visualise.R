@@ -563,7 +563,68 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 
 coverages_fig("output/k13_marcse/gneiting_sparse/")
 
+mut_data <- read_rds("output/k13_marcse/gneiting_sparse/mut_data.rds")
+lower <- rast("output/k13_marcse/gneiting_sparse/preds_lower.tif")
+upper <- rast("output/k13_marcse/gneiting_sparse/preds_upper.tif")
 
+lower_upper_panel <- function(path, 
+                           main = "", 
+                           show_nas = FALSE, 
+                           pal = colorRamp(iddo_palettes$BlGyRd),
+                           xlim = c(0,1), # define limits to pred/obs panel
+                           ylim = c(0,1), # define limits to pred/obs panel
+                           facet_bins = NULL, # apply facets over time?
+                           ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
+                           buffer = 1, # option to reland points?
+                           bb = NULL){
+  
+  mut_data <- read_rds(paste0(path, "mut_data.rds")) %>%
+    arrange(present/tested)
+  lower <- rast(paste0(path, "preds_lower.tif"))
+  upper <- rast(paste0(path, "preds_upper.tif"))
+  yrs_pred <- str_extract(names(lower), "\\d{4}")
+  
+  # get predictions for each row in `mut_data`
+  mut_data$lower <- NA
+  mut_data$upper <- NA
+  yrs_to_extract <- unique(mut_data$year)
+  for (yr in yrs_to_extract){
+    if (yr %in% yrs_pred){
+      idx <- which(mut_data$year == yr)
+      vall <- terra::extract(lower[[paste0(yr, "_2.5")]], 
+                            mut_data[idx, c("x", "y")],
+                            ID = FALSE, search_radius = buffer)
+      valu <- terra::extract(upper[[paste0(yr, "_97.5")]], 
+                            mut_data[idx, c("x", "y")],
+                            ID = FALSE, search_radius = buffer)
+      if(ncol(val) < 3){
+        # idk why we have to have an inconsistent return when |idx| == 1
+        mut_data[idx, "lower"] <- vall[1,1]
+        mut_data[idx, "upper"] <- valu[1,1]}
+      else{
+        mut_data[idx, "lower"] <- vall[, paste0(yr, "_2.5")]
+        mut_data[idx, "upper"] <- valu[, paste0(yr, "_97.5")]
+      }
+    }
+  }
+  
+  message(nrow(mut_data))
+  mut_data <- mut_data %>% 
+    filter(!is.na(lower) & !is.na(upper)) %>%
+    mutate(idx = 1:nrow(.), 
+           covered = ifelse(present/tested > lower & present/tested < upper, TRUE, FALSE))
+  message(nrow(mut_data))
+  
+  mut_data_long <- mut_data %>%
+    pivot_longer(cols = c(lower, upper), names_to = "lu", values_to = "value")
+  
+  ggplot(mut_data) +
+    geom_point(aes(x = idx, y = present/tested, col = covered), pch = 1) +
+    geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) 
+    
+}
+
+lower_upper_panel("output/k13_marcse/gneiting_sparse/")
 
 # check this again with zeroes removed
 # and have a look at upper and lower bound surfaces?

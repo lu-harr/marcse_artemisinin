@@ -499,7 +499,12 @@ p2 <- ggplot() +
   ylab("Latitude") +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
-  theme(plot.background = element_rect(fill='transparent', color=NA))
+  theme(plot.background = element_rect(fill='transparent', color=NA),
+        legend.position = "bottom",
+        legend.title = element_text(hjust = 0.5),
+        legend.spacing.x = unit(10, "lines")) +
+  guides(fill = guide_colourbar(title.position = "top"),
+         size = guide_legend(title.position = "top"))
 
 p2
 
@@ -520,8 +525,9 @@ library(cowplot)
 # )
 
 rect <- rectGrob(
-  x = 0.915,
-  y = 0.27,
+  # x = 0.915,
+  # y = 0.27,
+  x = 0.4, 0.05,
   width = unit(0.2, "in"),
   height = unit(0.2, "in"),
   gp = gpar(fill = "grey70", colour="grey50", alpha = 0.5)
@@ -529,7 +535,8 @@ rect <- rectGrob(
 
 p2 <- ggdraw(p2) +
   draw_grob(rect) + 
-  draw_label("Absence", x = 0.96, y = 0.27, size = 10)
+  # draw_label("Absence", x = 0.96, y = 0.27, size = 10)
+  draw_label("Absence", x = 0.45, y = 0.05, size = 10)
 #theme(#strip.background = element_blank(),
 #strip.text.x = element_blank(),
 #strip.placement = "outside") +
@@ -539,7 +546,7 @@ plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 
 # would be sick if I could make the word "absence" bigger but I've had enough of 
 # snarky people on ggplot stack overflow for about three years
-ggsave("figures/markers_disagg_marcse.png", height = 5, width = 5.1, scale = 2)
+ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
 
 
 

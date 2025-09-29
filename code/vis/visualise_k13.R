@@ -10,6 +10,8 @@ mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 # preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
 # preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
 preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
+preds <- c(rast("output/k13_marcse/gneiting_sparse/preds_medians.tif"),
+           rast("output/k13_marcse/gneiting_sparse/preds_sds.tif"))
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 library(iddoPal)
@@ -25,8 +27,8 @@ afr <- world %>%
   st_as_sf()
 
 preds <- preds %>% 
-  aggregate(fact = 2) %>%
-  subset(1:73)
+  aggregate(fact = 2) #%>%
+  # subset(1:73)
 
 ###############################################################################
 # surveillance effort
@@ -276,7 +278,7 @@ zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sdscaled"), 
+              filter(year %in% years_to_plot & tag == "sd"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
@@ -321,7 +323,7 @@ df <- data.frame(xmin = c(0.04, 0.525),
                  xmax = c(0.5, 0.873),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.02, 1),
-                 lab = c("Median", "Standard deviation (unscaled)"))
+                 lab = c("Median", "Standard deviation"))
 
 plot_grid(medians + theme(legend.position = "none"), 
           zooms, 
@@ -335,87 +337,87 @@ plot_grid(medians + theme(legend.position = "none"),
   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
                            label = lab))
 
-ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
+ggsave("figures/k13_out_bin.png", height = 5.2, width = 4.5, scale = 2)
 
 ################################################################################
 # just doing some fiddling for confab presentation
-
-df <- gg_ras_prep(preds)$df %>%
-  mutate(marker = str_extract(lyr, "[^_]+$"))
-
-medians <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & marker == "50"),
-            mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt",
-                       breaks = c(0.1, 0.2, 0.4, 0.6)) +
-  geom_sf(data = afr, fill = NA, col = "grey50") +
-  facet_wrap(~year, nrow = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  theme_bw()
-medians
-ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", height = 5, width = 10, scale = 0.9)
-
-sds <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & marker == "sd"),
-            mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_distiller(palette = "Oranges", 
-                       na.value = NA, 
-                       "Uncertainty", 
-                       direction = 1, trans="sqrt") +
-  geom_sf(data = afr, fill = NA, col = "grey50") +
-  facet_wrap(~year, nrow = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  theme_bw()
-sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sdsbb.png", height = 5, width = 10, scale = 0.9)
-
-sds <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & marker == "sdscaled"),
-            mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_distiller(palette = "Oranges", 
-                       na.value = NA, 
-                       "Uncertainty", 
-                       direction = 1) +
-  geom_sf(data = afr, fill = NA, col = "grey50") +
-  facet_wrap(~year, nrow = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  theme_bw()
-sds
-ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaledbb.png", height = 5, width = 10, scale = 0.9)
-
-tmp <- df %>%
-  filter(year == 2022) %>%
-  dplyr::select(-c(lyr)) %>%
-  pivot_wider(names_from = tag, values_from = val)
-
-# would have been nice to put some histograms in
-ggplot(tmp) +
-  geom_point(aes(x = medi, y = sd),
-             col = "darkgrey", alpha = 0.2) +
-  xlab("Median") +
-  ylab("Std Deviation")
-ggsave("~/Desktop/presentations/MARCSE/sd_over_medi.png", height = 5, width = 5)
-
-xxx <- seq(min(tmp$medi), max(tmp$medi), length.out = 100)
-varb <- data.frame(x = xxx,
-                   y = xxx * (1 - xxx))
-
-ggplot(tmp) +
-  geom_point(aes(x = medi, y = sd),
-             col = "darkgrey", alpha = 0.2) +
-  geom_line(aes(x = x, y = y * 0.6), data = varb) +
-  xlab("Median") +
-  ylab("Std Deviation")
-ggsave("~/Desktop/presentations/MARCSE/sd_over_medi_hypot.png", height = 5, width = 5)
+# 
+# df <- gg_ras_prep(preds)$df %>%
+#   mutate(marker = str_extract(lyr, "[^_]+$"))
+# 
+# medians <- ggplot() +
+#   geom_sf(data = afr, fill = "white") +
+#   geom_tile(data = df %>%
+#               filter(year %in% years_to_plot & marker == "50"),
+#             mapping = aes(x = x, y = y, fill = val)) +
+#   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt",
+#                        breaks = c(0.1, 0.2, 0.4, 0.6)) +
+#   geom_sf(data = afr, fill = NA, col = "grey50") +
+#   facet_wrap(~year, nrow = 1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   theme_bw()
+# medians
+# ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", height = 5, width = 10, scale = 0.9)
+# 
+# sds <- ggplot() +
+#   geom_sf(data = afr, fill = "white") +
+#   geom_tile(data = df %>%
+#               filter(year %in% years_to_plot & marker == "sd"),
+#             mapping = aes(x = x, y = y, fill = val)) +
+#   scale_fill_distiller(palette = "Oranges", 
+#                        na.value = NA, 
+#                        "Uncertainty", 
+#                        direction = 1, trans="sqrt") +
+#   geom_sf(data = afr, fill = NA, col = "grey50") +
+#   facet_wrap(~year, nrow = 1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   theme_bw()
+# sds
+# ggsave("~/Desktop/presentations/MARCSE/k13_sdsbb.png", height = 5, width = 10, scale = 0.9)
+# 
+# sds <- ggplot() +
+#   geom_sf(data = afr, fill = "white") +
+#   geom_tile(data = df %>%
+#               filter(year %in% years_to_plot & marker == "sdscaled"),
+#             mapping = aes(x = x, y = y, fill = val)) +
+#   scale_fill_distiller(palette = "Oranges", 
+#                        na.value = NA, 
+#                        "Uncertainty", 
+#                        direction = 1) +
+#   geom_sf(data = afr, fill = NA, col = "grey50") +
+#   facet_wrap(~year, nrow = 1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   theme_bw()
+# sds
+# ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaledbb.png", height = 5, width = 10, scale = 0.9)
+# 
+# tmp <- df %>%
+#   filter(year == 2022) %>%
+#   dplyr::select(-c(lyr)) %>%
+#   pivot_wider(names_from = tag, values_from = val)
+# 
+# # would have been nice to put some histograms in
+# ggplot(tmp) +
+#   geom_point(aes(x = medi, y = sd),
+#              col = "darkgrey", alpha = 0.2) +
+#   xlab("Median") +
+#   ylab("Std Deviation")
+# ggsave("~/Desktop/presentations/MARCSE/sd_over_medi.png", height = 5, width = 5)
+# 
+# xxx <- seq(min(tmp$medi), max(tmp$medi), length.out = 100)
+# varb <- data.frame(x = xxx,
+#                    y = xxx * (1 - xxx))
+# 
+# ggplot(tmp) +
+#   geom_point(aes(x = medi, y = sd),
+#              col = "darkgrey", alpha = 0.2) +
+#   geom_line(aes(x = x, y = y * 0.6), data = varb) +
+#   xlab("Median") +
+#   ylab("Std Deviation")
+# ggsave("~/Desktop/presentations/MARCSE/sd_over_medi_hypot.png", height = 5, width = 5)
 
 
 ################################################################################
@@ -424,10 +426,10 @@ ggsave("~/Desktop/presentations/MARCSE/sd_over_medi_hypot.png", height = 5, widt
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "medi"),
+              filter(year %in% years_to_plot & tag == "50"),
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1, strip.position = "left") +
-  scale_fill_viridis_c(na.value = NA, "Prevalence") +theme_bw() +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") + theme_bw() +
   labs(title = "Median") +
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
@@ -449,7 +451,7 @@ sds <- ggplot() +
                        "Uncertainty", 
                        direction = 1,
                        trans = "sqrt") +
-  labs(title = "Standard deviation (unscaled)") +
+  labs(title = "Standard deviation") +
   theme_bw() +
   theme(strip.background = element_blank(),
         strip.text.x = element_blank(),
@@ -461,14 +463,40 @@ sds <- ggplot() +
         legend.justification = "top") 
 sds
 
+legs <- plot_grid(get_legend(medians),
+                  get_legend(sds),
+                  # this is a bit hacky
+                  NULL,
+                  NULL,
+                  ncol = 1)
+
+rects <- data.frame(xmin = c(0.046, 0.47),
+                 xmax = c(0.45, 0.873),
+                 ymin = rep(0.968, 2),
+                 ymax = rep(0.995, 1),
+                 lab = c("Median", "Standard deviation"))
+
+plot_grid(medians + theme(legend.position = "none"), 
+          sds + theme(legend.position = "none"), 
+          legs,
+          ncol = 3, rel_widths = c(1,0.933,0.25)) +
+  theme(plot.margin = unit(c(0,0,0,0), "cm")) +
+  geom_rect(data = rects, aes(xmin=xmin, xmax=xmax, ymin=ymin,
+                           ymax=ymax),
+            colour="grey10", fill="grey85", linewidth=0.3) +
+  geom_text(data = rects, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+                            label = lab))
+
+ggsave("figures/k13_out_bin_no_zooms.png", height = 6, width = 4.5, scale = 1.7)
+
 
 # surveillance effort
-tmp <- mut_data %>%
-  group_by(year) %>%
-  summarise(n = sum(tested))
-ggplot(tmp %>% filter(year > 2008)) +
-  geom_col(aes(x = year, y = n)) +
-  theme_bw() +
-  xlab("Year") +
-  ylab("Tests")
+# tmp <- mut_data %>%
+#   group_by(year) %>%
+#   summarise(n = sum(tested))
+# ggplot(tmp %>% filter(year > 2008)) +
+#   geom_col(aes(x = year, y = n)) +
+#   theme_bw() +
+#   xlab("Year") +
+#   ylab("Tests")
 
