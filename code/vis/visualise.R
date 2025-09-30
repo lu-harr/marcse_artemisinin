@@ -108,41 +108,36 @@ ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png",
 # time !
 # note to self: this has the potential to crash ya laptop
 
-p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
+p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/",
                title = "(a) Pfkelch13")
-p2 <- pred_time_plot("output/crt76/gneiting_ahmc/preds_all.tif",
+p2 <- pred_time_plot("output/crt76/gneiting_sparse/",
                title = "(b) Pfcrt K76T")
-p3 <- pred_time_plot("output/mdr86/gneiting_ahmc/preds_all.tif",
+p3 <- pred_time_plot("output/mdr86/gneiting_sparse/",
                title = "(c) Pfmdr1 N86Y")
-p4 <- pred_time_plot("output/mdr184/gneiting_ahmc/preds_all.tif",
+p4 <- pred_time_plot("output/mdr184/gneiting_sparse/",
                title = "(d) Pfmdr1 Y184F")
-p5 <- pred_time_plot("output/mdr1246/gneiting_ahmc/preds_all.tif",
+p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/",
                title = "(e) Pfmdr1 D1246Y")
 
 library(patchwork)
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_gneiting2.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_bin.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
-                     title = "(a) Pfkelch13",
-                     points_path = "data/clean/moldm_k13_nomarker.csv")
-p2 <- pred_time_plot("output/crt76/gneiting_ahmc/preds_all.tif",
-                     title = "(b) Pfcrt K76T",
-                     points_path = "data/clean/moldm_crt76.csv")
-p3 <- pred_time_plot("output/mdr86/gneiting_ahmc/preds_all.tif",
-                     title = "(c) Pfmdr1 N86Y",
-                     points_path = "../moldm/clean/pfmdr_single_86.csv")
-p4 <- pred_time_plot("output/mdr184/gneiting_ahmc/preds_all.tif",
-                     title = "(d) Pfmdr1 Y184F",
-                     points_path = "../moldm/clean/pfmdr_single_184.csv")
-p5 <- pred_time_plot("output/mdr1246/gneiting_ahmc/preds_all.tif",
-                     title = "(e) Pfmdr1 D1246Y",
-                     points_path = "../moldm/clean/pfmdr_single_1246.csv")
+p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13")
+p2 <- pred_time_plot("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T")
+p3 <- pred_time_plot("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y")
+p4 <- pred_time_plot("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F")
+p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y")
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_pts_gneiting2.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
 
 p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
                      title = "(a) Pfkelch13")
@@ -192,93 +187,93 @@ zoom_df <- rbind(zambezi, victoria, eswatini) %>%
 # wrap up model predictions for pfcrt/pfmdr1:
 
 # make sure you've run what's up the top of this script
-years_to_plot <- c("2006","2010", "2014", "2018", "2022")
-p1 <- map_pred_row("output/crt76/bb_gne/preds_all.tif", 
+years_to_plot <- c("2004","2009", "2014", "2019", "2024")
+p1 <- map_pred_row("output/crt76/bb_gne/preds_medians.tif", 
              years = years_to_plot, field = "50", pal = blrd,
              legend_lim = c(0,1), ylab = "", top_pan = TRUE)#
-p2 <- map_pred_row("output/mdr86/bb_gne/preds_all.tif", 
+p2 <- map_pred_row("output/mdr86/bb_gne/preds_medians.tif", 
                    years = years_to_plot, field = "50", pal = blrd,
-                   legend_lim = c(0,1), xlab = "", ylab = "", top_pan = TRUE)# ylab = "(a)")
-p3 <- map_pred_row("output/mdr184/bb_gne/preds_all.tif", 
+                   legend_lim = c(0,1), xlab = "", ylab = "")# ylab = "(a)")
+p3 <- map_pred_row("output/mdr184/bb_gne/preds_medians.tif", 
                    years = years_to_plot, field = "50", pal = blrd,
                    legend_lim = c(0,1), xlab = "", ylab = "")#  ylab = "(c)")
-p4 <- map_pred_row("output/mdr1246/bb_gne/preds_all.tif", 
+p4 <- map_pred_row("output/mdr1246/bb_gne/preds_medians.tif", 
                    years = years_to_plot, field = "50", pal = blrd,
                    legend_lim = c(0,1), xlab = "",ylab = "")#  ylab = "(e)")
-p5 <- map_pred_row("output/crt76/bb_gne/preds_all.tif", 
+p5 <- map_pred_row("output/mdr86/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(b)")
-p6 <- map_pred_row("output/mdr86/bb_gne/preds_all.tif", 
+                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(b)")
+p6 <- map_pred_row("output/mdr86/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(b)")
-p7 <- map_pred_row("output/mdr184/bb_gne/preds_all.tif", 
+                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(b)")
+p7 <- map_pred_row("output/mdr184/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(d)")
-p8 <- map_pred_row("output/mdr1246/bb_gne/preds_all.tif", 
+                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(d)")
+p8 <- map_pred_row("output/mdr1246/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(f)")
-
+                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(f)")
+# legend_lim was c(0, 0.2) for the main fig ... although this probably could have been less
 library(gridExtra)
 library(grid)
 library(cowplot)
 
 
-# chuck the rows together
-pcol <- plot_grid(p2 + theme(legend.position = "none"), 
-             p6 + theme(legend.position = "none"), 
-             p3 + theme(legend.position = "none"),
-             p7 + theme(legend.position = "none"),
-             p4 + theme(legend.position = "none"),
-             p8 + theme(legend.position = "none"),
-             #ncol = 1, rel_heights = c(1.21, rep(1, 5))) +
-             ncol = 1, rel_heights = c(1.167, rep(1, 5))) +
-  theme(panel.spacing = unit(0, "cm"))
-
-#pcol
-
-#pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
-
-legend1 = get_legend(p2)
-legend2 = get_legend(p6)
-
-plegend <- plot_grid(legend1, legend2, ncol = 1, axis = "r")
-
-#plegend
-
-p <- plot_grid(pcol, plegend, rel_widths = c(0.8,0.2))
-
-# this df worked when I was using subfigure labels ...
-# df <- data.frame(xmin = rep(0.02, 3),
-#                  xmax = rep(0.062, 3),
-#                  ymin = c(0.017, 0.34, 0.66),
-#                  ymax = c(0.312, 0.635, 0.955),
+# # chuck the rows together
+# pcol <- plot_grid(p2 + theme(legend.position = "none"), 
+#              p6 + theme(legend.position = "none"), 
+#              p3 + theme(legend.position = "none"),
+#              p7 + theme(legend.position = "none"),
+#              p4 + theme(legend.position = "none"),
+#              p8 + theme(legend.position = "none"),
+#              #ncol = 1, rel_heights = c(1.21, rep(1, 5))) +
+#              ncol = 1, rel_heights = c(1.167, rep(1, 5))) +
+#   theme(panel.spacing = unit(0, "cm"))
+# 
+# #pcol
+# 
+# #pcol <- grid.arrange(arrangeGrob(pcol, left = y.grob, bottom = x.grob))
+# 
+# legend1 = get_legend(p2)
+# legend2 = get_legend(p6)
+# 
+# plegend <- plot_grid(legend1, legend2, ncol = 1, axis = "r")
+# 
+# #plegend
+# 
+# p <- plot_grid(pcol, plegend, rel_widths = c(0.8,0.2))
+# 
+# # this df worked when I was using subfigure labels ...
+# # df <- data.frame(xmin = rep(0.02, 3),
+# #                  xmax = rep(0.062, 3),
+# #                  ymin = c(0.017, 0.34, 0.66),
+# #                  ymax = c(0.312, 0.635, 0.955),
+# #                  lab = c("D1246Y", "Y184F", "N86Y"))
+# df <- data.frame(xmin = rep(0.001, 3),
+#                  xmax = rep(0.028, 3),
+#                  ymin = c(0.0155, 0.337, 0.663),
+#                  ymax = c(0.315, 0.639, 0.965),
 #                  lab = c("D1246Y", "Y184F", "N86Y"))
-df <- data.frame(xmin = rep(0.001, 3),
-                 xmax = rep(0.028, 3),
-                 ymin = c(0.0155, 0.337, 0.663),
-                 ymax = c(0.315, 0.639, 0.965),
-                 lab = c("D1246Y", "Y184F", "N86Y"))
-p <- p + 
-  # tried adding outer margin but that didn't do anything
-  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
-                          ymax=ymax), 
-            colour="grey10", fill="grey85", linewidth=0.3) +
-  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
-                            label = lab), angle = 90) +
-  geom_text(data = data.frame(x = rep(0.85, 2), y = c(0.34, 0.84), 
-                              label = c("Estimate SD", "Prevalence")),
-            aes(x = x, y = y, label = label))
-
-p
-
-# gave up on add_sub
-ggsave("figures/mdr_out_bb.png", height = 9, width = 8.5)
+# p <- p + 
+#   # tried adding outer margin but that didn't do anything
+#   geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+#                           ymax=ymax), 
+#             colour="grey10", fill="grey85", linewidth=0.3) +
+#   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+#                             label = lab), angle = 90) +
+#   geom_text(data = data.frame(x = rep(0.85, 2), y = c(0.34, 0.84), 
+#                               label = c("Estimate SD", "Prevalence")),
+#             aes(x = x, y = y, label = label))
+# 
+# p
+# 
+# # gave up on add_sub
+# ggsave("figures/mdr_out_bb.png", height = 9, width = 8.5)
 
 ########################################################################
 # can I fit crt in too?
-p2 <- map_pred_row("output/mdr86/bb_gne/preds_all.tif", 
-                   years = years_to_plot, field = "50", pal = blrd,
-                   legend_lim = c(0,1), xlab = "", ylab = "")# ylab = "(a)")
+# p2 <- map_pred_row("output/mdr86/bb_gne/preds_all.tif", 
+#                    years = years_to_plot, field = "50", pal = blrd,
+#                    legend_lim = c(0,1), xlab = "", ylab = "")# ylab = "(a)")
 
 # chuck the rows together
 pcol <- plot_grid(p1 + theme(legend.position = "none", plot.margin = unit(rep(0,4), "cm")), 
@@ -328,9 +323,7 @@ p <- p +
                               label = c("Estimate SD", "Prevalence")),
             aes(x = x, y = y, label = label))
 
-p
-
-ggsave("figures/crt_mdr_out_bb.png", height = 9, width = 7)
+ggsave("figures/crt_mdr_out_bb.png", p, height = 9, width = 7)
 
 ##############################################################################
 # need a short version for powerpoint
@@ -562,6 +555,27 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 # visualise coverages
 
 coverages_fig("output/k13_marcse/gneiting_sparse/")
+coverages_fig("output/k13_marcse/bb_gne/")
+coverages_fig("output/crt76/gneiting_sparse/")
+coverages_fig("output/crt76/bb_gne/")
+coverages_fig("output/mdr184/gneiting_sparse/")
+coverages_fig("output/mdr184/bb_gne/")
+#coverages_fig("output/mdr86/gneiting_sparse/")
+#coverages_fig("output/mdr86/bb_gne/")
+coverages_fig("output/mdr1246/gneiting_sparse/")
+coverages_fig("output/mdr1246/bb_gne/")
+
+# here's what I put in the MS
+p1 <- coverages_fig(list("output/k13_marcse/gneiting_sparse/", 
+                         "output/k13_marcse/bb_gne/"))
+p2 <- coverages_fig(list("output/mdr184/gneiting_sparse/", 
+                         "output/mdr184/bb_gne/"))
+
+p <- plot_grid(p1 + theme(legend.position = "none"), 
+               p2 + theme(legend.position = "none"), nrow = 2, 
+               labels = "auto", label_x = 0.1, label_y = 0.97)
+plot_grid(p, get_legend(p1), rel_widths = c(1, 0.25))
+ggsave("figures/coverages.png", height = 5, width = 7)
 
 mut_data <- read_rds("output/k13_marcse/gneiting_sparse/mut_data.rds")
 lower <- rast("output/k13_marcse/gneiting_sparse/preds_lower.tif")
@@ -582,7 +596,7 @@ lower_upper_panel <- function(path,
     arrange(present/tested)
   lower <- rast(paste0(path, "preds_lower.tif"))
   upper <- rast(paste0(path, "preds_upper.tif"))
-  yrs_pred <- str_extract(names(lower), "\\d{4}")
+  yrs_pred <- str_extract(names(upper), "\\d{4}")
   
   # get predictions for each row in `mut_data`
   mut_data$lower <- NA
@@ -597,11 +611,11 @@ lower_upper_panel <- function(path,
       valu <- terra::extract(upper[[paste0(yr, "_97.5")]], 
                             mut_data[idx, c("x", "y")],
                             ID = FALSE, search_radius = buffer)
-      if(ncol(val) < 3){
+      if(ncol(vall) < 3){
         # idk why we have to have an inconsistent return when |idx| == 1
         mut_data[idx, "lower"] <- vall[1,1]
-        mut_data[idx, "upper"] <- valu[1,1]}
-      else{
+        mut_data[idx, "upper"] <- valu[1,1]
+      } else{
         mut_data[idx, "lower"] <- vall[, paste0(yr, "_2.5")]
         mut_data[idx, "upper"] <- valu[, paste0(yr, "_97.5")]
       }
@@ -619,13 +633,50 @@ lower_upper_panel <- function(path,
     pivot_longer(cols = c(lower, upper), names_to = "lu", values_to = "value")
   
   ggplot(mut_data) +
-    geom_point(aes(x = idx, y = present/tested, col = covered), pch = 1) +
-    geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) 
+    geom_point(aes(x = idx, y = present/tested,
+                   size = tested, 
+                   col = covered), 
+               pch = 1) +
+    geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) +
+    scale_colour_manual(values = iddo_palettes$iddo, "CI covers\nobservation") +
+    scale_size_continuous(range = c(0.1, 6), "Tested") +
+    xlab("Index") +
+    ylab("Observed prevalence") +
+    theme_bw() #+
+    # for some reason, this legend.position doesn't play with get_legend
+    # theme(legend.position = "bottom")
     
 }
 
-lower_upper_panel("output/k13_marcse/gneiting_sparse/")
 
+lower_upper_panel("output/k13_marcse/gneiting_sparse/")
+lower_upper_panel("output/k13_marcse/bb_gne/")
+lower_upper_panel("output/mdr86/gneiting_sparse/")
+lower_upper_panel("output/mdr86/bb_gne/")
+# not 100% sure what's going on with crt ... may need refitting ..
+lower_upper_panel("output/crt76/gneiting_sparse/")
+lower_upper_panel("output/crt76/bb_gne/")
+lower_upper_panel("output/mdr1246/gneiting_sparse/")
+lower_upper_panel("output/mdr1246/bb_gne/")
+lower_upper_panel("output/mdr184/gneiting_sparse/")
+lower_upper_panel("output/mdr184/bb_gne/")
+
+
+p1 <- lower_upper_panel("output/k13_marcse/gneiting_sparse/")
+p2 <- lower_upper_panel("output/k13_marcse/bb_gne/")
+p3 <- lower_upper_panel("output/mdr184/gneiting_sparse/")
+p4 <- lower_upper_panel("output/mdr184/bb_gne/")
+
+legs <- get_legend(p1)
+# get_plot_component(p1, "guide-box", return_all = TRUE)
+
+p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()), 
+          p2 + theme(legend.position = "none", axis.title = element_blank()), 
+          p3 + theme(legend.position = "none", axis.title = element_blank()), 
+          p4 + theme(legend.position = "none", axis.title = element_blank()),
+          nrow = 4, align = "v", labels = "auto", label_y = 0.95, label_x = 0.05)
+plot_grid(p, legs, nrow = 1, rel_widths = c(1, 0.1))
+ggsave("figures/crints.png", scale = 1, height = 7, width = 9)
 # check this again with zeroes removed
 # and have a look at upper and lower bound surfaces?
 

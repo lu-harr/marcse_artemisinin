@@ -4,16 +4,44 @@ library(cowplot)
 library(iddoPal)
 library(sf)
 
+gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
+  # this was annoying me - add this to looseVis for cryin out loud
+  # there has to be a better way !!
+  if (!is.null(extent)){
+    extent <- ext(unlist(extent))
+    ras <- mask(ras, extent) %>%
+      crop(extent)
+    
+    if (!is.null(shp)){
+      # assuming we're working with sf
+      shp <- st_crop(shp, extent)
+    }
+  }
+  
+  coords <- xyFromCell(ras, cells(ras))
+  vals <- terra::extract(ras, coords)
+  
+  df <- cbind(coords, vals) %>%
+    pivot_longer(starts_with("2"),
+                 names_to = "lyr",
+                 values_to = "val") %>%
+    mutate(year = substr(lyr, 1, 4),
+           tag = substr(lyr, 6, 14))
+  
+  list(df = df,
+       shp = shp)
+}
+
 # wrapping up plot of all-Africa posterior medians over times
-pred_time_plot <- function(in_path, 
+pred_time_plot <- function(path, 
                            title = "",
-                           points_path = "",
                            pal = iddoPal::iddo_palettes$soft_blues,
                            zooms = NULL,
                            zoom_pal = NULL, 
+                           lowerupper = FALSE,
                            alpha = 0.5){
   
-  preds <- rast(in_path) %>%
+  preds <- rast(paste0(path, "preds_medians.tif")) %>%
     aggregate(fact = 10)
   message("aggregating")
   
@@ -23,14 +51,32 @@ pred_time_plot <- function(in_path,
     pivot_longer(starts_with("2"),
                  names_to = "lyr",
                  values_to = "val") %>%
-    mutate(year = substr(lyr, 1, 4),
-           tag = substr(lyr, 6, 14)) %>% # pick out year and thingo
-    filter(tag == "50") %>%
+    mutate(year = substr(lyr, 1, 4)) %>% # pick out year
     group_by(year) %>%
     summarise(q = list(quantile(val, c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)))) %>%
     unnest_wider(q) %>%
     ungroup() %>%
     mutate(year = as.numeric(year))
+  
+  # todo
+  # if (lowerupper == TRUE){
+  #   ci <- rast(c(paste0(path, "preds_lower.tif"),
+  #                paste0(path, "preds_upper.tif")))
+  #   
+  #   coords <- xyFromCell(ci, cells(ci))
+  #   vals <- terra::extract(ci, coords)
+  #   dfci <- cbind(coords, vals) %>%
+  #     pivot_longer(starts_with("2"),
+  #                  names_to = "lyr",
+  #                  values_to = "val") %>%
+  #     mutate(year = substr(lyr, 1, 4),
+  #            tag = str_extract()) %>% # pick out year
+  #     group_by(year, tag) %>%
+  #     summarise(q = median(val)) %>%
+  #     unnest_wider(q) %>%
+  #     ungroup() %>%
+  #     mutate(year = as.numeric(year))
+  # }
   
   p <- ggplot(df) +
     geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
@@ -50,43 +96,44 @@ pred_time_plot <- function(in_path,
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
   
-  if (!is.null(zooms)){
-    for (i in 1:nrow(zooms)){
-      exte <- ext(unlist(zooms[i,]))
-      tmp <- crop(preds, exte)
-      coords <- xyFromCell(tmp, cells(tmp))
-      vals <- terra::extract(tmp, coords)
-      
-      df <- cbind(coords, vals) %>%
-        pivot_longer(starts_with("2"),
-                     names_to = "lyr",
-                     values_to = "val") %>%
-        mutate(year = substr(lyr, 1, 4),
-               tag = substr(lyr, 11, 14)) %>% # pick out year and thingo
-        filter(tag == "medi") %>%
-        group_by(year) %>%
-        summarise(med = median(val)) %>%
-        ungroup() %>%
-        mutate(year = as.numeric(year))
-      
-      p <- p + geom_line(df, mapping = aes(x = year, y = med), colour = case_pal[i])
-    }
-  }
+  # if (!is.null(zooms)){
+  #   for (i in 1:nrow(zooms)){
+  #     exte <- ext(unlist(zooms[i,]))
+  #     tmp <- crop(preds, exte)
+  #     coords <- xyFromCell(tmp, cells(tmp))
+  #     vals <- terra::extract(tmp, coords)
+  #     
+  #     df <- cbind(coords, vals) %>%
+  #       pivot_longer(starts_with("2"),
+  #                    names_to = "lyr",
+  #                    values_to = "val") %>%
+  #       mutate(year = substr(lyr, 1, 4),
+  #              tag = substr(lyr, 11, 14)) %>% # pick out year and thingo
+  #       filter(tag == "medi") %>%
+  #       group_by(year) %>%
+  #       summarise(med = median(val)) %>%
+  #       ungroup() %>%
+  #       mutate(year = as.numeric(year))
+  #     
+  #     p <- p + geom_line(df, mapping = aes(x = year, y = med), colour = case_pal[i])
+  #   }
+  #}
   
   
   
-  if (points_path != ""){
-    message("Watch out! I set limits manually!")
-    mut_data <- setup_mut_data(points_path, min_year = MIN_YEAR)
-    p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
-                            size=tested), 
-                        colour="grey", pch = 21,
-                        mut_data) +
-      scale_size_continuous(name = "Tested", trans = "sqrt", 
-                            range = c(0.2, 4), limits = c(5, 3500)) # +
-    # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
-    #              mut_data, fill = NA, outliers = FALSE)
-  }
+  
+  message("Watch out! I set size limits manually!")
+  mut_data <- read_rds(paste0(path, "mut_data.rds"))
+  message(max(mut_data$tested))
+  p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
+                          size=tested), 
+                      colour="grey", pch = 21,
+                      mut_data) +
+    scale_size_continuous(name = "Tested", trans = "sqrt", 
+                          range = c(0.2, 5), limits = c(5, 5200)) # +
+  # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
+  #              mut_data, fill = NA, outliers = FALSE)
+  
   
   p
 }
@@ -103,7 +150,7 @@ map_pred_row <- function(in_path,
                          legend_lim = waiver(),
                          top_pan = FALSE){
   preds <- rast(in_path)
-  preds <- preds[[grep(paste0(field, "$"), names(preds))]]
+  preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years]]
   
   if (!is.null(buff)){
     preds <- mask(preds, buff) %>%
@@ -116,8 +163,7 @@ map_pred_row <- function(in_path,
     pivot_longer(starts_with("2"),
                  names_to = "lyr",
                  values_to = "val") %>%
-    mutate(year = substr(lyr, 1, 4)) %>%
-    filter(year %in% years) # pick out year
+    mutate(year = substr(lyr, 1, 4)) # pick out year
   
   p <- ggplot() +
     geom_sf(data = afr, fill = "white") +
@@ -256,7 +302,7 @@ obs_prev_panel <- function(data_path,
   
   message(paste0("Sites with preds: ", nrow(mut_data)))
   message(paste0("Goodness of fit: ", 
-                 sum((mut_data$pred*mut_data$tested - mut_data$present)**2 / 
+                 sum((mut_data$pred * mut_data$tested - mut_data$present)**2 / 
                           (mut_data$pred*mut_data$tested))))
   
   # mut_data$diffs = abs(mut_data$present / mut_data$tested - mut_data$pred)
@@ -360,8 +406,35 @@ obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_sparse/preds_medians.tif",
                xlim = c(0, 0.6), ylim = c(0, 0.6),
                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-ggsave("figures/residuals_k13m.png", height = 3.7, width = 5, scale = 1.5)
-# 
+ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/bb_gne/preds_medians.tif",
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+ggsave("figures/resid/residuals_k13m_bb.png", height = 3.7, width = 5, scale = 1.5)
+
+obs_prev_panel(get_input_dir("mdr184"),
+               "output/mdr184/gneiting_sparse/preds_medians.tif",
+               xlim = c(0, 1), ylim = c(0, 1),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+obs_prev_panel(get_input_dir("mdr184"),
+               "output/mdr184/bb_gne/preds_medians.tif",
+               xlim = c(0, 1), ylim = c(0, 1),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+ggsave("figures/resid/residuals_mdr184_bb.png", height = 3.7, width = 5, scale = 1.5)
+
+obs_prev_panel(get_input_dir("mdr86"),
+               "output/mdr86/gneiting_sparse/preds_medians.tif",
+               xlim = c(0, 1), ylim = c(0, 1),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+obs_prev_panel(get_input_dir("mdr86"),
+               "output/mdr86/bb_gne/preds_medians.tif",
+               xlim = c(0, 1), ylim = c(0, 1),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+ggsave("figures/resid/residuals_mdr86_bb.png", height = 3.7, width = 5, scale = 1.5)
+
+mdr86
+
 # # could try giving it longer ?
 # obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
 #                "output/k13_marcse/bb_gne/preds_all.tif",
@@ -556,9 +629,8 @@ plot_k13_markers <- function(buff,
 }
 
 
-coverages_fig <- function(path){
-  # wish I had included years here ... wait a sec I did
-  # yrs <- concat_coverages(path)
+coverages_inner <- function(path){
+  # wrapping extraction for a single model
   coverages <- read.csv(paste0(path, "coverages/all_coverages.csv"))
   covs_all <- coverages[seq(1, nrow(coverages), 2),] %>%
     colSums(na.rm=TRUE)
@@ -573,21 +645,60 @@ coverages_fig <- function(path){
                     pa = covs_all,
                     po = covs_pos) %>%
     pivot_longer(cols = c(pa, po), names_to = "group", values_to = "value") %>%
-    mutate(group = ifelse(group == "pa", "All points", "K13 presences only"))
+    mutate(group = ifelse(group == "pa", "All points", "Presences only"))
   
-  plot(widths, covs_pos, type="l", 
-       ylim = c(0, 100), xlim = c(0, 100))
-  lines(widths, covs_all, type = "l")
-  abline(a = 0, b = 1)
+  if (!grepl("k13", path)){
+    dat <- dat %>% filter(group != "Presences only")
+    # dat <- dat %>% dplyr::select(-c(group))
+  }
+  dat
+}
+
+
+coverages_fig <- function(path){
+  # wish I had included years here ... wait a sec I did
+  # yrs <- concat_coverages(path)
   
-  ggplot(dat) +
-    geom_line(aes(x = w, y = value, color = group)) +
-    geom_abline(slope = 1, intercept = 0, col="darkgrey", linetype = "dashed") +
-    scale_color_manual(values = iddo_palettes$iddo, name="") +
+  if (length(path) > 1){
+    dat <- lapply(path, function(p){
+      coverages_inner(p) %>% 
+        mutate(mod = str_extract(p, "(?<=/)[^/]+(?=/[^/]*$)"))
+      }) %>%
+      do.call(what = rbind) %>%
+      mutate(mod = case_when(mod == "bb_gne" ~ "Beta-binomial",
+                             mod == "gneiting_sparse" ~ "Binomial",
+                             TRUE ~ mod))
+  } else {
+    dat <- coverages_inner(p)
+  }
+  
+  # plot(widths, covs_pos, type="l", 
+  #      ylim = c(0, 100), xlim = c(0, 100))
+  # lines(widths, covs_all, type = "l")
+  # abline(a = 0, b = 1)
+  
+  if ("mod" %in% names(dat)){
+    message("A")
+    p <- ggplot(dat) +
+      geom_line(aes(x = w, y = value, color = mod, linetype = group)) +
+      geom_abline(slope = 1, intercept = 0, col="darkgrey") +
+      scale_color_manual(values = iddo_palettes$iddo, name="Model") +
+      scale_linetype("")
+  } else {
+    message("here")
+    p <- ggplot(dat) +
+      geom_line(aes(x = w, y = value, color = group)) +
+      geom_abline(slope = 1, intercept = 0, col="darkgrey") +
+      scale_color_manual(values = iddo_palettes$iddo, name="")
+  }
+  
+  p + 
     coord_cartesian(xlim = c(0, 100), ylim = c(0, 100), expand = FALSE) +
     xlab("Credible interval width") +
-    ylab("Coverage probability")
+    ylab("Coverage probability") +
+    theme_bw()
 }
+
 
 
 # unfinished: ...
@@ -679,4 +790,46 @@ country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
 
 
 
+thresholds_fig <- function(path,
+                           years_to_plot,
+                           thresholds,
+                           out = ""){
+  preds <- rast(paste0(path, "preds_medians.tif"))
+  preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]] #%>%
+  #  aggregate(fact = 10)
+  
+  df <- gg_ras_prep(preds)$df
+
+  tmp <- df %>%
+    mutate(val = cut(val, breaks = c(0, thresholds, 100)))
+  
+  pal <- colorRampPalette(iddo_palettes$Blues)(length(thresholds) + 1)
+  
+  ggplot(tmp) +
+    geom_sf(data = afr, col = "grey70") +
+    geom_tile(aes(x = x, y = y, fill = val)) +
+    scale_fill_manual(values = rev(pal), "Median Kelch 13\nprevalence") +
+    facet_wrap(~year) +
+    geom_sf(data = afr, col = "grey40", fill = NA) +
+    theme_bw() +
+    labs(x = "Longitude", y = "Latitude") +
+    theme(legend.position = "bottom")
+  
+  if (out != ""){
+    ggsave(paste0("figures/thresholds_", out, ".png"),
+           height = 5, width = 10)
+  }
+}
+
+# path <- "output/k13_marcse/gneiting_sparse/"
+# years_to_plot <- c("2012", "2018", "2024")
+# thresholds <- c(0.02, 0.05, 0.1, 0.25)
+thresholds_fig("output/k13_marcse/gneiting_sparse/",
+               c("2012", "2018", "2024"),
+               c(0.02, 0.05, 0.1, 0.25),
+               "k13m_bi")
+thresholds_fig("output/k13_marcse/bb_gne/",
+               c("2012", "2018", "2024"),
+               c(0.02, 0.05, 0.1, 0.25),
+               "k13m_bb")
 

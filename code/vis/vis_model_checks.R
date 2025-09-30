@@ -74,6 +74,7 @@ vis_model_checks <- function(path, out_tag = ""){
 }
 
 vis_model_checks("output/k13_marcse/gneiting_sparse/", out_tag = "k13m_bin")
+vis_model_checks("output/k13_marcse/bb_gne/", out_tag = "k13m_bb")
 vis_model_checks("output/mdr1246/gneiting_sparse/", out_tag = "1246_bin")
 vis_model_checks("output/mdr1246/bb_gne/", out_tag = "k13m_bb") 
 # that did not converge ! reviewing traceplots, looks like I need to throw out a chain

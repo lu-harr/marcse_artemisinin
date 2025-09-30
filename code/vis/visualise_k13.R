@@ -9,9 +9,10 @@ source("code/build_design_matrix.R")
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 # preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
 # preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
-preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
 preds <- c(rast("output/k13_marcse/gneiting_sparse/preds_medians.tif"),
            rast("output/k13_marcse/gneiting_sparse/preds_sds.tif"))
+preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
+           rast("output/k13_marcse/bb_gne/preds_sdscaled.tif"))
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 library(iddoPal)
@@ -184,7 +185,7 @@ zambezi_bits <- gg_ras_prep(preds, zambezi, afr)
 victoria_bits <- gg_ras_prep(preds, victoria, afr)
 eswatini_bits <- gg_ras_prep(preds, eswatini, afr)
 
-years_to_plot <- c("2014", "2018", "2022")
+years_to_plot <- c("2012", "2018", "2024")
 
 zoom_pan <- function(bits, 
                      yearr, 
@@ -278,7 +279,7 @@ zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sd"), 
+              filter(year %in% years_to_plot & tag == "sdscaled"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
@@ -306,11 +307,11 @@ legs <- plot_grid(get_legend(medians),
                   NULL,
                   ncol = 1)
 
-df <- data.frame(xmin = rep(0.001, 3),
-                 xmax = rep(0.028, 3),
-                 ymin = c(0.0155, 0.337, 0.663),
-                 ymax = c(0.315, 0.639, 0.965),
-                 lab = c("D1246Y", "Y184F", "N86Y"))
+# df <- data.frame(xmin = rep(0.001, 3),
+#                  xmax = rep(0.028, 3),
+#                  ymin = c(0.0155, 0.337, 0.663),
+#                  ymax = c(0.315, 0.639, 0.965),
+#                  lab = c("D1246Y", "Y184F", "N86Y"))
 # p <- p + 
 #   # tried adding outer margin but that didn't do anything
 #   geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
@@ -319,7 +320,7 @@ df <- data.frame(xmin = rep(0.001, 3),
 #   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
 #                            label = lab), angle = 90)
   
-df <- data.frame(xmin = c(0.04, 0.525),
+rect <- data.frame(xmin = c(0.04, 0.525),
                  xmax = c(0.5, 0.873),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.02, 1),
@@ -331,13 +332,13 @@ plot_grid(medians + theme(legend.position = "none"),
           legs,
           ncol = 4, rel_widths = c(1,0.3,0.933,0.3)) +
   theme(plot.margin = unit(c(0.7,0,0,0), "cm")) +
-  geom_rect(data = df, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
+  geom_rect(data = rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
                            ymax=ymax), 
             colour="grey10", fill="grey85", linewidth=0.3) +
-  geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+  geom_text(data = rect, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
                            label = lab))
 
-ggsave("figures/k13_out_bin.png", height = 5.2, width = 4.5, scale = 2)
+ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
 
 ################################################################################
 # just doing some fiddling for confab presentation
@@ -443,7 +444,7 @@ medians
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sd"), 
+              filter(year %in% years_to_plot & tag == "sdscaled"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
@@ -474,7 +475,7 @@ rects <- data.frame(xmin = c(0.046, 0.47),
                  xmax = c(0.45, 0.873),
                  ymin = rep(0.968, 2),
                  ymax = rep(0.995, 1),
-                 lab = c("Median", "Standard deviation"))
+                 lab = c("Median", "Standard deviation (unscaled)"))
 
 plot_grid(medians + theme(legend.position = "none"), 
           sds + theme(legend.position = "none"), 
@@ -487,7 +488,7 @@ plot_grid(medians + theme(legend.position = "none"),
   geom_text(data = rects, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
                             label = lab))
 
-ggsave("figures/k13_out_bin_no_zooms.png", height = 6, width = 4.5, scale = 1.7)
+ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 6, width = 4.5, scale = 1.7)
 
 
 # surveillance effort
