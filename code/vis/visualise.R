@@ -202,16 +202,16 @@ p4 <- map_pred_row("output/mdr1246/bb_gne/preds_medians.tif",
                    legend_lim = c(0,1), xlab = "",ylab = "")#  ylab = "(e)")
 p5 <- map_pred_row("output/mdr86/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(b)")
+                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(b)")
 p6 <- map_pred_row("output/mdr86/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(b)")
+                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(b)")
 p7 <- map_pred_row("output/mdr184/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(d)")
+                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(d)")
 p8 <- map_pred_row("output/mdr1246/bb_gne/preds_sds.tif", 
                    years = years_to_plot, field = "sd", pal = oranges,
-                   legend_lim = c(0,1.5), xlab = "",ylab = "")#  ylab = "(f)")
+                   legend_lim = c(0,0.2), xlab = "",ylab = "")#  ylab = "(f)")
 # legend_lim was c(0, 0.2) for the main fig ... although this probably could have been less
 library(gridExtra)
 library(grid)
