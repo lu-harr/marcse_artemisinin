@@ -109,15 +109,15 @@ ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png",
 # note to self: this has the potential to crash ya laptop
 
 p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/",
-               title = "(a) Pfkelch13")
+               title = "(a) Pfkelch13", show_pts = TRUE)
 p2 <- pred_time_plot("output/crt76/gneiting_sparse/",
-               title = "(b) Pfcrt K76T")
+               title = "(b) Pfcrt K76T", show_pts = TRUE)
 p3 <- pred_time_plot("output/mdr86/gneiting_sparse/",
-               title = "(c) Pfmdr1 N86Y")
+               title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
 p4 <- pred_time_plot("output/mdr184/gneiting_sparse/",
-               title = "(d) Pfmdr1 Y184F")
+               title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
 p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/",
-               title = "(e) Pfmdr1 D1246Y")
+               title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
 
 library(patchwork)
 p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -125,27 +125,19 @@ ggsave("figures/all_markers_time_bin.png", scale = 1.5, height = 7, width = 6)
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13")
+                     title = "(a) Pfkelch13", show_pts = TRUE)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T")
+                     title = "(b) Pfcrt K76T", show_pts = TRUE)
 p3 <- pred_time_plot("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y")
+                     title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
 p4 <- pred_time_plot("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F")
+                     title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
 p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y")
+                     title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
-
-p1 <- pred_time_plot("output/k13_marcse/gneiting_ahmc/preds_all.tif",
-                     title = "(a) Pfkelch13")
-
-p1 + p1 + p1 + p1 + p1 + 
-  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("~/Desktop/presentations/test_time2.png", scale = 1.5, height = 7, width = 6)
-
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
 # after all that, not sure this adds much?

@@ -38,8 +38,8 @@ pred_time_plot <- function(path,
                            pal = iddoPal::iddo_palettes$soft_blues,
                            zooms = NULL,
                            zoom_pal = NULL, 
-                           lowerupper = FALSE,
-                           alpha = 0.5){
+                           alpha = 0.5,
+                           show_pts = FALSE){
   
   preds <- rast(paste0(path, "preds_medians.tif")) %>%
     aggregate(fact = 10)
@@ -57,26 +57,6 @@ pred_time_plot <- function(path,
     unnest_wider(q) %>%
     ungroup() %>%
     mutate(year = as.numeric(year))
-  
-  # todo
-  # if (lowerupper == TRUE){
-  #   ci <- rast(c(paste0(path, "preds_lower.tif"),
-  #                paste0(path, "preds_upper.tif")))
-  #   
-  #   coords <- xyFromCell(ci, cells(ci))
-  #   vals <- terra::extract(ci, coords)
-  #   dfci <- cbind(coords, vals) %>%
-  #     pivot_longer(starts_with("2"),
-  #                  names_to = "lyr",
-  #                  values_to = "val") %>%
-  #     mutate(year = substr(lyr, 1, 4),
-  #            tag = str_extract()) %>% # pick out year
-  #     group_by(year, tag) %>%
-  #     summarise(q = median(val)) %>%
-  #     unnest_wider(q) %>%
-  #     ungroup() %>%
-  #     mutate(year = as.numeric(year))
-  # }
   
   p <- ggplot(df) +
     geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
@@ -119,24 +99,83 @@ pred_time_plot <- function(path,
   #   }
   #}
   
-  
-  
-  
-  message("Watch out! I set size limits manually!")
-  mut_data <- read_rds(paste0(path, "mut_data.rds"))
-  message(max(mut_data$tested))
-  p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
-                          size=tested), 
-                      colour="grey", pch = 21,
-                      mut_data) +
-    scale_size_continuous(name = "Tested", trans = "sqrt", 
-                          range = c(0.2, 5), limits = c(5, 5200)) # +
-  # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
-  #              mut_data, fill = NA, outliers = FALSE)
-  
+  if (show_pts == TRUE){
+    message("Watch out! I set size limits manually!")
+    mut_data <- read_rds(paste0(path, "mut_data.rds"))
+    message(max(mut_data$tested))
+    p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
+                            size=tested), 
+                        colour="grey", pch = 21,
+                        mut_data) +
+      scale_size_continuous(name = "Tested", trans = "sqrt", 
+                            range = c(0.2, 5), limits = c(5, 5200)) # +
+    # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
+    #              mut_data, fill = NA, outliers = FALSE)
+  }
   
   p
 }
+
+
+summarise_ribbon <- function(path){
+  preds <- rast(path) %>%
+    aggregate(fact = 10)
+  message("aggregating")
+  
+  coords <- xyFromCell(preds, cells(preds))
+  vals <- terra::extract(preds, coords)
+  df <- cbind(coords, vals) %>%
+    pivot_longer(starts_with("2"),
+                 names_to = "lyr",
+                 values_to = "val") %>%
+    mutate(year = substr(lyr, 1, 4)) %>% # pick out year
+    group_by(year) %>%
+    summarise(med = median(val)) %>%
+    mutate(year = as.numeric(year))
+}
+
+pred_time_plot_policy <- function(path, 
+                           title = "",
+                           pal = iddoPal::iddo_palettes$soft_blues,
+                           zooms = NULL,
+                           zoom_pal = NULL, 
+                           lowerupper = FALSE,
+                           alpha = 0.5){
+  # this one finds the median of CI bound surfaces (e.g., median of 95% lower bound surface)
+  
+  to_extract <- c("medians", "upper", "lower")
+  to_plot <- lapply(to_extract, function(x){
+    summarise_ribbon(paste0(path, "preds_", x, ".tif")) %>%
+      mutate(tag = x)
+  }) %>%
+    do.call(what = rbind) %>%
+    pivot_wider(values_from = med, names_from = tag)
+    
+  
+  p <- ggplot(to_plot) +
+    geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) + #fill=pal[6]) +
+    geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "25% - 75%"), alpha = alpha) + #fill=pal[4]) +
+    geom_ribbon(aes(x = year, ymin = medians, ymax = medians, fill = "50%")) + #fill=pal[1]) +
+    geom_line(aes(x = year, y = medians), col = pal[1], linewidth = 1) +
+    scale_linetype_manual("", values = c("0% - 100%" = 2)) +
+    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
+    ylab("Prevalence") +
+    xlab("Year") +
+    labs(title = title) +
+    ylim(0, 1) +
+    scale_x_continuous(breaks = seq(2000, 2022, 2), expand = c(0,0)) +
+    theme_bw() +
+    theme(legend.spacing.y = unit(-10, "cm"),
+          legend.background = element_rect(fill = NA))
+  p
+}
+
+# this is super narrow
+# pred_time_plot_policy("output/k13_marcse/bb_gne/")
+# pred_time_plot_policy("output/crt76/bb_gne/")
+# pred_time_plot_policy("output/mdr1246/bb_gne/")
+# pred_time_plot_policy("output/mdr184/bb_gne/")
+# pred_time_plot_policy("output/mdr86/bb_gne/")
 
 
 # to wrap up prediction figures for partner drug models :
@@ -182,7 +221,7 @@ map_pred_row <- function(in_path,
           plot.title = element_blank(),
           legend.justification = "left",
           axis.title.x = element_blank(),
-          axis.title.y = element_text(angle = 0, hjust = 1),
+          #axis.title.y = element_text(angle = 0, hjust = 1),
           #axis.title.y = element_blank(),
           title = element_blank(),
           panel.spacing = unit(0, "lines"))

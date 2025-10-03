@@ -19,3 +19,5 @@ pfpr <- malariaAtlas::getRaster("Malaria__202406_Global_Pf_Parasite_Rate",
 
 writeRaster(pfpr, "data/pfpr_rasters_afr.tif")
 
+# t
+
