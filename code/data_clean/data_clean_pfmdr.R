@@ -410,7 +410,7 @@ ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 6.5, width = 5)
 
 
 partners <- partners %>%
-  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2008, 2018, max(year))))
+  mutate(year_bin = cut(year, breaks = c(min(year) - 1, seq(2004, 2024, length.out = 5))))
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -426,11 +426,14 @@ ggplot() +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
   scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
   scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
-  facet_grid(year_bin ~ loc) +
-  # labs(#title = "Pfmdr1 84-186-1246: Surveillance at single loci",
-  #      xlab = "Longitude", ylab = "Latitude") +
+  facet_grid(loc ~ year_bin, switch = "y") +
   xlab("Longitude") +
   ylab("Latitude") +
-  theme_grey() #+
-#theme(title = element_blank())
-ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 5)
+  theme_bw() +
+  theme(title = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.spacing.x = unit(0, "mm"),
+        panel.spacing.y = unit(2, "mm"))
+ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 4)

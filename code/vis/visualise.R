@@ -139,6 +139,23 @@ p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
 
+
+p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13")
+p2 <- pred_time_plot("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T")
+p3 <- pred_time_plot("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y")
+p4 <- pred_time_plot("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F")
+p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y")
+
+p1 + p2 + p3 + p4 + p5 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_bb_nopts.png", scale = 1.5, height = 7, width = 6)
+
+
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
 # after all that, not sure this adds much?
 zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
@@ -618,7 +635,11 @@ lower_upper_panel <- function(path,
   mut_data <- mut_data %>% 
     filter(!is.na(lower) & !is.na(upper)) %>%
     mutate(idx = 1:nrow(.), 
-           covered = ifelse(present/tested > lower & present/tested < upper, TRUE, FALSE))
+           covered = case_when(present/tested < lower ~ "Over-prediction",
+                               present/tested > upper ~ "Under-prediction",
+                               present/tested > lower & present/tested < upper ~ "Covered",
+                               TRUE ~ NA))
+           #covered = ifelse(present/tested > lower & present/tested < upper, TRUE, FALSE))
   message(nrow(mut_data))
   
   mut_data_long <- mut_data %>%
@@ -630,7 +651,7 @@ lower_upper_panel <- function(path,
                    col = covered), 
                pch = 1) +
     geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) +
-    scale_colour_manual(values = iddo_palettes$iddo, "CI covers\nobservation") +
+    scale_colour_manual(values = iddo_palettes$BlGyRd[c(5,2,8)], "CI covers\nobservation") +
     scale_size_continuous(range = c(0.1, 6), "Tested") +
     xlab("Index") +
     ylab("Observed prevalence") +

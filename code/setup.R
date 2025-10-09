@@ -24,7 +24,8 @@ MIN_YEAR <- 2000
 afr <- world %>%
   filter(continent == "Africa") %>%
   vect() %>%
-  crop(ext(-21, 63, -35, 37))
+  crop(ext(-21, 63, -35, 37)) %>%
+  st_as_sf()
 
 afr_extent <- (matrix(c(-21, -34.9, 63, 37.4), nrow = 2, ncol = 2, 
                       dimnames = list(c("x", "y"), c("min", "max"))))

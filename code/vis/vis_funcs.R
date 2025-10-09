@@ -441,38 +441,38 @@ obs_prev_panel <- function(data_path,
 
 # # e.g.:
 # # might want to re-land some points inside of model fitting
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-               xlim = c(0, 0.6), ylim = c(0, 0.6),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/bb_gne/preds_medians.tif",
-               xlim = c(0, 0.6), ylim = c(0, 0.6),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-ggsave("figures/resid/residuals_k13m_bb.png", height = 3.7, width = 5, scale = 1.5)
-
-obs_prev_panel(get_input_dir("mdr184"),
-               "output/mdr184/gneiting_sparse/preds_medians.tif",
-               xlim = c(0, 1), ylim = c(0, 1),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-obs_prev_panel(get_input_dir("mdr184"),
-               "output/mdr184/bb_gne/preds_medians.tif",
-               xlim = c(0, 1), ylim = c(0, 1),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-ggsave("figures/resid/residuals_mdr184_bb.png", height = 3.7, width = 5, scale = 1.5)
-
-obs_prev_panel(get_input_dir("mdr86"),
-               "output/mdr86/gneiting_sparse/preds_medians.tif",
-               xlim = c(0, 1), ylim = c(0, 1),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-obs_prev_panel(get_input_dir("mdr86"),
-               "output/mdr86/bb_gne/preds_medians.tif",
-               xlim = c(0, 1), ylim = c(0, 1),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-ggsave("figures/resid/residuals_mdr86_bb.png", height = 3.7, width = 5, scale = 1.5)
-
-mdr86
+# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+#                "output/k13_marcse/gneiting_sparse/preds_medians.tif",
+#                xlim = c(0, 0.6), ylim = c(0, 0.6),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
+# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+#                "output/k13_marcse/bb_gne/preds_medians.tif",
+#                xlim = c(0, 0.6), ylim = c(0, 0.6),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# ggsave("figures/resid/residuals_k13m_bb.png", height = 3.7, width = 5, scale = 1.5)
+# 
+# obs_prev_panel(get_input_dir("mdr184"),
+#                "output/mdr184/gneiting_sparse/preds_medians.tif",
+#                xlim = c(0, 1), ylim = c(0, 1),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# obs_prev_panel(get_input_dir("mdr184"),
+#                "output/mdr184/bb_gne/preds_medians.tif",
+#                xlim = c(0, 1), ylim = c(0, 1),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# ggsave("figures/resid/residuals_mdr184_bb.png", height = 3.7, width = 5, scale = 1.5)
+# 
+# obs_prev_panel(get_input_dir("mdr86"),
+#                "output/mdr86/gneiting_sparse/preds_medians.tif",
+#                xlim = c(0, 1), ylim = c(0, 1),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# obs_prev_panel(get_input_dir("mdr86"),
+#                "output/mdr86/bb_gne/preds_medians.tif",
+#                xlim = c(0, 1), ylim = c(0, 1),
+#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+# ggsave("figures/resid/residuals_mdr86_bb.png", height = 3.7, width = 5, scale = 1.5)
+# 
+# mdr86
 
 # # could try giving it longer ?
 # obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
@@ -708,7 +708,7 @@ coverages_fig <- function(path){
                              mod == "gneiting_sparse" ~ "Binomial",
                              TRUE ~ mod))
   } else {
-    dat <- coverages_inner(p)
+    dat <- coverages_inner(path)
   }
   
   # plot(widths, covs_pos, type="l", 
@@ -739,6 +739,44 @@ coverages_fig <- function(path){
 }
 
 
+# res_by_fcode = collections.defaultdict(list)
+# nn_measure = np.zeros(N)
+# 
+# i = 0
+# fold-wise
+# for f, pred_samples in enumerate(pred_by_fold):
+#   for each pred:
+#   for i_in_fold in range(pred_samples.shape[1]):
+#     idx = rand_idx[i]
+#     i += 1
+#     
+#     codevec = codes[idx]
+#     info = infos[idx]
+#     # -1 corresponds to no info
+#     full_codemat = -1 * np.ones((len(codevec), G), int)
+#     
+#     j = 0
+#     for mut, reports_mut in enumerate(info):
+#       if not reports_mut:
+#         continue
+#       full_codemat[:,mut] = [code[j] for code in codevec]
+#       j += 1
+#     
+#     # ternary to binary array:
+#     amat = np.array([t2b(code) for code in full_codemat])
+#     pred_median = np.median(pred_samples[:,i_in_fold] @ amat.T, axis=0)
+#     
+#     for fcode, m, y in zip(full_codemat, pred_median, ys[idx]):
+#       res_by_fcode[tuple(fcode)].append((idx, m, y))
+#     
+#     test_start = int(N * (f / cv_tot))
+#     test_end = int(N * ((f+1) / cv_tot))
+#     train_idx = rand_idx[list(range(test_start)) + list(range(test_end, N))]
+#     nn_measure[idx] = C[idx, train_idx].max()
+
+nn_measure <- function(locs){
+  
+}
 
 # unfinished: ...
 # plot_partner_markers <- function(shp, buff, 
@@ -863,12 +901,12 @@ thresholds_fig <- function(path,
 # path <- "output/k13_marcse/gneiting_sparse/"
 # years_to_plot <- c("2012", "2018", "2024")
 # thresholds <- c(0.02, 0.05, 0.1, 0.25)
-thresholds_fig("output/k13_marcse/gneiting_sparse/",
-               c("2012", "2018", "2024"),
-               c(0.02, 0.05, 0.1, 0.25),
-               "k13m_bi")
-thresholds_fig("output/k13_marcse/bb_gne/",
-               c("2012", "2018", "2024"),
-               c(0.02, 0.05, 0.1, 0.25),
-               "k13m_bb")
+# thresholds_fig("output/k13_marcse/gneiting_sparse/",
+#                c("2012", "2018", "2024"),
+#                c(0.02, 0.05, 0.1, 0.25),
+#                "k13m_bi")
+# thresholds_fig("output/k13_marcse/bb_gne/",
+#                c("2012", "2018", "2024"),
+#                c(0.02, 0.05, 0.1, 0.25),
+#                "k13m_bb")
 
