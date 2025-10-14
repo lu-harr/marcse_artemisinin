@@ -313,57 +313,6 @@ map_pred_row <- function(in_path,
 
 
 
-# # e.g.:
-# # might want to re-land some points inside of model fitting
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_medians.tif",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_k13m_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# obs_prev_panel(get_input_dir("mdr184"),
-#                "output/mdr184/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# obs_prev_panel(get_input_dir("mdr184"),
-#                "output/mdr184/bb_gne/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_mdr184_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# obs_prev_panel(get_input_dir("mdr86"),
-#                "output/mdr86/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# obs_prev_panel(get_input_dir("mdr86"),
-#                "output/mdr86/bb_gne/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_mdr86_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# mdr86
-
-# # could try giving it longer ?
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_all.tif",
-#                #main = "k13 betabinom gneiting",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                buffer = 100000)
-# ggsave("~/Desktop/presentations/MARCSE/op_bbinom.png", height=3, width=4, scale=2)
-# # bit spooked by the points changing between these two ...
-# # might be points falling off the mask?
-# # that is so many points !
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/gneiting_ahmc/preds_all.tif",
-#                main = "",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                buffer = 100000)
-# ggsave("~/Desktop/presentations/MARCSE/op_binom.png", height=3, width=5, scale=1.5)
 
 
 

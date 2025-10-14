@@ -159,6 +159,7 @@ obs_prev_panel <- function(data_path,
     theme(legend.position = "bottom")
   
   if (!is.null(bb)){
+    # inset panel: RWA/UGA
     p4 <- p3 +
       xlim(bb[1:2]) +
       ylim(bb[3:4]) +
@@ -196,6 +197,57 @@ obs_prev_panel <- function(data_path,
 }
 
 
+
+obs_prev_panel_nn <- function(data_path, 
+                           pred_path, 
+                           draws_path,
+                           main = "", 
+                           show_nas = FALSE, 
+                           pal = colorRamp(iddo_palettes$BlGyRd),
+                           xlim = c(0,1), # define limits to pred/obs panel
+                           ylim = c(0,1), # define limits to pred/obs panel
+                           facet_bins = NULL, # apply facets over time?
+                           ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
+                           buffer = 1 # option to reland points?
+                           ){
+  
+  mut_data <- extract_preds(data_path, pred_path, ave_tag, buffer)
+  mut_data$nn <- nn_measure(mut_data, draws_path)
+  mut_data$cex <- scale_cex(mut_data$tested, sqrt, max_cex = 5)
+  un_pred <- mut_data[is.na(mut_data$pred),]
+  mut_data <- mut_data[!is.na(mut_data$pred),]
+  
+  message(paste0("Sites with preds: ", nrow(mut_data)))
+  message(paste0("Mean error: ", mean(mut_data$pred - mut_data$present/mut_data$tested)))
+  message(paste0("Mean abs error: ", mean(abs(mut_data$pred - mut_data$present/mut_data$tested))))
+  
+  mut_data$diffs <- mut_data$present / mut_data$tested - mut_data$pred
+  mut_data <- arrange(mut_data, abs(diffs))
+  
+  p1 <- ggplot(mut_data) +
+    geom_point(mapping = aes(x = present / tested, y = pred, col = nn), 
+               size = mut_data$cex,
+               shape = 1) +
+    geom_abline(slope = 1, intercept = 0) +
+    xlim(xlim) +
+    ylim(ylim) +
+    xlab("Observed prevalence") +
+    ylab("Predicted prevalence") +
+    theme_bw()
+  
+  p2 <- ggplot(mut_data) +
+    geom_point(mapping = aes(x = year, y = present / tested - pred, col = nn), 
+               size = mut_data$cex,
+               shape = 1) +
+    geom_hline(yintercept = 0) +
+    xlab("Year") +
+    ylab("Observed - Predicted prevalence") +
+    theme_bw()
+
+  plot_grid(p1, p2, nrow = 1)
+}
+
+
 mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
                           pred_path = "output/k13_marcse/gneiting_sparse/preds_medians.tif")
 
@@ -210,10 +262,15 @@ ggplot(mut_data) +
 
 # # e.g.:
 # # might want to re-land some points inside of model fitting
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+               "output/k13_marcse/gneiting_sparse/preds_medians.tif",
+               xlim = c(0, 0.6), ylim = c(0, 0.6),
+               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
+obs_prev_panel_nn("data/clean/moldm_marcse_k13_nomarker.csv",
+                  "output/k13_marcse/gneiting_sparse/preds_medians.tif",
+                  "output/k13_marcse/gneiting_sparse/",
+                  xlim = c(0, 0.6), ylim = c(0, 0.6),
+                  buffer = 100000)
 # ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
 # obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
 #                "output/k13_marcse/bb_gne/preds_medians.tif",
