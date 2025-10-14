@@ -49,8 +49,6 @@ predict_to_ras <- function(stack,
   } else if (year < min(cov_years)){
     year = min(cov_years)
   }
-  message(year)
-  message(names(stack))
   
   # retrieve raster for `year`
   ras <- stack[[grep(as.character(year), names(stack))]]
@@ -66,6 +64,7 @@ predict_to_ras <- function(stack,
   names(coords) <- c("x", "y", "year") # this is *not* coord_cols
   # message(names(coords))
   
+  # temporal var is turned off ... all one year
   tmp <- build_design_matrix(ras,
                              coords,
                              temporal_var = FALSE,
@@ -94,7 +93,7 @@ predict_to_ras <- function(stack,
     ilogit()
   # message(dim(mut_freq_pixel))
   
-  message(ncell(ras))
+  # message(ncell(ras))
   
   post_pixel_sims <- greta::calculate(mut_freq_pixel,
                                       values = draws,
@@ -111,7 +110,7 @@ predict_to_ras <- function(stack,
     coverages <- NULL
   }
   
-  message(coverages)
+  # message(coverages)
   
   # message("now here")
   probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
@@ -289,7 +288,6 @@ predict_to_ras_hier <- function(stack,
 #'
 #' @examples
 calculate_coverages <- function(sims, path, yr, ras, incs = 100){
-  message("hello")
   out <- list()
   
   dat <- read_rds(paste0(path, "mut_data.rds")) %>%
@@ -298,8 +296,6 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   if (nrow(dat) == 0){
     return(NULL)
   }
-  
-  message(ncell(ras))
     
   # now get indices for matrix
   dat <- dat %>%
@@ -322,8 +318,8 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   
   idx <- unique(dat$idx)
   
-  message(length(idx))
-  message(paste("dim", dim(sims$mut_freq_pixel)))
+  # message(length(idx))
+  # message(paste("dim", dim(sims$mut_freq_pixel)))
   
   # add cell IDs into middle index here and save yourself some time
   bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,
@@ -332,7 +328,7 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
     as.data.frame() %>%
     mutate(idx = idx)
   
-  message(dim(bounds))
+  # message(dim(bounds))
   
   dat <- left_join(dat, bounds, by = join_by(idx)) %>%
     mutate(prevalence = present / tested)
@@ -340,7 +336,7 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   dat_non_zero <- dat %>%
     filter(prevalence > 0)
   
-  message(paste(names(dat)))
+  # message(paste(names(dat)))
   
   ind <<- 9
   coverages <- lapply(widths, function(width){
@@ -353,7 +349,7 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
     upper <- ind + incs
     out <- c(sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper]),
              sum(dat_non_zero$prevalence >= dat[,lower] & dat_non_zero$prevalence <= dat[,upper]))
-    message(paste(width, lower, upper, out, ind))
+    # message(paste(width, lower, upper, out, ind))
     ind <<- ind + 1
     out
   })

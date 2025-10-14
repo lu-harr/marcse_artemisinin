@@ -71,7 +71,7 @@ nn_measure <- function(mut_data, draws_path){
   # YSF has the maximum of the covs for a point compared to *all* training points
   # yet to implement folds, so for now, find max for all points
   diag(covs) = NA # hack - diag won't be in training set
-  apply(covs, 1, max, na.rm=TRUE)
+  apply(covs, 1, mean, na.rm=TRUE)
 }
 
 

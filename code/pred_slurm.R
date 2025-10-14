@@ -1,4 +1,6 @@
-suppressMessages(source("code/setup.R"))
+source("code/setup.R") %>%
+  suppressWarnings() %>%
+  suppressMessages()
 suppressMessages(source("code/build_design_matrix.R"))
 suppressMessages(source("code/predict_to_raster.R"))
 
@@ -26,7 +28,7 @@ out_dir <- paste0("output/", marker, "/", mod, "/")
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 # this is now how I'm calculating scaled_years during inference - 
 # I'm pretty sure we have points in 23 and 24 for all markers ....
-message(range(mut_data$year))
+
 scaled_years <- scale_years(range(mut_data$year))
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
   aggregate(AGG_FACTOR)
@@ -34,8 +36,10 @@ random_field <- read_rds(paste0(out_dir, "random_field.rds"))
 parameters <- read_rds(paste0(out_dir, "parameters.rds"))
 draws <- read_rds(paste0(out_dir, "draws.rds"))
 
-# was there a reason why we needed this?
-# pfpr_years = 2020:2022
+# boo:
+if (!year %in% as.numeric(names(scaled_years))){
+  scaled_years <- extended_scaled_years(scaled_years, year)
+}
 
 set.seed(0748)
 preds <- predict_to_ras(covariates,
@@ -51,8 +55,6 @@ preds <- predict_to_ras(covariates,
                         nsim = 500,
                         coverage = TRUE,
                         data_path = out_dir)
-
-message(length(preds))
 
 # perhaps give me a quick plot here?
 

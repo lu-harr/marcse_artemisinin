@@ -121,3 +121,21 @@ scale_years <- function(temporal_range){
   scaled_years
 } 
 
+# why did I set it up like that originally ??
+extended_scaled_years <- function(scaled_years, extra_years){
+  # this is the dumbest code I'm going to write for a while
+  existing_years <- as.numeric(names(scaled_years))
+  roc <- scaled_years[[2]] - scaled_years[[1]]
+  intercept <- scaled_years[[1]] - roc * existing_years[1]
+  to_add <- as.list(intercept + roc * extra_years)
+  names(to_add) <- extra_years  
+  
+  scaled_years <- c(scaled_years, to_add)
+}
+
+# as in:
+# extended_scaled_years(scaled_years, c(2000, 2027))
+
+
+
+
