@@ -25,51 +25,6 @@ afr <- world %>%
 ###############################################################################
 # surveillance effort
 
-survey_effort_panel <- function(in_path, 
-                                agg_factor = 1, 
-                                pan = "", 
-                                main = "",
-                                xlab = "Longitude",
-                                ylab = "Latitude",
-                                lyr_names = main){
-  
-  test_dens <- lapply(in_path, rast) %>%
-    rast()
-  if (agg_factor > 1){
-    test_dens <- aggregate(test_dens, agg_factor)
-  }
-  
-  # nasty formula to convert to tests per 100kmsq (ish)
-  test_dens <- test_dens * 100 / (res(test_dens)[1] * 111) ** 2
-  
-  test_dens <- mask(test_dens, st_as_sf(afr))
-  
-  # surveil <- xyFromCell(test_dens, cell = cells(test_dens)) %>%
-  #   as.data.frame() %>%
-  #   cbind(unlist(extract(test_dens, cells(test_dens))))
-  surveil <- cbind(xyFromCell(test_dens, cell = cells(test_dens)), 
-                   extract(test_dens, cells(test_dens)))
-  names(surveil) <- c("x", "y", lyr_names)
-  
-  surveil <- surveil %>%
-    pivot_longer(lyr_names, names_to = "lyr", values_to = "effort") %>%
-    mutate(lyr = factor(lyr, levels = lyr_names))
-  
-  p <- ggplot() +
-    geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
-    geom_tile(data = surveil, aes(x, y, fill = effort)) +
-    geom_sf(data = st_as_sf(afr), colour = "white", fill = NA) +
-    # scale_fill_viridis_c(na.value = NA, bquote(atop("Tests per","~100"~km^2)), trans="sqrt") +
-    scale_fill_viridis_c(na.value = NA, bquote("Tests per ~100"~km^2), trans="sqrt") +
-    facet_wrap(~ lyr) +
-    xlab(xlab) +
-    ylab(ylab) +
-    ggtitle(paste(pan, main)) +
-    theme(legend.position = "bottom", strip.text.x = element_text(size = 12))
-  
-  p
-}
-
 survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
                       "output/crt76/surveillance_effort_crt76.grd",
                       "output/mdr86/surveillance_effort_mdr86.grd"),

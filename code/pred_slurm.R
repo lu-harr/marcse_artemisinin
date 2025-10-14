@@ -1,6 +1,4 @@
-source("code/setup.R") %>%
-  suppressWarnings() %>%
-  suppressMessages()
+suppressMessages(source("code/setup.R"))
 suppressMessages(source("code/build_design_matrix.R"))
 suppressMessages(source("code/predict_to_raster.R"))
 

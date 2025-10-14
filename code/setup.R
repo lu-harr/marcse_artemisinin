@@ -13,7 +13,7 @@ library(tidyr)
 library(scales)
 library(magrittr)
 library(tidyverse)
-
+library(sf) # not sure why I'm adding this in October 2025
 library(rnaturalearth)
 library(rnaturalearthdata)
 world <- ne_countries(scale="medium", returnclass = "sf")

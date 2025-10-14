@@ -20,3 +20,6 @@ betabinomial_p_rho <- function(N, p, rho) {
   greta::beta_binomial(size = N, alpha = a, beta = b)
   
 }
+
+
+

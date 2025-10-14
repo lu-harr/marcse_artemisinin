@@ -19,22 +19,32 @@ extract_preds <- function(data_path,
   mut_data$pred <- NA
   yrs_to_extract <- unique(mut_data$year)
   for (yr in yrs_to_extract){
+    #message(yr)
     if (yr %in% yrs_pred){
       idx <- which(mut_data$year == yr)
       val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                             mut_data[idx, c("x", "y")],
                             ID = FALSE, search_radius = buffer)
-      if(ncol(val) < 3){
-        # idk why we have to have an inconsistent return when |idx| == 1
-        mut_data[idx, "pred"] <- val[1,1]}
-      else{
-        mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
-      }
+      #message(paste(dim(val)))
+      # if(ncol(val) < 3){
+      #   # idk why we have to have an inconsistent return when |idx| == 1
+      #   message("here")
+      #   mut_data[idx, "pred"] <- val[1,1]}
+      #else{
+      mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+      #}
+    #plot(mut_data$present[idx] / mut_data$tested[idx], mut_data$pred[idx], main = yr)
     }
   }
   
   mut_data
 }
+
+# e.g.:
+# mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
+#                           pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
+# plot(mut_data$present / mut_data$tested, mut_data$pred)
+
 
 
 nn_measure <- function(mut_data, draws_path){
@@ -247,12 +257,53 @@ obs_prev_panel_nn <- function(data_path,
   plot_grid(p1, p2, nrow = 1)
 }
 
+library(greta)
+source("code/betabinomial_p_rho.R")
 
 mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
-                          pred_path = "output/k13_marcse/gneiting_sparse/preds_medians.tif")
+                          pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
+
+draws_path <- "output/k13_marcse/bb_gne/"
+
+posterior_predictive_check <- function(mut_data,
+                                       draws_path,
+                                       nsim = 500){
+  # given predicted prevalences, tested, and rho, 
+  # generate 100 observations from corresponding bbinomial
+  # "what fraction are below the observed"?
+  # histogram of the proportions - should be uniform
+  
+  draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
+    summary()
+  # error in here if you try to ask draws from a binomial model for rho
+  rho <- draws$quantiles[c("rho"), "50%"]
+  
+  mut_data <- mut_data[!is.na(mut_data$pred),]
+  
+  props <- sapply(1:nrow(mut_data),function(i){
+    sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
+      calculate(nsim = nsim)
+    c(sum(sims$. < mut_data$present[i]) / nsim, sum(sims$. == mut_data$present[i]) / nsim)
+  }) %>%
+    t() %>%
+    as.data.frame() %>%
+    mutate(V3 = 1 - V1 - V2) %>%
+    rename(V1 = "lt", V2 = "eq", V3 = "gt")
+    pivot_longer(cols = everything())
+  
+  # looking for a uniform distribution:
+  ggplot(props, aes(x = value, fill = name)) +
+    geom_histogram()
+}
+
+posterior_predictive_check(mut_data,
+                           draws_path)
+
+
+
 
 mut_data$nn <- nn_measure(mut_data, 
-                          draws_path = "output/k13_marcse/gneiting_sparse/")
+                          draws_path = )
 
 ggplot(mut_data) +
   geom_point(aes(x = x, y = y, col = nn))

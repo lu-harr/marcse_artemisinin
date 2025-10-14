@@ -12,7 +12,7 @@ mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
 preds <- c(rast("output/k13_marcse/gneiting_sparse/preds_medians.tif"),
            rast("output/k13_marcse/gneiting_sparse/preds_sds.tif"))
 preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
-           rast("output/k13_marcse/bb_gne/preds_sdscaled.tif"))
+           rast("output/k13_marcse/bb_gne/preds_sds.tif"))
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
 
 library(iddoPal)
@@ -279,7 +279,7 @@ zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sdscaled"), 
+              filter(year %in% years_to_plot & tag == "sd"), 
             mapping = aes(x = x, y = y, fill = val)) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
@@ -340,6 +340,26 @@ plot_grid(medians + theme(legend.position = "none"),
 
 ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
 
+
+################################################################################
+# coef of var - needs to go into supp
+covar <- preds[[grep("_50", names(preds))]] / preds[[grep("_sd", names(preds))]]
+df <- gg_ras_prep(covar)$df
+
+p_covar <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot),
+            mapping = aes(x = x, y = y, fill = val)) +
+  scale_fill_viridis_c(na.value = NA, "Coeff", trans = "sqrt") +
+  geom_sf(data = afr, fill = NA, col = "grey50") +
+  facet_wrap(~year, nrow = 1) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme_bw()
+p_covar
+# where are the brighter yellows at?
+
 ################################################################################
 # just doing some fiddling for confab presentation
 # 
@@ -381,7 +401,7 @@ sds <- ggplot() +
 sds
 ggsave("~/Desktop/presentations/MARCSE/k13_sdsbb.png", height = 5, width = 10, scale = 0.9)
 
-preds <- rast("output/k13_marcse/bb_gne/preds_sdscaled.tif")
+preds <- rast("output/k13_marcse/bb_gne/preds_sds.tif")
 df <- gg_ras_prep(preds)$df
 
 sds <- ggplot() +
