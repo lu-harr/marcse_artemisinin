@@ -1,5 +1,6 @@
 # nearest neighbour index - from Foo and Flegg
 library(tensorflow)
+source("code/setup.R")
 source("code/build_design_matrix.R") # for year scaling
 
 # bringing in some backend functions from greta.gp
@@ -265,6 +266,40 @@ mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv"
 
 draws_path <- "output/k13_marcse/bb_gne/"
 
+coverage_probabilities_through_observation_model <- function(mut_data,
+                                                             draws_path,
+                                                             nsim = 500,
+                                                             probs){
+  draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
+    summary()
+  # error in here if you try to ask draws from a binomial model for rho
+  rho <- draws$quantiles[c("rho"), "50%"]
+  
+  message(rho)
+  
+  mut_data <- mut_data[!is.na(mut_data$pred),]
+  
+  widths <- sapply(1:floor(length(probs) / 2), 
+                   function(i){probs[length(probs) - i + 1] - probs[i]})
+  
+  quants <- sapply(1:nrow(mut_data),function(i){
+    sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
+      calculate(nsim = nsim) %>%
+      unlist() %>%
+      quantile(probs = probs)
+  })
+  
+  # out <- c(sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper]),
+  #          sum(dat_non_zero$prevalence >= dat[,lower] & dat_non_zero$prevalence <= dat[,upper]))
+  # 
+  quants
+}
+
+tmp = coverage_probabilities_through_observation_model(mut_data,
+                                                       draws_path,
+                                                       probs = seq(0, 1, 0.1))
+
+
 posterior_predictive_check <- function(mut_data,
                                        draws_path,
                                        nsim = 500){
@@ -278,32 +313,68 @@ posterior_predictive_check <- function(mut_data,
   # error in here if you try to ask draws from a binomial model for rho
   rho <- draws$quantiles[c("rho"), "50%"]
   
+  message(rho)
+  
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
   props <- sapply(1:nrow(mut_data),function(i){
     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
       calculate(nsim = nsim)
-    c(sum(sims$. < mut_data$present[i]) / nsim, sum(sims$. == mut_data$present[i]) / nsim)
-  }) %>%
+    c(sum(sims$. < mut_data$present[i]) / nsim, 
+      sum(sims$. == mut_data$present[i]) / nsim)
+  })
+  
+  return(props)
+  
+  props <- props %>%
     t() %>%
     as.data.frame() %>%
     mutate(V3 = 1 - V1 - V2) %>%
-    rename(V1 = "lt", V2 = "eq", V3 = "gt")
-    pivot_longer(cols = everything())
+    rename(lt = V1, eq = V2, gt = V3)
+    tidyr::pivot_longer(cols = everything())
   
   # looking for a uniform distribution:
   ggplot(props, aes(x = value, fill = name)) +
     geom_histogram()
 }
 
-posterior_predictive_check(mut_data,
-                           draws_path)
+tmp <- posterior_predictive_check(mut_data,
+                                  draws_path)
 
+tmp2 = t(tmp) %>% as.data.frame() %>% mutate(V3 = 1 - V1 - V2) %>% 
+  rename(lt = V1, eq = V2, gt = V3)
 
+ggplot(tmp2, aes(x = lt)) +
+  geom_histogram() +
+  labs(title = "proportion of simulated values less than obs")
+# (i.e. most simulations are greater than obs)
+
+ggplot(tmp2, aes(x = eq)) +
+  geom_histogram() +
+  labs(title = "proportion of simulated values equal to obs")
+# (these are mostly small numbers)
+
+ggplot(tmp2, aes(x = gt)) +
+  geom_histogram() +
+  labs(title = "proportion of simulated values greater than obs")
+# (i.e. most simulations are less than obs)
+
+# now this is where I get confused
+ggplot(tmp2, aes(x = gt + eq)) +
+  geom_histogram() +
+  labs(title = "proportion of simulated values greater than obs")
+
+pairs(tmp2)
+
+tmp3 <- tmp2 %>% pivot_longer(cols = everything())
+
+# then I got a bit stuck here ......
+ggplot(tmp3, aes(x = value, fill = name)) +
+  geom_histogram()
 
 
 mut_data$nn <- nn_measure(mut_data, 
-                          draws_path = )
+                          draws_path)
 
 ggplot(mut_data) +
   geom_point(aes(x = x, y = y, col = nn))

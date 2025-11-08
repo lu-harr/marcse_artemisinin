@@ -363,14 +363,14 @@ p_covar
 ################################################################################
 # just doing some fiddling for confab presentation
 # 
+years_to_plot <- c("2010", "2019", "2028")
 preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
 df <- gg_ras_prep(preds)$df
-years_to_plot <- c("2008", "2016", "2024")
 
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot),
+  geom_tile(data = df,
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
   geom_sf(data = afr, fill = NA, col = "grey50") +
@@ -382,12 +382,12 @@ medians
 ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", height = 5, width = 10, scale = 0.9)
 
 preds <- rast("output/k13_marcse/bb_gne/preds_sds.tif")
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
 df <- gg_ras_prep(preds)$df
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot),
+  geom_tile(data = df,
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_distiller(palette = "Oranges",
                        na.value = NA,
@@ -401,13 +401,13 @@ sds <- ggplot() +
 sds
 ggsave("~/Desktop/presentations/MARCSE/k13_sdsbb.png", height = 5, width = 10, scale = 0.9)
 
-preds <- rast("output/k13_marcse/bb_gne/preds_sds.tif")
+preds <- rast("output/k13_marcse/bb_gne/preds_sdscaled.tif")
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
 df <- gg_ras_prep(preds)$df
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot),
+  geom_tile(data = df,
             mapping = aes(x = x, y = y, fill = val)) +
   scale_fill_distiller(palette = "Oranges",
                        na.value = NA,

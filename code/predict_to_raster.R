@@ -406,15 +406,12 @@ concat_preds <- function(path, medians = TRUE,
                          sds = FALSE, sdscaled = FALSE, ciwidth = FALSE,
                          upper = FALSE, lower = FALSE){
   to_read <- grep("\\d{4}_preds.grd$", list.files(path), value = TRUE)
-  
-  message(paste(to_read))
 
   razzes <- rast(paste0(path, "/", to_read))
   
   to_write <- c()
   
-  message("\n")
-  message(paste(names(razzes)))
+  message(paste(str_extract(names(razzes), "\\d{4}")))
 
   if (medians){
     to_write <- names(razzes)[grep("50", names(razzes))]

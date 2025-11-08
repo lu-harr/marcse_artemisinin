@@ -202,13 +202,14 @@ plot_k13_markers <- function(buff,
 
 # perhaps this should be wrapped into its own script ...
 # make calls to ribbon plot, row plot, etc., but provide masked raster
-country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
-                            # could be vector? for regional map?
+
+country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3; could be vector for regional map
                             mod = c("gneiting_sparse", "bb_gne"), 
                             marker = c("k13_marcse", "partner"),
                             buff = NULL, # option to look at neighbouring countries; in m
                             epsg = 32736,
-                            years = as.character(seq(2009, 2024, length.out = 4))){
+                            years = as.character(seq(2009, 2024, length.out = 4)),
+                            summarise_only = FALSE){
   # a function to give me country-level plots for a given model/marker?
   # would like:
   # - map of data, hist of survey effort, number of contributing studies, number of testees
@@ -233,9 +234,21 @@ country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
   preds <- get_output_dir(marker, mod) %>%
     paste0("/preds_medians.tif") %>%
     rast() %>%
-    aggregate(fact = 10) %>%
+    #aggregate(fact = 10) %>%
     mask(vect(buff)) %>%
     trim()
+  
+  if (summarise_only){
+    preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years]]
+    
+    # plot(preds)
+    # mtext(marker)
+    
+    medians <- terra::global(preds, fun = "mean", na.rm = TRUE)
+    
+    return(data.frame(year = years,
+                      median = medians))
+  }
   
   # top panel: data
   # if (marker == "k13_marcse"){
@@ -259,46 +272,46 @@ country_profile <- function(iso = c("KEN"), # of values in afr$iso_a3
   list(dat_plot, pred_plot)
 }
 
-out = country_profile(iso = c("RWA", "UGA"),
-                      marker = "k13_marcse", 
-                      mod = "bb_gne", 
-                      buff = 50000)
-
-p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
-               ncol = 1, rel_heights = c(0.4, 1, 0.55))
-ggsave("figures/country_profiles/rwa_uga.png", p, height = 10, width = 9)
-
-
-
-out = country_profile(iso = c("RWA", "UGA", "KEN"),
-                      marker = "k13_marcse", 
-                      mod = "bb_gne", 
-                      buff = 50000)
-
-p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
-               ncol = 1, rel_heights = c(0.7, 1, 0.55))
-ggsave("figures/country_profiles/rwa_uga_ken.png", p, height = 9, width = 9)
+# out = country_profile(iso = c("RWA", "UGA"),
+#                       marker = "k13_marcse", 
+#                       mod = "bb_gne", 
+#                       buff = 50000)
+# 
+# p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
+#                ncol = 1, rel_heights = c(0.4, 1, 0.55))
+# ggsave("figures/country_profiles/rwa_uga.png", p, height = 10, width = 9)
 
 
 
-out = country_profile(iso = c("RWA", "UGA", "BDI"),
-                      marker = "k13_marcse", 
-                      mod = "bb_gne", 
-                      buff = 50000)
+# out = country_profile(iso = c("RWA", "UGA", "KEN"),
+#                       marker = "k13_marcse", 
+#                       mod = "bb_gne", 
+#                       buff = 50000)
+# 
+# p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
+#                ncol = 1, rel_heights = c(0.7, 1, 0.55))
+# ggsave("figures/country_profiles/rwa_uga_ken.png", p, height = 9, width = 9)
 
-p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
-               ncol = 1, rel_heights = c(0.48, 1, 0.5))
-ggsave("figures/country_profiles/rwa_uga_bdi.png", p, height = 12, width = 9)
 
 
-out = country_profile(iso = c("ETH", "ERI", "SSD", "SDN"),
-                      marker = "k13_marcse", 
-                      mod = "bb_gne", 
-                      buff = 50000)
+# out = country_profile(iso = c("RWA", "UGA", "BDI"),
+#                       marker = "k13_marcse", 
+#                       mod = "bb_gne", 
+#                       buff = 50000)
+# 
+# p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
+#                ncol = 1, rel_heights = c(0.48, 1, 0.5))
+# ggsave("figures/country_profiles/rwa_uga_bdi.png", p, height = 12, width = 9)
 
-p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
-               ncol = 1, rel_heights = c(0.48, 1, 0.5))
-ggsave("figures/country_profiles/northern_cluster.png", p, height = 7.5, width = 9)
+
+# out = country_profile(iso = c("ETH", "ERI", "SSD", "SDN"),
+#                       marker = "k13_marcse", 
+#                       mod = "bb_gne", 
+#                       buff = 50000)
+# 
+# p <- plot_grid(out[[1]][[2]], out[[1]][[1]], out[[2]], 
+#                ncol = 1, rel_heights = c(0.48, 1, 0.5))
+# ggsave("figures/country_profiles/northern_cluster.png", p, height = 7.5, width = 9)
 
 
 

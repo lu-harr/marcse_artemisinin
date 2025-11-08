@@ -15,6 +15,8 @@ moldm <- raw_moldm("data/raw/db_20250922/novartis.csv") %>%
 #   unlist()
 # note 578 and 537 not included in WHO lists but included due to prevalence
 
+library(readxl)
+
 marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
   mutate_at(c("Present", "Tested"), as.numeric) %>%
   bind_rows(read_xlsx("../MARC_SEA_dashboard/September_25_Lucy.xlsx") %>%
@@ -230,11 +232,12 @@ message(paste("Number of rows in mutant table:", nrow(mutants)))
 tmp <- moldm %>% 
   filter(mutant) %>% 
   group_by(Marker) %>%
-  summarise(n = n(), npres = sum(Present)) %>%
-  filter(npres > 0) %>%
+  summarise(n_present = sum(Present), n_tested = sum(Tested)) %>%
+  filter(n_present > 0) %>%
   #filter(npres >= 10) %>%
   full_join(marker_reference, join_by(Marker == marker)) %>%
-  arrange(desc(npres))
+  arrange(desc(n_present)) %>%
+  filter(!is.na(n_present))
 message("TF-associated mutations in dataset")
 tmp %>% as.data.frame()
 
@@ -560,14 +563,14 @@ ggplot() +
   geom_point(data = df, 
              aes(x = year, y = present, group = marker, color = marker)) +
   labs(
-    title = "Detected mutations by year - with unpublished records",
+    title = "Detected mutations by year - IDDO Surveyor + MARCSE-Africa data",
     color = "Marker",
     linetype = "Marker"
   ) +
   scale_color_manual(values = rep(c(viridis(4), "#E37210", iddoblue, "#c7047c"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 300)) +
+                     limits = c(0, 325)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +

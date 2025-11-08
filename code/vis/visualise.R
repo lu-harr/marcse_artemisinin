@@ -92,7 +92,7 @@ p5 <- pred_time_plot("output/mdr1246/bb_gne/",
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_bb_astmh.png", scale = 1.5, height = 7, width = 6)
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
@@ -108,7 +108,7 @@ p5 <- pred_time_plot("output/mdr1246/bb_gne/",
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb_nopts.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
 
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?

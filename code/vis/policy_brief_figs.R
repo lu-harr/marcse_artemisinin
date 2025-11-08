@@ -220,6 +220,7 @@ library(iddoPal)
 blrd <- iddoPal::iddo_palettes$BlGyRd
 
 years_to_plot <- c("2004","2009", "2014", "2019", "2024")
+years_to_plot <- as.character(seq(2005, 2025, 5))
 p1 <- map_pred_row("output/crt76/bb_gne/preds_medians.tif", 
                    years = years_to_plot, field = "50", pal = blrd,
                    legend_lim = c(0,1), ylab = "", top_pan = TRUE)#

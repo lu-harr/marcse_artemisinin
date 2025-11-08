@@ -99,7 +99,7 @@ str_to_hap %>%
 
 pfmdr <- left_join(pfmdr, str_to_hap, by = join_by(Marker == stri)) %>%
   filter(!is.na(`86`) | !is.na(`184`) | !is.na(`1246`)) %>%
-  mutate(n_loci = 3 - rowSums(is.na(select(., c(`86`, `184`, `1246`)))))
+  mutate(n_loci = 3 - rowSums(is.na(dplyr::select(., c(`86`, `184`, `1246`)))))
 
 nrow(pfmdr)
 
@@ -410,11 +410,12 @@ ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 6.5, width = 5)
 
 
 partners <- partners %>%
-  mutate(year_bin = cut(year, breaks = c(min(year) - 1, seq(2004, 2024, length.out = 5))))
+  mutate(year_bin = cut(year, breaks = c(min(year) - 1, seq(2005, 2025, length.out = 5))))
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
-  geom_point(data = partners, 
+  geom_point(data = partners %>%
+               arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = Present/Tested),
              col = "grey50", pch=21, stroke = 0.2) +
@@ -437,3 +438,4 @@ ggplot() +
         panel.spacing.x = unit(0, "mm"),
         panel.spacing.y = unit(2, "mm"))
 ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 4)
+

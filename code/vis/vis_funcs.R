@@ -108,19 +108,20 @@ pred_time_plot <- function(path,
     mutate(year = as.numeric(year))
   
   p <- ggplot(df) +
-    geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
-    geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
+    # geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
+    # geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
     geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%"), alpha = alpha) + #fill=pal[6]) +
     geom_ribbon(aes(x = year, ymin = `25%`, ymax = `75%`, fill = "25% - 75%"), alpha = alpha) + #fill=pal[4]) +
     geom_ribbon(aes(x = year, ymin = `50%`, ymax = `50%`, fill = "50%")) + #fill=pal[1]) +
     geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
-    scale_linetype_manual("", values = c("0% - 100%" = 2)) +
+    # scale_linetype_manual("", values = c("0% - 100%" = 2)) +
     scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
     ylab("Prevalence") +
     xlab("Year") +
     labs(title = title) +
     ylim(0, 1) +
-    scale_x_continuous(breaks = seq(2000, 2022, 2), expand = c(0,0)) +
+    scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
+    geom_vline(xintercept = 2025, colour = iddo_palettes$BlGyRd[9], linetype = 2)
     theme_bw() +
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
