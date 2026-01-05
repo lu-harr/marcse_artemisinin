@@ -158,7 +158,7 @@ pred_time_plot <- function(path,
                         colour="grey", pch = 21,
                         mut_data) +
       scale_size_continuous(name = "Tested", trans = "sqrt", 
-                            range = c(0.2, 5), limits = c(5, 5200)) # +
+                            range = c(0.2, 5), limits = c(5, 5200), breaks = c(10, 100, 1000, 5000)) # +
     # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
     #              mut_data, fill = NA, outliers = FALSE)
   }

@@ -4,7 +4,7 @@
 # at this point, ya need to run the top of data_clean_k13.R
 # ... I could put everything in the same place or put the functions somewhere on
 # they're own but I'm going to keep things separate for now
-moldm <- raw_moldm("data/raw/db_20250922/novartis.csv") %>%
+moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
   mutate(Marker = strip_marker)
 # head(moldm)
 
@@ -475,7 +475,7 @@ p1 <-
         axis.title.y.right = element_text(color = bg_col),
         axis.ticks.y.right = element_line(color = bg_col)) +
   #legend.justification.right = "bottom") +
-  scale_x_continuous(breaks = 2005:2024) 
+  scale_x_continuous(breaks = 2005:2025) 
 p1
 
 p2 <- ggplot() + 
@@ -583,7 +583,7 @@ ggplot() +
         axis.title.y.right = element_text(color = bg_col),
         axis.ticks.y.right = element_line(color = bg_col)) +
   #legend.justification.right = "bottom") +
-  scale_x_continuous(breaks = seq(2005, 2024, 2))
+  scale_x_continuous(breaks = seq(2005, 2025, 2))
 ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13_time.png", scale = 0.8, width = 10, height = 5)
 
 

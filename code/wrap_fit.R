@@ -256,6 +256,8 @@ fit_betabinom <- function(mut_data,
   names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
                          "white_sd", "beta", "rho")
   
+  # would be nice to put a traceplot back in here ...
+  
   # save everything and do the prediction separately
   write_rds(parameters, paste0("output/", out_dir, "parameters", fold, ".rds"))
   write_rds(kernel, paste0("output/", out_dir, "kernel", fold, ".rds"))

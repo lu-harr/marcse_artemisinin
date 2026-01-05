@@ -261,15 +261,21 @@ obs_prev_panel_nn <- function(data_path,
 library(greta)
 source("code/betabinomial_p_rho.R")
 
+draws_path <- "output/k13_marcse/bb_gne/"
+draws_path <- "output/mdr86/bb_gne/"
+
 mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
                           pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
+mut_data <- extract_preds(data_path = "data/clean/pfmdr_single_mdr86.csv",
+                          pred_path = "output/mdr86/bb_gne/preds_medians.tif")
 
-draws_path <- "output/k13_marcse/bb_gne/"
+
 
 coverage_probabilities_through_observation_model <- function(mut_data,
                                                              draws_path,
                                                              nsim = 500,
                                                              probs){
+  # given draws, 
   draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
     summary()
   # error in here if you try to ask draws from a binomial model for rho
@@ -279,7 +285,7 @@ coverage_probabilities_through_observation_model <- function(mut_data,
   
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
-  widths <- sapply(1:floor(length(probs) / 2), 
+  widths <- sapply(1: floor(length(probs) / 2), 
                    function(i){probs[length(probs) - i + 1] - probs[i]})
   
   quants <- sapply(1:nrow(mut_data),function(i){
@@ -289,6 +295,7 @@ coverage_probabilities_through_observation_model <- function(mut_data,
       quantile(probs = probs)
   })
   
+  message("This doesn't do anything with observed data yet ..?")
   # out <- c(sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper]),
   #          sum(dat_non_zero$prevalence >= dat[,lower] & dat_non_zero$prevalence <= dat[,upper]))
   # 
@@ -298,6 +305,7 @@ coverage_probabilities_through_observation_model <- function(mut_data,
 tmp = coverage_probabilities_through_observation_model(mut_data,
                                                        draws_path,
                                                        probs = seq(0, 1, 0.1))
+
 
 
 posterior_predictive_check <- function(mut_data,
@@ -313,7 +321,7 @@ posterior_predictive_check <- function(mut_data,
   # error in here if you try to ask draws from a binomial model for rho
   rho <- draws$quantiles[c("rho"), "50%"]
   
-  message(rho)
+  message(paste0("rho ", rho))
   
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
@@ -324,66 +332,61 @@ posterior_predictive_check <- function(mut_data,
       sum(sims$. == mut_data$present[i]) / nsim)
   })
   
-  return(props)
-  
-  props <- props %>%
+  probs <- props %>%
     t() %>%
     as.data.frame() %>%
     mutate(V3 = 1 - V1 - V2) %>%
-    rename(lt = V1, eq = V2, gt = V3)
-    tidyr::pivot_longer(cols = everything())
+    rename(less_than = V1, equal_to = V2, greater_than = V3) %>%
+    mutate(leq = less_than + equal_to, 
+           geq = greater_than + equal_to,
+           tested = mut_data$tested,
+           present = mut_data$present,
+           pred = mut_data$pred) %>%
+    pivot_longer(cols = -c(tested, present, pred))
   
   # looking for a uniform distribution:
-  ggplot(props, aes(x = value, fill = name)) +
-    geom_histogram()
+  ggplot(probs, aes(x = value, fill = name)) +
+    geom_histogram() +
+    facet_wrap(~name)
+  
+  # show cumulative distribution:
+  ggplot(probs %>% filter(name == "leq"), aes(x = value, col = name)) +
+    stat_ecdf(geom = "step") +
+    geom_abline(intercept = 0, slope = 1)
+  
+  return(props)
 }
 
+# okay so this now works okay ..
+# It's just that the result for k13 is a bit insensible: lots of zeroes
 tmp <- posterior_predictive_check(mut_data,
                                   draws_path)
 
-tmp2 = t(tmp) %>% as.data.frame() %>% mutate(V3 = 1 - V1 - V2) %>% 
-  rename(lt = V1, eq = V2, gt = V3)
-
-ggplot(tmp2, aes(x = lt)) +
-  geom_histogram() +
-  labs(title = "proportion of simulated values less than obs")
-# (i.e. most simulations are greater than obs)
-
-ggplot(tmp2, aes(x = eq)) +
-  geom_histogram() +
-  labs(title = "proportion of simulated values equal to obs")
-# (these are mostly small numbers)
-
-ggplot(tmp2, aes(x = gt)) +
-  geom_histogram() +
-  labs(title = "proportion of simulated values greater than obs")
-# (i.e. most simulations are less than obs)
-
-# now this is where I get confused
-ggplot(tmp2, aes(x = gt + eq)) +
-  geom_histogram() +
-  labs(title = "proportion of simulated values greater than obs")
-
-pairs(tmp2)
-
-tmp3 <- tmp2 %>% pivot_longer(cols = everything())
-
-# then I got a bit stuck here ......
-ggplot(tmp3, aes(x = value, fill = name)) +
-  geom_histogram()
-
-
-mut_data$nn <- nn_measure(mut_data, 
-                          draws_path)
+mut_data <- mut_data %>%
+  mutate(nn = nn_measure(mut_data, 
+                          draws_path),
+         nnplot = 2**nn,
+         nnplot = nnplot/max(nnplot))
 
 ggplot(mut_data) +
-  geom_point(aes(x = x, y = y, col = nn))
+  geom_point(aes(x = x, y = y, col = nnplot))
 
 ggplot(mut_data) +
-  geom_point(aes(x = x, y = y, col = 2**nn), alpha = 0.3)
+  geom_point(aes(x = present/tested, y = abs(pred - present/tested), col = nnplot)) +
+  scale_color_viridis_c("Mean distance\nto other points")
+
+ggplot(mut_data) +
+  geom_sf(data = afr) +
+  geom_point(aes(x = x, y = y, col = nnplot), alpha = 0.3) +
+  scale_color_viridis_c("Mean distance\nto other points") +
+  xlab("Longitude") +
+  ylab("Latitude")
 
 # # e.g.:
 # # might want to re-land some points inside of model fitting
+library(looseVis)
+library(iddoPal)
+library(cowplot)
 obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/gneiting_sparse/preds_medians.tif",
                xlim = c(0, 0.6), ylim = c(0, 0.6),

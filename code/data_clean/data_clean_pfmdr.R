@@ -19,7 +19,7 @@ afr <- world %>%
   st_as_sf()
 
 moldm <- #read.csv("data/raw/db_20250616/novartis.csv") 
-  read.csv("data/raw/db_20250922/novartis.csv") %>%
+  read.csv("data/raw/db_20260105/novartis.csv") %>%
   mutate(across(c(Start.Year, End.Year, Present, Tested, Longitude, Latitude), 
                 as.numeric)) %>% 
   filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA

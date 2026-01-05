@@ -96,9 +96,8 @@ raw_moldm <- function(path){
   out
 }
 
-#moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
-moldm <- raw_moldm("data/raw/db_20250922/novartis.csv")
-# had 240 before filtering this morning ... but that also can't be right
+# moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
+moldm <- raw_moldm("data/raw/db_20260105/novartis.csv")
 
 # notes:
 # S446I possible typo?
@@ -322,6 +321,7 @@ bg <- bg %>%
 bg_scale <- 80
 bg_col <- "grey65"
 
+library(viridisLite)
  p1 <- 
 ggplot() +
   geom_bar(data = bg, aes(x = year, y = Tested / bg_scale), 
@@ -335,8 +335,8 @@ ggplot() +
     color = "Marker",
     linetype = "Marker"
   ) +
-  scale_color_manual(values = rep(c(viridis(4), "#E37210", iddoblue, "#c7047c"), 2)) +
-  scale_linetype_manual(values = rep(1:2, each = 7)) +
+  scale_color_manual(values = rep(c(viridis(5), "#E37210", iddoblue, "#c7047c"), 2)) +
+  scale_linetype_manual(values = rep(1:2, each = 8)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests")) +
   theme_minimal() +
   xlab("Year") +
@@ -350,7 +350,7 @@ ggplot() +
         axis.title.y.right = element_text(color = bg_col),
         axis.ticks.y.right = element_line(color = bg_col)) +
   #legend.justification.right = "bottom") +
-  scale_x_continuous(breaks = 2005:2024) 
+  scale_x_continuous(breaks = 2005:2025) 
 p1
 
 p2 <- ggplot() + 
