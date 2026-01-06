@@ -74,11 +74,11 @@ predict_to_ras <- function(stack,
   # finish off design matrix
   X_pixel <- tmp$df %>%
     dplyr::mutate(year_scaled = scaled_year)
-  message(paste0("Scaled year: ", scaled_year))
+  #  message(paste0("Scaled year: ", scaled_year))
   # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  message(coord_cols) # this is xyyear
-  message(design_cols) # this is interceptyear_scaledpfpr
-  message(paste(names(X_pixel), collapse = ", "))
+  # message(coord_cols) # this is xyyear
+  # message(design_cols) # this is interceptyear_scaledpfpr
+  # message(paste(names(X_pixel), collapse = ", "))
   message(dim(X_pixel[,coord_cols]))
   message(dim(X_pixel[,design_cols]))
   # 
@@ -435,8 +435,12 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   
   idx <- unique(dat$idx)
   
-  # message(length(idx))
-  # message(paste("dim", dim(sims$mut_freq_pixel)))
+  message(length(idx))
+  message(paste("dim", dim(sims$mut_freq_pixel)))
+
+  if (length(idx) == 0){
+    return(NULL)
+  }
   
   # add cell IDs into middle index here and save yourself some time
   bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,

@@ -1,4 +1,4 @@
-suppressMessages(source("code/setup.R"))
+suppressWarnings(suppressMessages(source("code/setup.R")))
 suppressMessages(source("code/build_design_matrix.R"))
 suppressMessages(source("code/predict_to_raster.R"))
 
@@ -28,8 +28,10 @@ mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 # I'm pretty sure we have points in 23 and 24 for all markers ....
 
 scaled_years <- scale_years(range(mut_data$year))
-stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
-  aggregate(AGG_FACTOR)
+stable_transmission_mask <- rast("data/stable_transmission_mask.grd")
+if(AGG_FACTOR != 1){
+  stable_transmission_mask <- aggregate(stable_transmission_mask, AGG_FACTOR)
+}
 random_field <- read_rds(paste0(out_dir, "random_field.rds"))
 parameters <- read_rds(paste0(out_dir, "parameters.rds"))
 draws <- read_rds(paste0(out_dir, "draws.rds"))

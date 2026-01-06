@@ -44,7 +44,7 @@ print("Fitting betabinom")
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
 
-NFOLD <- 5
+NFOLD <- 10
 folds <- createFolds(mut_data$present / mut_data$tested, k = NFOLD)
 write_rds(folds, paste0("output/", out_dir, "cv_folds.rds"))
 
@@ -59,7 +59,7 @@ system.time(mclapply(1:NFOLD, function(x){
             nchains = 6,
             warmup = 3000,
             nsamples = 20000)
-}, mc.cores = 5))
+}, mc.cores = NFOLD))
 
 # test <- folds[[fold]] # don't need you yet !
 

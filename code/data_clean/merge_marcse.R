@@ -364,7 +364,7 @@ markers <- moldm %>%
 # put test intensity in the background
 bg <- moldm %>%
   group_by(Longitude, Latitude, year, PubMedID) %>%
-  summarise(Tested = sum(unique(Tested))) %>%
+  summarise(Tested = max(Tested)) %>%
   ungroup() %>%
   group_by(year) %>%
   summarise(Tested = sum(Tested))
@@ -442,16 +442,18 @@ df <- df %>%
 bg <- bg %>%
   filter(year >= 2005)
 
-bg_scale <- 140
+bg_scale <- 100
 bg_col <- "grey65"
 
 message("Caution: setting bg_scale and y limits manually")
 p1 <- 
   ggplot() +
-  geom_bar(data = bg, aes(x = year, y = Tested / bg_scale), 
+  geom_bar(data = bg, 
+           aes(x = year, y = Tested / bg_scale), 
            stat = "identity", fill = "grey75") +
   geom_line(data = df, size = 0.7,
-            aes(x = year, y = present, group = marker, color = marker, linetype = marker)) +
+            aes(x = year, y = present, group = marker, color = marker, 
+                linetype = marker)) +
   geom_point(data = df, 
              aes(x = year, y = present, group = marker, color = marker)) +
   labs(
@@ -462,7 +464,7 @@ p1 <-
   scale_color_manual(values = rep(c(iddoblue, "#c7047c", viridis(4), "#E37210"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 310)) +
+                     limits = c(0, 400)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +
@@ -475,7 +477,7 @@ p1 <-
         axis.title.y.right = element_text(color = bg_col),
         axis.ticks.y.right = element_line(color = bg_col)) +
   #legend.justification.right = "bottom") +
-  scale_x_continuous(breaks = 2005:2025) 
+  scale_x_continuous(breaks = 2008:2025, limits = c(2008, 2025)) 
 p1
 
 p2 <- ggplot() + 
@@ -505,7 +507,8 @@ p2 <- ggplot() +
   theme(plot.background = element_rect(fill='transparent', color=NA),
         legend.position = "bottom",
         legend.title = element_text(hjust = 0.5),
-        legend.spacing.x = unit(10, "lines")) +
+        legend.spacing.x = unit(10, "lines"),
+        panel.spacing = unit(0, "lines")) +
   guides(fill = guide_colourbar(title.position = "top"),
          size = guide_legend(title.position = "top"))
 

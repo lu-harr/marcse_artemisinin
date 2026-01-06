@@ -113,11 +113,13 @@ fit_binom <- function(mut_data,
   r_hats <- coda::gelman.diag(draws,
                               autoburnin = FALSE,
                               multivariate = FALSE)
-  summary(r_hats$psrf)
+  message(summary(r_hats$psrf))
   
   parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta)
   names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
                          "white_sd", "beta")
+
+  message(paste0("Writing", out_dir, fold))
   
   # save everything and do the prediction separately
   write_rds(parameters, paste0("output/", out_dir, "parameters", fold, ".rds"))
@@ -224,7 +226,6 @@ fit_betabinom <- function(mut_data,
   
   # likelihood
   distribution(X_obs$present) <- betabinomial_p_rho(X_obs$tested, X_prob_obs, rho)
-  # distribution(X_obs$present) <- binomial(X_obs$tested, X_prob_obs)
   
   # fit the model by Hamiltonian Monte Carlo
   m <- model(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta, rho)
@@ -250,13 +251,14 @@ fit_betabinom <- function(mut_data,
   r_hats <- coda::gelman.diag(draws,
                               autoburnin = FALSE,
                               multivariate = FALSE)
-  summary(r_hats$psrf)
+  message(summary(r_hats$psrf))
   
   parameters <- list(gneiting_len, gneiting_tim, gneiting_sd, white_sd, beta, rho)
   names(parameters) <- c("gneiting_len", "gneiting_tim", "gneiting_sd",
                          "white_sd", "beta", "rho")
   
   # would be nice to put a traceplot back in here ...
+  message(paste0("Writing", out_dir, fold))
   
   # save everything and do the prediction separately
   write_rds(parameters, paste0("output/", out_dir, "parameters", fold, ".rds"))

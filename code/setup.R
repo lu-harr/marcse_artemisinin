@@ -4,18 +4,19 @@ set.seed(0784)
 # filter on end.year ..
 # filter on 
 
-library(greta)
-library(greta.gp)
-library(terra)
-library(readxl)
-library(dplyr)
-library(tidyr)
-library(scales)
-library(magrittr)
-library(tidyverse)
-library(sf) # not sure why I'm adding this in October 2025
-library(rnaturalearth)
-library(rnaturalearthdata)
+suppressPackageStartupMessages({
+  library(greta)
+  library(greta.gp)
+  library(terra)
+  library(readxl)
+  library(dplyr)
+  library(tidyr)
+  library(scales)
+  library(magrittr)
+  library(tidyverse)
+  library(sf) # not sure why I'm adding this in October 2025
+  library(rnaturalearth)
+  library(rnaturalearthdata)})
 world <- ne_countries(scale="medium", returnclass = "sf")
 
 MIN_YEAR <- 2000
