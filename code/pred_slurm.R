@@ -54,7 +54,7 @@ preds <- predict_to_ras(covariates,
                         stable_transmission_mask = stable_transmission_mask,
                         nsim = 500,
                         coverage = TRUE,
-                        data_path = out_dir)
+                        test_pts_for_coverage = mut_data)
 
 # perhaps give me a quick plot here?
 

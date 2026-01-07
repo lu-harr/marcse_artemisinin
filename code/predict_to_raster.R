@@ -39,7 +39,7 @@ predict_to_ras <- function(stack,
                            coord_cols = c("x", "y", "year"),
                            design_cols = c("year"),
                            coverage = FALSE,
-                           data_path = ""){
+                           test_pts_for_coverage = NULL){
   message("predicting to raster")
   cov_years <- names(stack)
   cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
@@ -99,9 +99,9 @@ predict_to_ras <- function(stack,
                                       nsim = nsim,
                                       trace_batch_size = 1) # reducing: will take longer, use less mem
   
-  if (coverage & data_path != ""){
+  if (coverage & !is.null(test_pts_for_coverage)){
     coverages <- calculate_coverages(post_pixel_sims,
-                                      data_path,
+                                      test_pts_for_coverage,
                                       lab_year,
                                       ras,
                                      incs = 100)
@@ -285,6 +285,7 @@ predict_to_points <- function(pts,
                                coverage = FALSE,
                                data_path = ""){
   message("predicting to points")
+  message("warning coverages call is deprecated")
   
   # coords should be npts * c("x", "y", "year")
   # X_pixel should be 
@@ -404,10 +405,10 @@ predict_to_points <- function(pts,
 #' @export
 #'
 #' @examples
-calculate_coverages <- function(sims, path, yr, ras, incs = 100){
+calculate_coverages <- function(sims, dat, yr, ras, incs = 100){
   out <- list()
   
-  dat <- read_rds(paste0(path, "mut_data.rds")) %>%
+  dat <- dat %>%
     filter(year == yr)
   
   if (nrow(dat) == 0){
@@ -439,17 +440,25 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   # message(paste("dim", dim(sims$mut_freq_pixel)))
 
   if (length(idx) == 0){
+    message("no coverages to check")
     return(NULL)
   }
-  
-  # add cell IDs into middle index here and save yourself some time
-  bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,
-                  probs = probs) %>% # a nprobs * ncell matrix
-    t() %>%
-    as.data.frame() %>%
-    mutate(idx = idx)
-  
-  # message(dim(bounds))
+
+
+  if (length(idx) == 1){
+    message("Here's a fix")
+    bounds <- quantile(sims$mut_freq_pixel[,idx,1], probs = probs) %>%
+      t() %>%
+      as.data.frame() %>%
+      mutate(idx = idx)
+  } else {
+    # add cell IDs into middle index here and save yourself some time
+    bounds <- apply(sims$mut_freq_pixel[,idx,1], 2, quantile,
+                      probs = probs) %>% # a nprobs * ncell matrix
+        t() %>%
+        as.data.frame() %>%
+        mutate(idx = idx)
+  }
   
   dat <- left_join(dat, bounds, by = join_by(idx)) %>%
     mutate(prevalence = present / tested)

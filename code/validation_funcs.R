@@ -3,8 +3,11 @@ library(tensorflow)
 source("code/setup.R")
 source("code/build_design_matrix.R") # for year scaling
 
-# bringing in some backend functions from greta.gp
+# bringing in some backend functions from greta.gp for NN calculatin
 source("~/greta.gp.st.on.earth/R/tf_kernels.R")
+
+library(greta)
+source("code/betabinomial_p_rho.R")
 
 # will need to build folds in at some point
 extract_preds <- function(data_path,
@@ -86,7 +89,7 @@ nn_measure <- function(mut_data, draws_path){
 }
 
 
-# observed vs predicted values
+
 obs_prev_panel <- function(data_path, 
                            pred_path, 
                            main = "", 
@@ -97,7 +100,9 @@ obs_prev_panel <- function(data_path,
                            facet_bins = NULL, # apply facets over time?
                            ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
                            buffer = 1, # option to reland points?
-                           bb = NULL){
+                           bb = NULL # bounding box for inset
+                           ){
+  # observed vs predicted values: give me a three-panelled plot
   
   mut_data <- extract_preds(data_path, pred_path, ave_tag, buffer)
   
@@ -163,7 +168,8 @@ obs_prev_panel <- function(data_path,
                aes(x = x, y = y, col = diffs),
                shape = 1, size = mut_data$cex) +
     scale_color_gradientn(colours = cols, 
-                          name = "Residuals\n(Observed - Predicted)") + # this needs re-scaling (back to what it was..)
+                          name = "Residuals\n(Observed - Predicted)") + 
+    # this needs re-scaling (back to what it was..)
     theme_bw() +
     xlab("Longitude") +
     ylab("Latitude") +
@@ -221,6 +227,7 @@ obs_prev_panel_nn <- function(data_path,
                            ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
                            buffer = 1 # option to reland points?
                            ){
+  # visualise with NN metric
   
   mut_data <- extract_preds(data_path, pred_path, ave_tag, buffer)
   mut_data$nn <- nn_measure(mut_data, draws_path)
@@ -258,16 +265,6 @@ obs_prev_panel_nn <- function(data_path,
   plot_grid(p1, p2, nrow = 1)
 }
 
-library(greta)
-source("code/betabinomial_p_rho.R")
-
-draws_path <- "output/k13_marcse/bb_gne/"
-draws_path <- "output/mdr86/bb_gne/"
-
-mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
-                          pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
-mut_data <- extract_preds(data_path = "data/clean/pfmdr_single_mdr86.csv",
-                          pred_path = "output/mdr86/bb_gne/preds_medians.tif")
 
 
 
@@ -289,22 +286,36 @@ coverage_probabilities_through_observation_model <- function(mut_data,
                    function(i){probs[length(probs) - i + 1] - probs[i]})
   
   quants <- sapply(1:nrow(mut_data),function(i){
+    # quantiles of simulations, given predicted prevalences
     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
       calculate(nsim = nsim) %>%
       unlist() %>%
       quantile(probs = probs)
+  }) %>%
+    t()
+  
+  dat <- bind_cols(mut_data, quants)
+  
+  skip <- 8
+  ind <<- 1 # number of columns to skip
+  coverages <- lapply(widths, function(width){
+    if (width == 0){return(0)}
+    
+    lower <- skip + ind
+    upper <- skip + length(probs) + 1 - ind
+    # what proportion of recorded numbers of positives are in the intervals we 
+    # just simulated?
+    out <- sum(dat$present >= dat[,lower] & dat$present <= dat[,upper])
+    message(paste(lower, upper))
+    message(paste(names(dat)[lower], names(dat)[upper]))
+    ind <<- ind + 1
+    
+    out
   })
   
-  message("This doesn't do anything with observed data yet ..?")
-  # out <- c(sum(dat$prevalence >= dat[,lower] & dat$prevalence <= dat[,upper]),
-  #          sum(dat_non_zero$prevalence >= dat[,lower] & dat_non_zero$prevalence <= dat[,upper]))
-  # 
-  quants
+  cbind(widths, unlist(coverages) / nrow(dat))
+  # which ends up being greater than y = x?
 }
-
-tmp = coverage_probabilities_through_observation_model(mut_data,
-                                                       draws_path,
-                                                       probs = seq(0, 1, 0.1))
 
 
 
@@ -332,7 +343,7 @@ posterior_predictive_check <- function(mut_data,
       sum(sims$. == mut_data$present[i]) / nsim)
   })
   
-  probs <- props %>%
+  probs <- tmp %>%
     t() %>%
     as.data.frame() %>%
     mutate(V3 = 1 - V1 - V2) %>%
@@ -344,23 +355,41 @@ posterior_predictive_check <- function(mut_data,
            pred = mut_data$pred) %>%
     pivot_longer(cols = -c(tested, present, pred))
   
-  # looking for a uniform distribution:
-  ggplot(probs, aes(x = value, fill = name)) +
-    geom_histogram() +
-    facet_wrap(~name)
   
-  # show cumulative distribution:
-  ggplot(probs %>% filter(name == "leq"), aes(x = value, col = name)) +
-    stat_ecdf(geom = "step") +
-    geom_abline(intercept = 0, slope = 1)
   
-  return(props)
+  return(probs)
 }
+
+draws_path <- "output/k13_marcse/bb_gne/"
+draws_path <- "output/mdr86/bb_gne/"
+
+mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
+                          pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
+mut_data <- extract_preds(data_path = "data/clean/pfmdr_single_mdr86.csv",
+                          pred_path = "output/mdr86/bb_gne/preds_medians.tif")
+
+
+
+tmp = coverage_probabilities_through_observation_model(mut_data,
+                                                       draws_path,
+                                                       probs = seq(0, 1, 0.1))
+
+
 
 # okay so this now works okay ..
 # It's just that the result for k13 is a bit insensible: lots of zeroes
 tmp <- posterior_predictive_check(mut_data,
                                   draws_path)
+
+# looking for a uniform distribution:
+ggplot(probs, aes(x = value, fill = name)) +
+  geom_histogram() +
+  facet_wrap(~name)
+
+# show cumulative distribution:
+ggplot(probs %>% filter(name == "leq"), aes(x = value, col = name)) +
+  stat_ecdf(geom = "step") +
+  geom_abline(intercept = 0, slope = 1)
 
 mut_data <- mut_data %>%
   mutate(nn = nn_measure(mut_data, 
@@ -396,6 +425,8 @@ obs_prev_panel_nn("data/clean/moldm_marcse_k13_nomarker.csv",
                   "output/k13_marcse/gneiting_sparse/",
                   xlim = c(0, 0.6), ylim = c(0, 0.6),
                   buffer = 100000)
+
+
 # ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
 # obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
 #                "output/k13_marcse/bb_gne/preds_medians.tif",

@@ -27,23 +27,26 @@ out_dir <- paste0("output/", marker, "/", mod, "/")
 # bring in all of the other outputs here too
 mut_data <- read_rds(paste0(out_dir, "mut_data.rds"))
 folds <- read_rds(paste0(out_dir, "cv_folds.rds"))
-train <- unlist(folds[-c(fold)])
-mut_data <- mut_data[train,]
-message(nrow(mut_data))
-message(names(mut_data))
+train_dat <- mut_data[unlist(folds[-c(fold)]),]
+test_dat <- mut_data[unlist(folds[fold]),]
+
+message(nrow(train_dat))
+message(names(train_dat))
 
 # this is now how I'm calculating scaled_years during inference - 
 # I'm pretty sure we have points in 23 and 24 for all markers ....
-message(range(mut_data$year))
-scaled_years <- scale_years(range(mut_data$year))
+message(range(train_dat$year))
+scaled_years <- scale_years(range(train_dat$year))
 stable_transmission_mask <- rast("data/stable_transmission_mask.grd") %>%
   aggregate(AGG_FACTOR)
 random_field <- read_rds(paste0(out_dir, "random_field_", fold, ".rds"))
 parameters <- read_rds(paste0(out_dir, "parameters_", fold, ".rds"))
 draws <- read_rds(paste0(out_dir, "draws_", fold, ".rds"))
 
-# was there a reason why we needed this?
-# pfpr_years = 2020:2022
+# boo:
+if (!year %in% as.numeric(names(scaled_years))){
+  scaled_years <- extended_scaled_years(scaled_years, year)
+}
 
 set.seed(0748)
 preds <- predict_to_ras(covariates,
@@ -55,12 +58,16 @@ preds <- predict_to_ras(covariates,
                         scaled_year = scaled_years[[as.character(year)]],
                         coord_cols = c("x_rd", "y_rd", "year_scaled"),
                         design_cols = c("intercept", "year_scaled", "pfpr"),
-                        stable_transmission_mask = stable_transmission_mask)
+                        stable_transmission_mask = stable_transmission_mask,
+                        coverage = TRUE,
+                        test_pts_for_coverage = test_dat)
 
 # perhaps give me a quick plot here?
 
-writeRaster(preds$out, paste0(out_dir, "cv_preds", year, "_preds_", fold, ".grd"), overwrite = TRUE)
-write.csv(preds$coverages, paste0(out_dir, "cv_preds", year, "_coverages_", fold, ".csv"), row.names = FALSE)
+writeRaster(preds$out, paste0(out_dir, "cv_preds/", year, "_preds_", fold, ".grd"), overwrite = TRUE)
+if(!is.null(preds$coverages)){
+  write.csv(preds$coverages, paste0(out_dir, "cv_preds/", year, "_coverages_", fold, ".csv"), row.names = FALSE)
+}
 
 message(paste0("written to ", out_dir))
 
