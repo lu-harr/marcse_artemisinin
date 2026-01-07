@@ -10,10 +10,10 @@ library(parallelly)
 print(paste("Cores:", detectCores()))
 print(paste("Cores:", availableCores()))
 
-source("code/setup.R")
-source("code/build_design_matrix.R")
-source("code/betabinomial_p_rho.R")
-source("code/wrap_fit.R")
+suppressMessages(source("code/setup.R"))
+suppressMessages(source("code/build_design_matrix.R"))
+suppressMessages(source("code/betabinomial_p_rho.R"))
+suppressMessages(source("code/wrap_fit.R"))
 
 
 # commandArgs feels a bit unflashy but I can't keep having separate scripts
@@ -44,7 +44,7 @@ print("Fitting betabinom")
 mut_data <- setup_mut_data(in_dat, min_year = 2000)
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
 
-NFOLD <- 10
+NFOLD <- 5
 folds <- createFolds(mut_data$present / mut_data$tested, k = NFOLD)
 write_rds(folds, paste0("output/", out_dir, "cv_folds.rds"))
 

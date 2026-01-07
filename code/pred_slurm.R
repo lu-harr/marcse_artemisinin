@@ -59,7 +59,7 @@ preds <- predict_to_ras(covariates,
 # perhaps give me a quick plot here?
 
 writeRaster(preds$out, paste0(out_dir, year, "_preds.grd"), overwrite = TRUE)
-message(preds$coverages)
+# message(preds$coverages)
 
 if(!is.null(preds$coverages)){
   write.csv(preds$coverages, 

@@ -46,7 +46,7 @@ pfmdr <- moldm %>%
                    Estimated.Prev, Estimated.Location))
 # drop where Display.On.Surveyor is false? Ask Sabina about how this works for pfmdr1
 
-unique(pfmdr$Marker)
+
 
 str_to_hap <- data.frame(stri = unique(pfmdr$Marker)) %>%
   mutate(tri = case_when(str_length(stri) == 5 & 
@@ -120,12 +120,17 @@ tmp <- pfmdr %>%
   summarise(n = n())
 sum(tmp$Tested)
 
+message("Here's the numbers for Results")
 tmp <- pfmdr %>%
-  group_by(Longitude, Latitude, year, PubMedID, Tested) %>%
-  summarise(n = n())
+  filter(!is.na(`86`) | !is.na(`184`) | !is.na(`1246`)) %>%
+  group_by(Longitude, Latitude, year, Title, Year.Published) %>%
+  summarise(n = n(), Tested = max(Tested))
 sum(tmp$Tested)
 
-summary(tmp$Tested)
+length(unique(tmp$Title))
+length(setdiff(unique(tmp$Title), unique(crt$Title)))
+range(tmp$year)
+range(as.numeric(tmp$Year.Published), na.rm=TRUE)
 
 # run assumptions past Sabina
 # group into studies and review haplotypes/evidence of surveillance at all three loci
@@ -372,6 +377,8 @@ crt <- read.csv("data/clean/moldm_crt76.csv") %>%
          year_bin = cut(year, breaks = c(1974, 2008, 2013, 2017, 2020, 2024)))
 
 single_loc <- read.csv("data/clean/pfmdr_single_locus.csv")
+
+message("Summary stats for results")
 
 partners <- bind_rows(crt,
                       single_loc %>%

@@ -79,8 +79,8 @@ predict_to_ras <- function(stack,
   # message(coord_cols) # this is xyyear
   # message(design_cols) # this is interceptyear_scaledpfpr
   # message(paste(names(X_pixel), collapse = ", "))
-  message(dim(X_pixel[,coord_cols]))
-  message(dim(X_pixel[,design_cols]))
+  # message(dim(X_pixel[,coord_cols]))
+  # message(dim(X_pixel[,design_cols]))
   # 
   # project random field to coordinates we would like predictions for
   random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
@@ -435,8 +435,8 @@ calculate_coverages <- function(sims, path, yr, ras, incs = 100){
   
   idx <- unique(dat$idx)
   
-  message(length(idx))
-  message(paste("dim", dim(sims$mut_freq_pixel)))
+  # message(length(idx))
+  # message(paste("dim", dim(sims$mut_freq_pixel)))
 
   if (length(idx) == 0){
     return(NULL)
