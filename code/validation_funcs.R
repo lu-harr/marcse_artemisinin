@@ -1,13 +1,4 @@
-# nearest neighbour index - from Foo and Flegg
-library(tensorflow)
-source("code/setup.R")
-source("code/build_design_matrix.R") # for year scaling
-
-# bringing in some backend functions from greta.gp for NN calculatin
-source("~/greta.gp.st.on.earth/R/tf_kernels.R")
-
-library(greta)
-source("code/betabinomial_p_rho.R")
+# fucntions for validation script
 
 # will need to build folds in at some point
 extract_preds <- function(data_path,
@@ -268,25 +259,25 @@ obs_prev_panel_nn <- function(data_path,
 
 
 
-coverage_probabilities_through_observation_model <- function(mut_data,
-                                                             draws_path,
-                                                             nsim = 500,
-                                                             probs){
-  # given draws, 
+coverage_probabilities_from_observation_model <- function(mut_data,
+                                                         draws_path,
+                                                         nsim = 100,
+                                                         probs){
+  # given draws, grab median rho
   draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
     summary()
-  # error in here if you try to ask draws from a binomial model for rho
-  rho <- draws$quantiles[c("rho"), "50%"]
   
-  message(rho)
+  # (error in here if you try to ask draws from a binomial model for rho)
+  rho <- draws$quantiles[c("rho"), "50%"]
+  message(paste0("Rho: ", rho))
   
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
   widths <- sapply(1: floor(length(probs) / 2), 
                    function(i){probs[length(probs) - i + 1] - probs[i]})
   
-  quants <- sapply(1:nrow(mut_data),function(i){
-    # quantiles of simulations, given predicted prevalences
+  quants <- sapply(1:nrow(mut_data), function(i){
+    # now assess quantiles of posterior samples, given predicted prevalences
     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
       calculate(nsim = nsim) %>%
       unlist() %>%
@@ -296,25 +287,24 @@ coverage_probabilities_through_observation_model <- function(mut_data,
   
   dat <- bind_cols(mut_data, quants)
   
-  skip <- 8
-  ind <<- 1 # number of columns to skip
+  skip <- 7 # number of columns to skip
+  ind <<- 1 
   coverages <- lapply(widths, function(width){
     if (width == 0){return(0)}
     
     lower <- skip + ind
-    upper <- skip + length(probs) + 1 - ind
+    upper <- length(names(dat)) - ind
     # what proportion of recorded numbers of positives are in the intervals we 
     # just simulated?
     out <- sum(dat$present >= dat[,lower] & dat$present <= dat[,upper])
-    message(paste(lower, upper))
-    message(paste(names(dat)[lower], names(dat)[upper]))
+    
     ind <<- ind + 1
     
     out
   })
   
-  cbind(widths, unlist(coverages) / nrow(dat))
-  # which ends up being greater than y = x?
+  data.frame(widths = widths, 
+             cover = unlist(coverages) / nrow(dat))
 }
 
 
@@ -336,14 +326,14 @@ posterior_predictive_check <- function(mut_data,
   
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
-  props <- sapply(1:nrow(mut_data),function(i){
+  props <- sapply(1:nrow(mut_data), function(i){
     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
       calculate(nsim = nsim)
     c(sum(sims$. < mut_data$present[i]) / nsim, 
       sum(sims$. == mut_data$present[i]) / nsim)
   })
   
-  probs <- tmp %>%
+  probs <- props %>%
     t() %>%
     as.data.frame() %>%
     mutate(V3 = 1 - V1 - V2) %>%
@@ -355,77 +345,8 @@ posterior_predictive_check <- function(mut_data,
            pred = mut_data$pred) %>%
     pivot_longer(cols = -c(tested, present, pred))
   
-  
-  
   return(probs)
 }
-
-draws_path <- "output/k13_marcse/bb_gne/"
-draws_path <- "output/mdr86/bb_gne/"
-
-mut_data <- extract_preds(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
-                          pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
-mut_data <- extract_preds(data_path = "data/clean/pfmdr_single_mdr86.csv",
-                          pred_path = "output/mdr86/bb_gne/preds_medians.tif")
-
-
-
-tmp = coverage_probabilities_through_observation_model(mut_data,
-                                                       draws_path,
-                                                       probs = seq(0, 1, 0.1))
-
-
-
-# okay so this now works okay ..
-# It's just that the result for k13 is a bit insensible: lots of zeroes
-tmp <- posterior_predictive_check(mut_data,
-                                  draws_path)
-
-# looking for a uniform distribution:
-ggplot(probs, aes(x = value, fill = name)) +
-  geom_histogram() +
-  facet_wrap(~name)
-
-# show cumulative distribution:
-ggplot(probs %>% filter(name == "leq"), aes(x = value, col = name)) +
-  stat_ecdf(geom = "step") +
-  geom_abline(intercept = 0, slope = 1)
-
-mut_data <- mut_data %>%
-  mutate(nn = nn_measure(mut_data, 
-                          draws_path),
-         nnplot = 2**nn,
-         nnplot = nnplot/max(nnplot))
-
-ggplot(mut_data) +
-  geom_point(aes(x = x, y = y, col = nnplot))
-
-ggplot(mut_data) +
-  geom_point(aes(x = present/tested, y = abs(pred - present/tested), col = nnplot)) +
-  scale_color_viridis_c("Mean distance\nto other points")
-
-ggplot(mut_data) +
-  geom_sf(data = afr) +
-  geom_point(aes(x = x, y = y, col = nnplot), alpha = 0.3) +
-  scale_color_viridis_c("Mean distance\nto other points") +
-  xlab("Longitude") +
-  ylab("Latitude")
-
-# # e.g.:
-# # might want to re-land some points inside of model fitting
-library(looseVis)
-library(iddoPal)
-library(cowplot)
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-               xlim = c(0, 0.6), ylim = c(0, 0.6),
-               ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-obs_prev_panel_nn("data/clean/moldm_marcse_k13_nomarker.csv",
-                  "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-                  "output/k13_marcse/gneiting_sparse/",
-                  xlim = c(0, 0.6), ylim = c(0, 0.6),
-                  buffer = 100000)
-
 
 # ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
 # obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",

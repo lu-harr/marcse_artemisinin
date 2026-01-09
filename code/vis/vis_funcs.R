@@ -375,11 +375,11 @@ coverages_inner <- function(path){
   covs_pos <- coverages[seq(2, nrow(coverages), 2),] %>%
     colSums(na.rm=TRUE)
   
-  covs_all <- covs_all[grep("X", names(covs_all))] / covs_all["n_landed"] * 100
-  covs_pos <- covs_pos[grep("X", names(covs_pos))] / covs_pos["n_non_zero"] * 100
+  covs_all <- covs_all[grep("X", names(covs_all))] / covs_all["n_landed"]
+  covs_pos <- covs_pos[grep("X", names(covs_pos))] / covs_pos["n_non_zero"]
   widths <- gsub("X", "", names(covs_all))[grep("X", names(covs_all))] %>% as.numeric()
   
-  dat <- data.frame(w = widths,
+  dat <- data.frame(w = widths / 100,
                     pa = covs_all,
                     po = covs_pos) %>%
     pivot_longer(cols = c(pa, po), names_to = "group", values_to = "value") %>%
@@ -397,41 +397,55 @@ coverages_fig <- function(path){
   # wish I had included years here ... wait a sec I did
   # yrs <- concat_coverages(path)
   
-  if (length(path) > 1){
-    dat <- lapply(path, function(p){
-      coverages_inner(p) %>% 
-        mutate(mod = str_extract(p, "(?<=/)[^/]+(?=/[^/]*$)"))
-      }) %>%
-      do.call(what = rbind) %>%
-      mutate(mod = case_when(mod == "bb_gne" ~ "Beta-binomial",
-                             mod == "gneiting_sparse" ~ "Binomial",
-                             TRUE ~ mod))
-  } else {
-    dat <- coverages_inner(path)
-  }
+  # removing earlier code when I was comparing binom and betabinom models:
+  # if (length(path) > 1){
+  #   dat <- lapply(path, function(p){
+  #     coverages_inner(p) %>% 
+  #       mutate(mod = str_extract(p, "(?<=/)[^/]+(?=/[^/]*$)"))
+  #     }) %>%
+  #     do.call(what = rbind) %>%
+  #     mutate(mod = case_when(mod == "bb_gne" ~ "Beta-binomial",
+  #                            mod == "gneiting_sparse" ~ "Binomial",
+  #                            TRUE ~ mod))
+  # } else {
+  #   dat <- coverages_inner(path)
+  # }
+  # 
+  # # plot(widths, covs_pos, type="l", 
+  # #      ylim = c(0, 100), xlim = c(0, 100))
+  # # lines(widths, covs_all, type = "l")
+  # # abline(a = 0, b = 1)
+  # 
+  # if ("mod" %in% names(dat)){
+  #   p <- ggplot(dat) +
+  #     geom_line(aes(x = w, y = value, color = mod, linetype = group)) +
+  #     geom_abline(slope = 1, intercept = 0, col="darkgrey") +
+  #     scale_color_manual(values = iddo_palettes$iddo, name="Model") +
+  #     scale_linetype("")
+  # } else {
+  #   p <- ggplot(dat) +
+  #     geom_line(aes(x = w, y = value, color = group)) +
+  #     geom_abline(slope = 1, intercept = 0, col="darkgrey") +
+  #     scale_color_manual(values = iddo_palettes$iddo, name="")
+  # }
   
-  # plot(widths, covs_pos, type="l", 
-  #      ylim = c(0, 100), xlim = c(0, 100))
-  # lines(widths, covs_all, type = "l")
-  # abline(a = 0, b = 1)
+  dat <- lapply(path, function(p){
+    message(p)
+    message(str_extract(p, "(?<=/)[^/]+(?=/)"))
+    coverages_inner(p) %>%
+      mutate(marker = str_extract(p, "(?<=/)[^/]+(?=/)"),
+             marker = factor(unlist(nice_name_lookup[marker]),
+                                levels = nice_name_lookup))
+  }) %>%
+    do.call(what = rbind)
   
-  if ("mod" %in% names(dat)){
-    message("A")
-    p <- ggplot(dat) +
-      geom_line(aes(x = w, y = value, color = mod, linetype = group)) +
-      geom_abline(slope = 1, intercept = 0, col="darkgrey") +
-      scale_color_manual(values = iddo_palettes$iddo, name="Model") +
-      scale_linetype("")
-  } else {
-    message("here")
-    p <- ggplot(dat) +
-      geom_line(aes(x = w, y = value, color = group)) +
-      geom_abline(slope = 1, intercept = 0, col="darkgrey") +
-      scale_color_manual(values = iddo_palettes$iddo, name="")
-  }
+  p <- ggplot(dat) +
+    geom_line(aes(x = w, y = value, color = marker, linetype = group)) +
+    geom_abline(slope = 1, intercept = 0, col = "darkgrey") +
+    scale_color_manual(values = viridis(5), name = "Marker")
   
   p + 
-    coord_cartesian(xlim = c(0, 100), ylim = c(0, 100), expand = FALSE) +
+    coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     xlab("Credible interval width") +
     ylab("Coverage probability") +
     theme_bw()
@@ -439,9 +453,6 @@ coverages_fig <- function(path){
 
 
 
-nn_measure <- function(locs){
-  # need to have distance by kernel
-}
 
 # unfinished: ...
 # plot_partner_markers <- function(shp, buff, 
@@ -451,23 +462,6 @@ nn_measure <- function(locs){
 #   }
 #   
 # }
-
-
-
-
-
-
-
-# this absolutely came from chatty g
-# | Region                   | UTM Zone | EPSG Code   |
-#   | ------------------------ | -------- | ----------- |
-#   | Kenya/Tanzania           | 36S      | 32736       |
-#   | Uganda/South Sudan       | 36N      | 32636       |
-#   | Ethiopia                 | 37N      | 32637       |
-#   | Zambia/Malawi/Mozambique | 36S–37S  | 32736–32737 |
-#   | South Africa             | 34S–36S  | 32734–32736 |
-
-
 
 thresholds_fig <- function(path,
                            years_to_plot,
@@ -512,3 +506,75 @@ thresholds_fig <- function(path,
 #                c(0.02, 0.05, 0.1, 0.25),
 #                "k13m_bb")
 
+
+lower_upper_panel_crints <- function(path, 
+                                     main = "", 
+                                     show_nas = FALSE, 
+                                     pal = colorRamp(iddo_palettes$BlGyRd),
+                                     xlim = c(0,1), # define limits to pred/obs panel
+                                     ylim = c(0,1), # define limits to pred/obs panel
+                                     facet_bins = NULL, # apply facets over time?
+                                     ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
+                                     buffer = 1, # option to reland points?
+                                     bb = NULL){
+  # assess credible interval coverage of observed marker prevalences
+  mut_data <- read_rds(paste0(path, "mut_data.rds")) %>%
+    arrange(present/tested)
+  lower <- rast(paste0(path, "preds_lower.tif"))
+  upper <- rast(paste0(path, "preds_upper.tif"))
+  yrs_pred <- str_extract(names(upper), "\\d{4}")
+  
+  # get predictions for each row in `mut_data`
+  mut_data$lower <- NA
+  mut_data$upper <- NA
+  yrs_to_extract <- unique(mut_data$year)
+  for (yr in yrs_to_extract){
+    if (yr %in% yrs_pred){
+      idx <- which(mut_data$year == yr)
+      vall <- terra::extract(lower[[paste0(yr, "_2.5")]], 
+                             mut_data[idx, c("x", "y")],
+                             ID = FALSE, search_radius = buffer)
+      valu <- terra::extract(upper[[paste0(yr, "_97.5")]], 
+                             mut_data[idx, c("x", "y")],
+                             ID = FALSE, search_radius = buffer)
+      if(ncol(vall) < 3){
+        # idk why we have to have an inconsistent return when |idx| == 1
+        mut_data[idx, "lower"] <- vall[1,1]
+        mut_data[idx, "upper"] <- valu[1,1]
+      } else{
+        mut_data[idx, "lower"] <- vall[, paste0(yr, "_2.5")]
+        mut_data[idx, "upper"] <- valu[, paste0(yr, "_97.5")]
+      }
+    }
+  }
+  
+  message(nrow(mut_data))
+  mut_data <- mut_data %>% 
+    filter(!is.na(lower) & !is.na(upper)) %>%
+    mutate(idx = 1:nrow(.), 
+           covered = case_when(present/tested < lower ~ "Over-prediction",
+                               present/tested > upper ~ "Under-prediction",
+                               present/tested > lower & present/tested < upper ~ "Covered",
+                               TRUE ~ NA))
+  #covered = ifelse(present/tested > lower & present/tested < upper, TRUE, FALSE))
+  message(nrow(mut_data))
+  
+  mut_data_long <- mut_data %>%
+    pivot_longer(cols = c(lower, upper), names_to = "lu", values_to = "value")
+  
+  ggplot(mut_data) +
+    geom_point(aes(x = idx, y = present/tested,
+                   size = tested, 
+                   col = covered), 
+               pch = 1) +
+    geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) +
+    scale_colour_manual(values = iddo_palettes$BlGyRd[c(5,2,8)], "CI covers\nobservation") +
+    scale_size_continuous(range = c(0.1, 6), "Tested") +
+    xlab("Index") +
+    ylab("Observed prevalence") +
+    scale_x_continuous(expand = c(0.01,0.01)) + # remove excess padding
+    theme_bw()
+  # for some reason, this legend.position doesn't play with get_legend
+  # theme(legend.position = "bottom")
+  
+}

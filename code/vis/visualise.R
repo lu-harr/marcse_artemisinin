@@ -516,137 +516,100 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 # this is where the CV would be helpful to make my point ...
 
 ##############################################################################
-# visualise coverages
+# visualise coverages - relocating coverages.png to validation script
 
-coverages_fig("output/k13_marcse/gneiting_sparse/")
-coverages_fig("output/k13_marcse/bb_gne/")
-coverages_fig("output/crt76/gneiting_sparse/")
-coverages_fig("output/crt76/bb_gne/")
-coverages_fig("output/mdr184/gneiting_sparse/")
-coverages_fig("output/mdr184/bb_gne/")
-#coverages_fig("output/mdr86/gneiting_sparse/")
-#coverages_fig("output/mdr86/bb_gne/")
-coverages_fig("output/mdr1246/gneiting_sparse/")
-coverages_fig("output/mdr1246/bb_gne/")
+# coverages_fig("output/k13_marcse/gneiting_sparse/")
+# coverages_fig("output/k13_marcse/bb_gne/")
+# coverages_fig("output/crt76/gneiting_sparse/")
+# coverages_fig("output/crt76/bb_gne/")
+# coverages_fig("output/mdr184/gneiting_sparse/")
+# coverages_fig("output/mdr184/bb_gne/")
+# coverages_fig("output/mdr86/gneiting_sparse/")
+# coverages_fig("output/mdr86/bb_gne/")
+# coverages_fig("output/mdr1246/gneiting_sparse/")
+# coverages_fig("output/mdr1246/bb_gne/")
 
 # here's what I put in the MS
-p1 <- coverages_fig(list("output/k13_marcse/gneiting_sparse/", 
-                         "output/k13_marcse/bb_gne/"))
-p2 <- coverages_fig(list("output/mdr184/gneiting_sparse/", 
-                         "output/mdr184/bb_gne/"))
+# p1 <- coverages_fig(list("output/k13_marcse/gneiting_sparse/", 
+#                          "output/k13_marcse/bb_gne/"))
+# p2 <- coverages_fig(list("output/mdr184/gneiting_sparse/", 
+#                          "output/mdr184/bb_gne/"))
 
-p <- plot_grid(p1 + theme(legend.position = "none"), 
-               p2 + theme(legend.position = "none"), nrow = 2, 
-               labels = "auto", label_x = 0.1, label_y = 0.97)
-plot_grid(p, get_legend(p1), rel_widths = c(1, 0.25))
-ggsave("figures/coverages.png", height = 5, width = 7)
+# p <- plot_grid(p1 + theme(legend.position = "none"), 
+#                p2 + theme(legend.position = "none"), nrow = 2, 
+#                labels = "auto", label_x = 0.1, label_y = 0.97)
+# plot_grid(p, get_legend(p1), rel_widths = c(1, 0.25))
 
-mut_data <- read_rds("output/k13_marcse/gneiting_sparse/mut_data.rds")
-lower <- rast("output/k13_marcse/gneiting_sparse/preds_lower.tif")
-upper <- rast("output/k13_marcse/gneiting_sparse/preds_upper.tif")
+# mut_data <- read_rds("output/k13_marcse/gneiting_sparse/mut_data.rds")
+# lower <- rast("output/k13_marcse/gneiting_sparse/preds_lower.tif")
+# upper <- rast("output/k13_marcse/gneiting_sparse/preds_upper.tif")
 
-lower_upper_panel <- function(path, 
-                           main = "", 
-                           show_nas = FALSE, 
-                           pal = colorRamp(iddo_palettes$BlGyRd),
-                           xlim = c(0,1), # define limits to pred/obs panel
-                           ylim = c(0,1), # define limits to pred/obs panel
-                           facet_bins = NULL, # apply facets over time?
-                           ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
-                           buffer = 1, # option to reland points?
-                           bb = NULL){
-  
-  mut_data <- read_rds(paste0(path, "mut_data.rds")) %>%
-    arrange(present/tested)
-  lower <- rast(paste0(path, "preds_lower.tif"))
-  upper <- rast(paste0(path, "preds_upper.tif"))
-  yrs_pred <- str_extract(names(upper), "\\d{4}")
-  
-  # get predictions for each row in `mut_data`
-  mut_data$lower <- NA
-  mut_data$upper <- NA
-  yrs_to_extract <- unique(mut_data$year)
-  for (yr in yrs_to_extract){
-    if (yr %in% yrs_pred){
-      idx <- which(mut_data$year == yr)
-      vall <- terra::extract(lower[[paste0(yr, "_2.5")]], 
-                            mut_data[idx, c("x", "y")],
-                            ID = FALSE, search_radius = buffer)
-      valu <- terra::extract(upper[[paste0(yr, "_97.5")]], 
-                            mut_data[idx, c("x", "y")],
-                            ID = FALSE, search_radius = buffer)
-      if(ncol(vall) < 3){
-        # idk why we have to have an inconsistent return when |idx| == 1
-        mut_data[idx, "lower"] <- vall[1,1]
-        mut_data[idx, "upper"] <- valu[1,1]
-      } else{
-        mut_data[idx, "lower"] <- vall[, paste0(yr, "_2.5")]
-        mut_data[idx, "upper"] <- valu[, paste0(yr, "_97.5")]
-      }
-    }
-  }
-  
-  message(nrow(mut_data))
-  mut_data <- mut_data %>% 
-    filter(!is.na(lower) & !is.na(upper)) %>%
-    mutate(idx = 1:nrow(.), 
-           covered = case_when(present/tested < lower ~ "Over-prediction",
-                               present/tested > upper ~ "Under-prediction",
-                               present/tested > lower & present/tested < upper ~ "Covered",
-                               TRUE ~ NA))
-           #covered = ifelse(present/tested > lower & present/tested < upper, TRUE, FALSE))
-  message(nrow(mut_data))
-  
-  mut_data_long <- mut_data %>%
-    pivot_longer(cols = c(lower, upper), names_to = "lu", values_to = "value")
-  
-  ggplot(mut_data) +
-    geom_point(aes(x = idx, y = present/tested,
-                   size = tested, 
-                   col = covered), 
-               pch = 1) +
-    geom_line(data = mut_data_long, aes(x = idx, y = value, group = idx, col = covered)) +
-    scale_colour_manual(values = iddo_palettes$BlGyRd[c(5,2,8)], "CI covers\nobservation") +
-    scale_size_continuous(range = c(0.1, 6), "Tested") +
-    xlab("Index") +
-    ylab("Observed prevalence") +
-    theme_bw() #+
-    # for some reason, this legend.position doesn't play with get_legend
-    # theme(legend.position = "bottom")
-    
-}
+# lower_upper_panel_crints("output/k13_marcse/gneiting_sparse/")
+# lower_upper_panel_crints("output/k13_marcse/bb_gne/")
+# lower_upper_panel_crints("output/mdr86/gneiting_sparse/")
+# lower_upper_panel_crints("output/mdr86/bb_gne/")
+# # not 100% sure what's going on with crt ... may need refitting ..
+# lower_upper_panel_crints("output/crt76/gneiting_sparse/")
+# lower_upper_panel_crints("output/crt76/bb_gne/")
+# lower_upper_panel_crints("output/mdr1246/gneiting_sparse/")
+# lower_upper_panel_crints("output/mdr1246/bb_gne/")
+# lower_upper_panel_crints("output/mdr184/gneiting_sparse/")
+# lower_upper_panel_crints("output/mdr184/bb_gne/")
 
 
-lower_upper_panel("output/k13_marcse/gneiting_sparse/")
-lower_upper_panel("output/k13_marcse/bb_gne/")
-lower_upper_panel("output/mdr86/gneiting_sparse/")
-lower_upper_panel("output/mdr86/bb_gne/")
-# not 100% sure what's going on with crt ... may need refitting ..
-lower_upper_panel("output/crt76/gneiting_sparse/")
-lower_upper_panel("output/crt76/bb_gne/")
-lower_upper_panel("output/mdr1246/gneiting_sparse/")
-lower_upper_panel("output/mdr1246/bb_gne/")
-lower_upper_panel("output/mdr184/gneiting_sparse/")
-lower_upper_panel("output/mdr184/bb_gne/")
-
-
-p1 <- lower_upper_panel("output/k13_marcse/gneiting_sparse/")
-p2 <- lower_upper_panel("output/k13_marcse/bb_gne/")
-p3 <- lower_upper_panel("output/mdr184/gneiting_sparse/")
-p4 <- lower_upper_panel("output/mdr184/bb_gne/")
-
-legs <- get_legend(p1)
-# get_plot_component(p1, "guide-box", return_all = TRUE)
-
-p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()), 
-          p2 + theme(legend.position = "none", axis.title = element_blank()), 
-          p3 + theme(legend.position = "none", axis.title = element_blank()), 
-          p4 + theme(legend.position = "none", axis.title = element_blank()),
-          nrow = 4, align = "v", labels = "auto", label_y = 0.95, label_x = 0.05)
-plot_grid(p, legs, nrow = 1, rel_widths = c(1, 0.1))
-ggsave("figures/crints.png", scale = 1, height = 7, width = 9)
+# p1 <- lower_upper_panel_crints("output/k13_marcse/gneiting_sparse/")
+# p2 <- lower_upper_panel_crints("output/k13_marcse/bb_gne/")
+# p3 <- lower_upper_panel_crints("output/mdr184/gneiting_sparse/")
+# p4 <- lower_upper_panel_crints("output/mdr184/bb_gne/")
+# 
+# legs <- get_legend(p1)
+# # get_plot_component(p1, "guide-box", return_all = TRUE)
+# 
+# p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()), 
+#           p2 + theme(legend.position = "none", axis.title = element_blank()), 
+#           p3 + theme(legend.position = "none", axis.title = element_blank()), 
+#           p4 + theme(legend.position = "none", axis.title = element_blank()),
+#           nrow = 4, align = "v", labels = "auto", label_y = 0.95, label_x = 0.05)
+# plot_grid(p, legs, nrow = 1, rel_widths = c(1, 0.1))
+# ggsave("figures/crints.png", scale = 1, height = 7, width = 9)
 # check this again with zeroes removed
 # and have a look at upper and lower bound surfaces?
+
+# here's bb_gne all models
+
+p1 <- lower_upper_panel_crints("output/k13_marcse/bb_gne/")
+p2 <- lower_upper_panel_crints("output/crt76/bb_gne/")
+p3 <- lower_upper_panel_crints("output/mdr86/bb_gne/")
+p4 <- lower_upper_panel_crints("output/mdr184/bb_gne/")
+p5 <- lower_upper_panel_crints("output/mdr1246/bb_gne/")
+
+
+p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()), 
+               p2 + theme(legend.position = "none", axis.title = element_blank()), 
+               p3 + theme(legend.position = "none", axis.title = element_blank()), 
+               p4 + theme(legend.position = "none", axis.title = element_blank()),
+               p5 + theme(legend.position = "none", axis.title = element_blank()),
+               nrow = 5, align = "v", #labels = "auto", 
+               labels = c("(a) Kelch 13", "(b) Pfcrt-K76T", "(c) Pfmdr1-N86Y", 
+                          "(d) Pfmdr1-Y184F", "(e) Pfmdr1-D1246Y"), 
+               label_fontface = "plain",
+               label_y = 0.95, label_x = 0.07, hjust = 0) %>%
+  plot_grid(legs, nrow = 1, rel_widths = c(1, 0.2)) +
+  theme(plot.margin = margin(t = 0, r = 0, b = 20, l = 25))
+
+ggdraw(p) +
+  draw_label(
+    "Record index",
+    x = 0.4, y = 0.02,
+    hjust = 0.5, vjust = 0
+  ) +
+  draw_label(
+    "Recorded molecular marker prevalence",
+    x = 0.02, y = 0.5,
+    angle = 90,
+    hjust = 0.5, vjust = 1
+  )
+ggsave("figures/crints_bb.png", scale = 1, height = 10, width = 9)
 
 ##############################################################################
 # a plot of all preds in all years
