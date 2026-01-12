@@ -16,23 +16,29 @@ source("code/wrap_fit.R")
 
 # this feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
-snp <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76"
+marker <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76"
 seed <- as.numeric(args[2])
-message(paste0("Marker: ", snp))
+message(paste0("Marker: ", marker))
 message(paste0("Seed: ", seed))
 
-# snp = "k13_marcse"
+# marker = "k13_marcse"
 # seed = 834903
 
-out_dir <- paste0(snp, "/bb_gne/")
+out_dir <- paste0(marker, "/bb_gne/")
 
-in_dat <- ifelse(snp == "k13",
-                 "data/clean/moldm_k13_nomarker.csv",
-                 ifelse(snp == "crt76",
-                        "data/clean/moldm_crt76.csv",
-                        ifelse(snp == "k13_marcse",
-                               "data/clean/moldm_marcse_k13_nomarker.csv",
-                               paste0(paste0("data/clean/pfmdr_single_", snp, ".csv")))))
+if(marker == "k13"){
+  in_dat <- "data/clean/moldm_k13_nomarker.csv"
+} else if(marker == "crt76"){
+  in_dat <- "data/clean/moldm_crt76.csv"
+} else if(marker == "k13_marcse"){
+  in_dat <- "data/clean/moldm_marcse_k13_nomarker.csv"
+} else if(grepl("mdr", marker)){
+  in_dat <- paste0("data/clean/pfmdr_single_", marker, ".csv")
+} else {
+  # for k13 SNP models
+  in_dat <- todo
+}
+
 
 
 message(paste0("Reading in from: ", in_dat))
