@@ -30,9 +30,10 @@ ggplot(dat %>% filter(Antimalarial == "ASAQ")) +
 ggplot(dat %>% filter(Antimalarial == "AL")) +
   geom_histogram(aes(x = PCR_Corrected))
 
+# with a totally naive linear model there is no downwards trend
 ggplot(dat %>% filter(Antimalarial == "AL")) +
-  geom_point(aes(x = Start_Year, y = PCR_Corrected)) +
-  geom_smooth(aes(x = Start_Year, y = PCR_Corrected), method = "lm")
+  geom_point(aes(x = year, y = PCR_Corrected)) +
+  geom_smooth(aes(x = year, y = PCR_Corrected), method = "lm")
 
 extract_preds <- function(locs,
                            pred_path,
@@ -58,11 +59,13 @@ extract_preds <- function(locs,
   locs$pred
 }
 
+# extract model predictions
 dat$k13 <- extract_preds(dat, pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
 dat$mdr86 <- extract_preds(dat, pred_path = "output/mdr86/bb_gne/preds_medians.tif")
 dat$mdr184 <- extract_preds(dat, pred_path = "output/mdr184/bb_gne/preds_medians.tif")
 dat$mdr1246 <- extract_preds(dat, pred_path = "output/mdr1246/bb_gne/preds_medians.tif")
 dat$crt76 <- extract_preds(dat, pred_path = "output/crt76/bb_gne/preds_medians.tif")
+
 
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
 {
@@ -84,7 +87,7 @@ pairs(dat %>%
       lower.panel = panel.cor
       )
 
-mod <- lm(PCR_Corrected ~ k13 + mdr86 + mdr1246 + mdr184 + crt76, 
+mod <- lm(PCR_Corrected ~ k13 + mdr86 + mdr1246 + mdr184 + crt76 + year, 
           dat %>% filter(Antimalarial == "AL"))
 summary(mod)
 
@@ -211,7 +214,7 @@ pairs(dat %>%
       lower.panel = panel.cor
 )
 
-gmod <- glm(PCR_Corrected ~ mdr86_dat + mdr1246_dat + mdr184_dat + crt76, 
+gmod <- glm(PCR_Corrected ~ kelch13 + mdr86_dat + mdr1246_dat + mdr184_dat + crt76, 
             data = dat %>% filter(Antimalarial == "AL"),
             family = quasibinomial())
 summary(gmod)
@@ -231,6 +234,32 @@ plot(k13$`2024_50` + mdr86$`2024_50` - mdr184$`2024_50` +
        mdr1246$`2024_50` + crt76$`2024_50`)
 
 plot(k13$`2024_50`)
+
+plot(k13$`2025_50`, mdr86$`2025_50`)
+df <- data.frame(k13 = values(k13$`2025_50`),
+                 mdr86 = values(mdr86$`2025_50`)) %>%
+  drop_na() %>%
+  setNames(c("k13", "mdr86")) %>%
+  mutate(k13_disc = cut(k13, breaks = 100),
+         mdr86_disc = cut(mdr86, breaks = 100)) %>%
+  group_by(k13_disc, mdr86_disc) %>%
+  summarise(n = n())
+
+ggplot() +
+  geom_tile(data = df, aes(x = k13_disc, y = mdr86_disc, fill = n))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

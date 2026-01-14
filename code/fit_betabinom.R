@@ -3,7 +3,7 @@
 start <- Sys.time()
 
 # need some sort of test for overdispersion to justify going to all of this trouble
-# other than "doy I just gave it a crack"
+
 
 #################################################################################
 source("code/betabinomial_p_rho.R")
@@ -14,9 +14,9 @@ source("code/setup.R")
 source("code/build_design_matrix.R")
 source("code/wrap_fit.R")
 
-# this feels a bit unflashy but I can't keep having separate scripts
+
 args <- commandArgs(trailingOnly = TRUE)
-marker <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76"
+marker <- args[1] 
 seed <- as.numeric(args[2])
 message(paste0("Marker: ", marker))
 message(paste0("Seed: ", seed))
@@ -36,7 +36,7 @@ if(marker == "k13"){
   in_dat <- paste0("data/clean/pfmdr_single_", marker, ".csv")
 } else {
   # for k13 SNP models
-  in_dat <- todo
+  in_dat <- paste0("data/clean/moldm_marcse_", marker, ".csv")
 }
 
 

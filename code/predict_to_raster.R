@@ -468,7 +468,7 @@ calculate_coverages <- function(sims, dat, yr, ras, incs = 100){
   
   # message(paste(names(dat)))
   
-  ind <<- 9
+  ind <<- 9 # number of columns to skip
   coverages <- lapply(widths, function(width){
     # pick out the upper and lower bound columns for this width ..
     # this probably a nice way to do this based on column ordering ..

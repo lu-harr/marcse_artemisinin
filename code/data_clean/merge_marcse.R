@@ -17,11 +17,39 @@ moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
 
 library(readxl)
 
-marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
+# marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
+#   mutate_at(c("Present", "Tested"), as.numeric) %>%
+#   bind_rows(read_xlsx("../MARC_SEA_dashboard/September_25_Lucy.xlsx") %>%
+#               dplyr::select(-c("...19", "Site Name", "WIld-type (%)"))) %>%
+#   rename(Notes = "...18",
+#          Site.Name.District.Country = `Site Name/District/Country`,
+#          Start.Year = `Start Year`,
+#          End.Year = `End Year`,
+#          Year.Published = `Year Published`,
+#          Prevalence... = `Prevalence (%)`) %>%
+#   mutate_at(c("Longitude", "Latitude"), as.numeric) %>%
+#   mutate(year = round((Start.Year + End.Year) / 2, 0),
+#          Year.Published = as.character(Year.Published) # clashing during bind_rows
+#          ) %>%
+#   suppressWarnings() %>%
+# # so the .csv is data that is exported to the dashboard - so all duplicates
+#   # bind_rows(read.csv("../MARC_SEA_dashboard/k13_marcse_africa.csv") %>%
+#   #             mutate_at(c("Longitude"), as.numeric))
+#   mutate(Marker = ifelse(Marker == "WT", "wildtype", Marker),
+#          # in preparation for casting to numeric ..
+#          Prevalence = gsub("%", "", Prevalence...), 
+#          # in preparation for imputing Testeds
+#          Prevalence = as.numeric(Prevalence),
+#          # for one study, Tested was not provided but Present and Prev were
+#          Tested = ifelse(Title == "Detection of Low-Frequency Artemisinin Resistance Mutations C469Y. P553L and A675V in Asymptomatic Primary School Children in Kenya",
+#                          Present / (Prevalence / 100), Tested)) %>%
+#   left_join(marker_reference, by = join_by(Marker == marker)) %>%
+#   suppressMessages()
+
+marcse_tmp <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xlsx") %>%
   mutate_at(c("Present", "Tested"), as.numeric) %>%
-  bind_rows(read_xlsx("../MARC_SEA_dashboard/September_25_Lucy.xlsx") %>%
-              dplyr::select(-c("...19", "Site Name"))) %>%
-  rename(Notes = "...18",
+  dplyr::select(-c("...19": "...22")) %>%
+  rename(Notes = `...18`,
          Site.Name.District.Country = `Site Name/District/Country`,
          Start.Year = `Start Year`,
          End.Year = `End Year`,
@@ -30,9 +58,9 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
   mutate_at(c("Longitude", "Latitude"), as.numeric) %>%
   mutate(year = round((Start.Year + End.Year) / 2, 0),
          Year.Published = as.character(Year.Published) # clashing during bind_rows
-         ) %>%
+  ) %>%
   suppressWarnings() %>%
-# so the .csv is data that is exported to the dashboard - so all duplicates
+  # so the .csv is data that is exported to the dashboard - so all duplicates
   # bind_rows(read.csv("../MARC_SEA_dashboard/k13_marcse_africa.csv") %>%
   #             mutate_at(c("Longitude"), as.numeric))
   mutate(Marker = ifelse(Marker == "WT", "wildtype", Marker),
@@ -42,14 +70,23 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
          Prevalence = as.numeric(Prevalence),
          # for one study, Tested was not provided but Present and Prev were
          Tested = ifelse(Title == "Detection of Low-Frequency Artemisinin Resistance Mutations C469Y. P553L and A675V in Asymptomatic Primary School Children in Kenya",
-                         Present / (Prevalence / 100), Tested)) %>%
+                         Present / (Prevalence / 100), Tested),
+         Present = ifelse(is.na(Present),
+                          Tested * Prevalence,
+                          Present)) %>%
   left_join(marker_reference, by = join_by(Marker == marker)) %>%
   suppressMessages()
+
 # head(marcse)
 # names(marcse)
 
-# Bagamoyo Longitude: 38.900002? .. will need to reassign:
+# unclear what to do with these:
+marcse_tmp %>% filter(is.na(Tested)) %>% as.data.frame()
+# can derive Present from Prevalence and Tested: (above - all are WTs)
+marcse_tmp %>% filter(is.na(Present)) %>% as.data.frame()
 
+# Bagamoyo Longitude: 38.900002? .. will need to reassign:
+marcse_tmp %>% filter(is.na(Longitude))
 # unique(marcse$PubMedID)
 # unique(marcse$Marker)
 # unique(marcse$Marker_Classification)
@@ -61,28 +98,28 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
 # there aren't any 537 classified as "Widespread other"
 
 # let's check for weirdness here:
-# marcse %>%
-#   filter(!PubMedID %in% moldm$PubMedID) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-# marcse %>%
-#   filter(str_length(PubMedID) != 8) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
+marcse %>%
+  filter(!PubMedID %in% moldm$PubMedID) %>%
+  dplyr::select(PubMedID) %>%
+  unique() %>%
+  as.vector()
+marcse %>%
+  filter(str_length(PubMedID) != 8) %>%
+  dplyr::select(PubMedID) %>%
+  unique() %>%
+  as.vector()
 
 # check for weirdness here:  
-# moldm %>%
-#   filter(!PubMedID %in% marcse$PubMedID) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-# moldm %>%
-#   filter(str_length(PubMedID) != 8) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
+moldm %>%
+  filter(!PubMedID %in% marcse$PubMedID) %>%
+  dplyr::select(PubMedID) %>%
+  unique() %>%
+  as.vector()
+moldm %>%
+  filter(str_length(PubMedID) != 8) %>%
+  dplyr::select(PubMedID) %>%
+  unique() %>%
+  as.vector()
 # there's one particularly weird pmid 9999971 but satisfied that it's not published ..
 
 
