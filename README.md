@@ -53,36 +53,40 @@ There are a number of scripts in `code/`:
 
 - `setup.R` sets up R packages, covariate data and code for prevalence
   data formatting
-- `inference_gneiting_slurm.R` runs model fitting (written to be called
-  from the command line or bash/slurm scripts with arguments for marker,
+- `fit_bb.R` runs betabinomial model fitting (written to be called from
+  the command line or bash/slurm scripts with arguments for marker,
   seed)
 - `predict_slurm.R` makes predictions from outputs of inference (written
   to be called from the command line or bash/slurm scripts with
   arguments for marker, seed, model, etc.)
-- `vis/visualise*.R` generate figures… although this could do with some
-  reorganisation
+- `vis/visualise*.R` generate figures
 
 Secondary to these there are:
 
-- `build_design_matrix.R` and `predict_to_raster.R` wrap up some
-  functions for different bits of the workflow.
+- `build_design_matrix.R`, `wrap_fit.R`, and `predict_to_raster.R` wrap
+  up some functions for different bits of the workflow.
 - `surveillance_effort_slurm.R` wraps up the calculation of kernel
   density estimates for smoothed annual/aggregated surveillance effort
   rasters for each model (intended to be called from the command line or
   bash/slurm scripts with arguments for marker, model, etc.).
 - `stable_transmission_mask.R` cooks up a mask for prediction using
-  MAP’s estimate of *P. falciparum* parasite rate for 2021.
-- `power.R`: I was playing around with different metrics for model
-  uncertainty, particularly in the context of K13 where the SD of
-  posterior samples is greatest in areas where $\hat p > 0$ …
+  MAP’s estimate of *P. falciparum* parasite rate for 2022.
+
+Slurm scripts for fitting, prediction, and summarisation can be found in
+`slurm/`.
 
 All manuscript figures can be found in `figures/`.
 
 There are no outputs in here yet but I should add compressed versions of
-those in before I submit the manuscript.
+those in before I submit…
 
 ### See also
 
 - Flegg et al., 2022
 - Flegg et al., 2024
 - Foo et al., 2024
+
+### TODO
+
+- Add proper refs to MAP pkg/data
+- Clean up validation code
