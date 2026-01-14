@@ -1,6 +1,14 @@
 
 ## Prevalence of molecular markers of artemisinin and partner drug resistance in Africa
 
+### Data usage
+
+Data files in `data/clean` are provided only to allow replication of the
+results reported in this repository. This data is not licensed for
+general reuse. Users wishing to use this data for other purposes must
+obtain it from: [](https://surveyor.iddo.org) and [this
+repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard).
+
 ### What the code does
 
 There are (more than) five models in here:
@@ -13,7 +21,7 @@ There are (more than) five models in here:
 - *pfmdr1D1246Y* prevalence
 
 All models take as input published data from the **IDDO Surveyors**
-([kelch 13](https://visualizer.iddo.org/map/k13); [partner
+([kelch 13](https://surveyor.iddo.org/map/k13); [partner
 drugs](https://www.iddo.org/wwarn/tracking-resistance/act-partner-drug-molecular-surveyor))
 which collate published records molecular surveillance in *Plasmodium
 falciparum* malaria. The Kelch-13 model is supplemented with unpublished
@@ -68,16 +76,13 @@ Secondary to these there are:
   uncertainty, particularly in the context of K13 where the SD of
   posterior samples is greatest in areas where $\hat p > 0$ …
 
-All manuscript figures can be found in `figures/`
+All manuscript figures can be found in `figures/`.
+
+There are no outputs in here yet but I should add compressed versions of
+those in before I submit the manuscript.
 
 ### See also
 
 - Flegg et al., 2022
 - Flegg et al., 2024
 - Foo et al., 2024
-
-### TODOs
-
-- write down equations for existing binomial model and for extensions
-- think about how partner drug outputs combine with K13 outputs to make
-  “overall ACT molecular resistance map”
