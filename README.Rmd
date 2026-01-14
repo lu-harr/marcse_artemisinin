@@ -6,7 +6,7 @@ output: github_document
 
 ### Data usage
 
-Data files in `data/clean` are provided only to allow replication of the results reported in this repository. This data is not licensed for general reuse. Users wishing to use this data for other purposes must obtain it from: [](https://surveyor.iddo.org) and [this repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard).
+Data files in `data/clean` are provided only to allow replication of the results reported in this repository. This data is not licensed for general reuse. Users wishing to use this data for other purposes must obtain it from: https://surveyor.iddo.org and [this repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard).
 
 ### What the code does
 
