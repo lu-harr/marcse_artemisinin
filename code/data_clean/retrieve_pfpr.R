@@ -17,7 +17,48 @@ pfpr <- malariaAtlas::getRaster("Malaria__202406_Global_Pf_Parasite_Rate",
           rast() %>%
           subset(seq(1, length(years)*2+1, 2))
 
+
+
 writeRaster(pfpr, "data/pfpr_rasters_afr.tif")
 
-# t
+
+#################################################################################
+# more recent rasters not yet incorporated:
+pfpr <- malariaAtlas::getRaster("Malaria__202508_Global_Pf_Parasite_Rate",
+                                extent=afr_extent,
+                                year=years) %>%
+  suppressMessages() %>%
+  as.list() %>%
+  rast() %>%
+  subset(seq(1, length(years)*2+1, 2))
+
+plot(pfpr$`Proportion of Children 2 to 10 years of age showing, on a given year, detectable Plasmodium falciparum parasite 2000-2024-2020`)
+
+
+# grabbing for time visualisation:
+incid <- malariaAtlas::getRaster("Malaria__202508_Global_Pf_Incidence_Count",
+                                 extent=afr_extent,
+                                 year=2000:2024) %>% # which gives me a SpatRasterCollection
+  suppressMessages() %>% # looks like some messages are still slipping the net ...
+  as.list() %>%
+  rast()
+
+writeRaster(incid, "data/incid_rasters_afr.tif")
+
+plot(incid$`Number of newly diagnosed Plasmodium falciparum cases, on a given year 2000-2024-2024`)
+plot(log10(incid$`Number of newly diagnosed Plasmodium falciparum cases, on a given year 2000-2024-2024`))
+# this is in the same order of magnitude as malaria report estimate:
+sum(values(incid$`Number of newly diagnosed Plasmodium falciparum cases, on a given year 2000-2024-2024`), 
+    na.rm = TRUE)
+max(values(incid$`Number of newly diagnosed Plasmodium falciparum cases, on a given year 2000-2024-2024`),
+    na.rm = TRUE)
+
+# incid <- malariaAtlas::getRaster("Malaria__202406_Global_Pf_Incidence_Count",
+#                                  extent=afr_extent,
+#                                  year=years) %>% # which gives me a SpatRasterCollection
+#   suppressMessages() %>% # looks like some messages are still slipping the net ...
+#   as.list() %>%
+#   rast()
+
+
 

@@ -88,11 +88,28 @@ pred_time_plot <- function(path,
                            zooms = NULL,
                            zoom_pal = NULL, 
                            alpha = 0.5,
-                           show_pts = FALSE){
+                           show_pts = FALSE,
+                           agg_fact = 10,
+                           incid = NULL,
+                           ylim = c(0, 1),
+                           ylab = "Prevalence"){
   
   preds <- rast(paste0(path, "preds_medians.tif")) %>%
-    aggregate(fact = 10)
-  message("aggregating")
+    aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE)
+  
+  if (!is.null(incid)){
+    incid <- aggregate(incid, agg_fact, fun = "sum", na.rm = TRUE)
+    keep_names <- names(preds)
+    preds <- lapply(names(preds), function(x){
+      yr <- str_extract(x, "^.{4}")
+      idx <- which(str_extract(names(incid), ".{4}$") == yr)
+      if (length(idx) == 0){idx = length(names(incid))} # assuming they're in order
+      return(preds[x] * incid[[idx]])
+    }) %>%
+      rast()
+    names(preds) <- keep_names
+    ylim = c(0, max(values(preds)), na.rm=TRUE)
+  }
   
   coords <- xyFromCell(preds, cells(preds))
   vals <- terra::extract(preds, coords)
@@ -108,6 +125,7 @@ pred_time_plot <- function(path,
     mutate(year = as.numeric(year))
   
   p <- ggplot(df) +
+    # removing min and max lines as they were a little distracting:
     # geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
     # geom_line(aes(x = year, y = `100%`, linetype = "0% - 100%")) +
     geom_ribbon(aes(x = year, ymin = `2.5%`, ymax = `97.5%`, fill = "2.5% - 97.5%"), alpha = alpha) + #fill=pal[6]) +
@@ -116,12 +134,12 @@ pred_time_plot <- function(path,
     geom_line(aes(x = year, y = `50%`), col = pal[1], linewidth = 1) +
     # scale_linetype_manual("", values = c("0% - 100%" = 2)) +
     scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "25% - 75%" = pal[4], "50%" = pal[1])) +
-    ylab("Prevalence") +
+    ylab(ylab) +
     xlab("Year") +
     labs(title = title) +
-    ylim(0, 1) +
+    ylim(ylim[1], ylim[2]) +
     scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
-    geom_vline(xintercept = 2025, colour = iddo_palettes$BlGyRd[9], linetype = 2)
+    geom_vline(xintercept = 2025, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
     theme_bw() +
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
@@ -226,6 +244,90 @@ pred_time_plot_policy <- function(path,
 # pred_time_plot_policy("output/mdr1246/bb_gne/")
 # pred_time_plot_policy("output/mdr184/bb_gne/")
 # pred_time_plot_policy("output/mdr86/bb_gne/")
+
+factor_incidence <- function(preds, incid){
+  # multiply preds by annual new cases estimate, 
+  # using most recent estimate for future marker prevalence predictions
+  keep_names <- names(preds)
+  preds <- lapply(names(preds), function(x){
+    yr <- str_extract(x, "^.{4}")
+    idx <- which(str_extract(names(incid), ".{4}$") == yr)
+    if (length(idx) == 0){idx = length(names(incid))} # assuming they're in order
+    return(preds[x] * incid[[idx]])
+  }) %>%
+    rast()
+  names(preds) <- keep_names
+  
+  preds
+}
+
+pred_time_plot_quantiles <- function(path, 
+                                     incid,
+                                     title = "",
+                                     pal = iddoPal::iddo_palettes$soft_reds,
+                                     zooms = NULL,
+                                     zoom_pal = NULL, 
+                                     alpha = 0.5,
+                                     show_pts = FALSE,
+                                     agg_fact = 10,
+                                     ylim = NULL,
+                                     proportional = FALSE,
+                                     ylab = "Annual cases"){
+  # this could also be a fraction of annual estimated cases .........
+  incid <- aggregate(incid, agg_fact, fun = "sum", na.rm = TRUE)
+  annual_estimated_cases <- sapply(incid, function(x){sum(values(x), na.rm = TRUE)})
+  
+  preds_medians <- rast(paste0(path, "preds_medians.tif"))
+  yrs <- as.numeric(str_extract(names(preds_medians), "^.{4}"))
+  
+  preds_medians <- preds_medians %>%
+    aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE) %>%
+    factor_incidence(incid) %>%
+    sapply(function(x){sum(values(x), na.rm=TRUE)})
+  preds_lower <- rast(paste0(path, "preds_lower.tif")) %>%
+    aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE) %>%
+    factor_incidence(incid) %>%
+    sapply(function(x){sum(values(x), na.rm=TRUE)})
+  preds_upper <- rast(paste0(path, "preds_upper.tif")) %>%
+    aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE) %>%
+    factor_incidence(incid) %>%
+    sapply(function(x){sum(values(x), na.rm=TRUE)})
+  
+  df <- data.frame(year = yrs,
+                   med = preds_medians,
+                   lower = preds_lower,
+                   upper = preds_upper)
+  
+  if (proportional){
+    # extend estimated cases to future years - assuming we're starting in common year (2000)
+    annual_estimated_cases <- c(annual_estimated_cases,
+                                rep(annual_estimated_cases[length(annual_estimated_cases)],
+                                    length(yrs) - length(annual_estimated_cases)))
+    df <- mutate(df, across(med:upper, ~.x / annual_estimated_cases))
+  }
+  
+  if(is.null(ylim)){ylim <- c(min(df$lower), max(df$upper))}
+  
+  p <- ggplot(df) +
+    geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) +
+    geom_ribbon(aes(x = year, ymin = med, ymax = med, fill = "50%")) +
+    geom_line(aes(x = year, y = med), linewidth = 1, col = pal[1]) +
+    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "50%" = pal[1])) +
+    theme_bw() +
+    xlab("Year") +
+    labs(title = title) +
+    ylab(ylab) +
+    ylim(ylim[1], ylim[2]) +
+    scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
+    geom_vline(xintercept = 2024.5, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
+    theme(legend.spacing.y = unit(-10, "cm"),
+          legend.background = element_rect(fill = NA))
+  
+  p
+}
+
+
+
 
 
 # to wrap up prediction figures for partner drug models :

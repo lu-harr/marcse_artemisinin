@@ -23,60 +23,49 @@ afr <- world %>%
 #output_dir <- "output/circmat_pfmdr86/"
 
 ###############################################################################
-# surveillance effort
+# surveillance effort - very slow running atm ...
 
-survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
+p <- survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
                       "output/crt76/surveillance_effort_crt76.grd",
                       "output/mdr86/surveillance_effort_mdr86.grd"),
                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 
-# p1 <- survey_effort_panel("output/circmat_k13/surveillance_effort_k13.grd", 
-#                           pan = "(a)", main = "Kelch 13", xlab="")
-# p2 <- survey_effort_panel("output/circmat_crt/surveillance_effort_crt.grd", 
-#                           pan = "(b)", main = "Pfcrt 76", ylab="")
-# p3 <- survey_effort_panel("output/pfmdr_hier/surveillance_effort_pfmdr86.grd", 
-#                           pan = "(c)", main = "Pfmdr1 86/184/1246", xlab="", ylab="")
-# 
-# library(patchwork)
-# p1 + p2 + p3 +
-#   plot_layout(ncol = 3, widths = c(4, 4, 4),
-#               axis_titles = "collect")
-ggsave("figures/surveillance_effort_all.png", 
+ggsave("figures/surveillance_effort_all.png", p,
         height = 5, width=10, scale = 0.8)
 
-survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
+p <- survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
                       "output/crt76/surveillance_effort_crt76.grd",
                       "output/mdr86/surveillance_effort_mdr86.grd"),
                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
-ggsave("figures/surveillance_effort_all_marcse.png", 
+
+ggsave("figures/surveillance_effort_all_marcse.png", p,
        height = 5, width=10, scale = 1.1)
 
-survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
-                      "output/k13_marcse/surveillance_effort_k13_marcse.grd"),
-                    lyr_names = c("moldm", "moldm + unpublished data"))
-ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png", 
-       height = 5, width=8, scale = 0.9)
+# survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
+#                       "output/k13_marcse/surveillance_effort_k13_marcse.grd"),
+#                     lyr_names = c("moldm", "moldm + unpublished data"))
+# ggsave("~/Desktop/presentations/MARCSE/surveillance_effort_marcse.png", 
+#        height = 5, width=8, scale = 0.9)
 
 # after all that, I might just facet_wrap ....
 
 ###############################################################################
 # time !
-# note to self: this has the potential to crash ya laptop
 
-p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/",
-               title = "(a) Pfkelch13", show_pts = TRUE)
-p2 <- pred_time_plot("output/crt76/gneiting_sparse/",
-               title = "(b) Pfcrt K76T", show_pts = TRUE)
-p3 <- pred_time_plot("output/mdr86/gneiting_sparse/",
-               title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
-p4 <- pred_time_plot("output/mdr184/gneiting_sparse/",
-               title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
-p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/",
-               title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
-
-library(patchwork)
-p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bin.png", scale = 1.5, height = 7, width = 6)
+# p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/",
+#                title = "(a) Pfkelch13", show_pts = TRUE)
+# p2 <- pred_time_plot("output/crt76/gneiting_sparse/",
+#                title = "(b) Pfcrt K76T", show_pts = TRUE)
+# p3 <- pred_time_plot("output/mdr86/gneiting_sparse/",
+#                title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
+# p4 <- pred_time_plot("output/mdr184/gneiting_sparse/",
+#                title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
+# p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/",
+#                title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
+# 
+# library(patchwork)
+# p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+# ggsave("figures/all_markers_time_bin.png", scale = 1.5, height = 7, width = 6)
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
@@ -110,17 +99,76 @@ p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
 
+# make a version of this weighted by malaria case incidence
+incid <- rast("data/incid_rasters_afr.tif")
+names(incid) <- paste0("incid_", str_extract(names(incid), ".{4}$"))
+
+p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases")
+p2 <- pred_time_plot("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases")
+p3 <- pred_time_plot("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases")
+p4 <- pred_time_plot("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases")
+p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases")
+
+p1 + p2 + p3 + p4 + p5 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+# ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
+# ultimately this isn't super useful: e.g., for Kelch, it's saying that increasingly,
+# the mutation intercepts with high transmission areas, but there are lots of pixels
+# where incidence is very low ... really need to show quantiles of prevalence * annual incidence
+# surface which will require a fairly different function
+
+p1 <- pred_time_plot_quantiles("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases")
+p2 <- pred_time_plot_quantiles("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases")
+p3 <- pred_time_plot_quantiles("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases")
+p4 <- pred_time_plot_quantiles("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases")
+p5 <- pred_time_plot_quantiles("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases")
+
+p1 + p2 + p3 + p4 + p5 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
+
+
+p1 <- pred_time_plot_quantiles("output/k13_marcse/bb_gne/",
+                               title = "(a) Pfkelch13", incid = incid, 
+                               ylab = "Proportion of annual cases", proportional = TRUE)
+p2 <- pred_time_plot_quantiles("output/crt76/bb_gne/",
+                               title = "(b) Pfcrt K76T", incid = incid, 
+                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
+p3 <- pred_time_plot_quantiles("output/mdr86/bb_gne/",
+                               title = "(c) Pfmdr1 N86Y", incid = incid, 
+                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
+p4 <- pred_time_plot_quantiles("output/mdr184/bb_gne/",
+                               title = "(d) Pfmdr1 Y184F", incid = incid, 
+                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
+p5 <- pred_time_plot_quantiles("output/mdr1246/bb_gne/",
+                               title = "(e) Pfmdr1 D1246Y", incid = incid, 
+                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
+
+p1 + p2 + p3 + p4 + p5 + 
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_bb_incidence_weighted_proportional.png", scale = 1.5, height = 7, width = 6)
+
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
 # after all that, not sure this adds much?
-zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
-victoria <- list(xmin = 27, xmax = 35, ymin = -6, ymax = 2)
-eswatini <- list(xmin = 34, xmax = 41, ymin = 12, ymax = 19)
-
-zoom_df <- rbind(zambezi, victoria, eswatini) %>%
-  as.data.frame() %>%
-  unnest() %>%
-  suppressWarnings()
+# zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
+# victoria <- list(xmin = 27, xmax = 35, ymin = -6, ymax = 2)
+# eswatini <- list(xmin = 34, xmax = 41, ymin = 12, ymax = 19)
+# 
+# zoom_df <- rbind(zambezi, victoria, eswatini) %>%
+#   as.data.frame() %>%
+#   unnest() %>%
+#   suppressWarnings()
 
 # ended up abandoning this
 # p1 <- pred_time_plot("output/k13/gneiting_sparse/preds_all.grd",

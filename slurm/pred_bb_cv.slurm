@@ -2,9 +2,9 @@
 #SBATCH --job-name=pre_bb_cv
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-#SBATCH --time=5:00:00           # Max runtime (HH:MM:SS)
-#SBATCH --mem=50G                  # Memory per node
-#SBATCH --array=0-24                 # should be up to nmarkers*nfolds
+#SBATCH --time=8:00:00           # Max runtime (HH:MM:SS)
+#SBATCH --mem=60G                  # Memory per node
+#SBATCH --array=0-49                 # should be up to nmarkers*nfolds
 #SBATCH --cpus-per-task=20         # Number of CPU cores per task
 
 #SBATCH --mail-type=BEGIN,END,FAIL  # Send email when job begins, ends, or fails
@@ -26,14 +26,16 @@ markers=(
   k13_marcse
 )
 
-nfolds=5
+nfolds=10
 
 idx=$SLURM_ARRAY_TASK_ID
 
-fold=$(( idx % ${#markers[@]}  + 1))
+#fold=$(( idx % ${#markers[@]}  + 1))
+fold=$(( idx % nfolds  + 1))
 
 # Select marker for this array task
-marker=${markers[idx / ${#markers[@]}]}
+#marker=${markers[idx / ${#markers[@]}]}
+marker=${markers[idx / nfolds]}
 
 echo $idx $marker $fold
 

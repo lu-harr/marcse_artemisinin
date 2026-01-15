@@ -2,7 +2,7 @@
 #SBATCH --job-name=inf_cv
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-#SBATCH --time=24:00:00           # Max runtime (HH:MM:SS)
+#SBATCH --time=8:00:00           # Max runtime (HH:MM:SS)
 #SBATCH --mem=50000                  # Memory per node
 #SBATCH --array=0-4
 #SBATCH --cpus-per-task=30         # Number of CPU cores per task
@@ -34,13 +34,5 @@ SEED=124
 
 # Run R script
 Rscript code/fit_betabinom_cv.R "$DATASET" "$SEED"
-
-# provide marker and seed ...
-# Rscript code/fit_betabinom_cv.R mdr86 124 &
-# Rscript code/fit_betabinom_cv.R mdr184 124 &
-# Rscript code/fit_betabinom_cv.R mdr1246 124 &
-# Rscript code/fit_betabinom_cv.R crt76 124 &
-# Rscript code/fit_betabinom_cv.R k13_marcse 124 &
-# wait
 
 echo "Job done!"
