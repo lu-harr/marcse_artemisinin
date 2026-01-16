@@ -105,7 +105,7 @@ crt = crt %>%
                              is.na(`pfcrt 76T`) & !is.na(`pfcrt 76K/T`) &
                                Mixed.Included == "null" ~ `pfcrt 76K/T`,
                              TRUE ~ NA)) %>% # there shouldn't be any NAs left
-  filter(Tested > MIN_SAMPLE_SIZE) %>% # check min Tested in k13 script - note in manuscript
+  filter(Tested >= MIN_SAMPLE_SIZE) %>% # check min Tested in k13 script - note in manuscript
   group_by(Longitude, Latitude, year, Tested, uniq_id_publication) %>%
   summarise(n = n(), Present = first(Present)) %>%
   ungroup()
@@ -142,7 +142,7 @@ ggplot() +
     xlab = "Longitude",
     ylab = "Latitude") +
   theme_grey()
-ggsave("figures/moldm_crt76.png", width = 4, height = 2.5, scale = 2)
+# ggsave("figures/moldm_crt76.png", width = 4, height = 2.5, scale = 2)
 
 
 tmp <- crt %>%

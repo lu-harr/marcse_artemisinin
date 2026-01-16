@@ -529,7 +529,7 @@ p2 <- ggplot() +
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested,
                            fill = Present / Tested),
-             col = "grey50", pch=21, stroke = 0.2) +
+             col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_color_manual(name = "", values = c("grey30"), labels=c("Absence"), guide = "none") +
   scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
@@ -541,6 +541,7 @@ p2 <- ggplot() +
   ylab("Latitude") +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
+  theme_bw() +
   theme(plot.background = element_rect(fill='transparent', color=NA),
         legend.position = "bottom",
         legend.title = element_text(hjust = 0.5),

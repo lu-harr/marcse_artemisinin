@@ -234,7 +234,7 @@ forwards <- names(tmp)  # (mutants)
 single_opps <- c(single_opps, tmp)
 
 pfmdr <- pfmdr %>%
-  filter(Tested > MIN_SAMPLE_SIZE) %>%
+  filter(Tested >= MIN_SAMPLE_SIZE) %>%
   group_by(Longitude, Latitude, year, PubMedID, Tested, realised, `86`, `184`, `1246`, n_loci) %>%
   summarise(pres = paste(Present, collapse = ","), 
             n_tri = length(unique(tri)),
@@ -343,7 +343,7 @@ ggplot() +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_grey()
-ggsave("figures/pfmdr_single_locus.png", scale = 1.7, height = 6, width = 5)
+# ggsave("figures/pfmdr_single_locus.png", scale = 1.7, height = 6, width = 5)
 
 plot(single_loc$year, single_loc$Present/single_loc$Tested, col = factor(single_loc$loc))
 
@@ -396,9 +396,10 @@ ggplot() +
   scale_fill_gradientn(colors = iddoPal::iddo_palettes$BlGyRd, 
                        "Prevalence",
                        breaks = c(0, 0.5, 1), 
-                       labels = c("0\n(all WT)", "0.5", "1\n(all mutant)"),
+                       labels = c("0\n(all wildtype)", "0.5", "1\n(all mutant)"),
                        limits = c(0,1)) +
-  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
+  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt",
+                        breaks = c(10, 100, 1000, 3000)) +
   scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
   scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
   facet_grid(year_bin ~ loc) +
@@ -409,11 +410,12 @@ ggplot() +
   theme_bw() + 
   theme(legend.position = "bottom",
         legend.title = element_text(hjust = 0.5),
-        legend.spacing.x = unit(4, "lines")) +
+        legend.spacing.x = unit(4, "lines"),
+        panel.spacing = unit(0, "lines")) +
   guides(fill = guide_colourbar(title.position = "top"),
          size = guide_legend(title.position = "top"))
 #theme(title = element_blank())
-ggsave("figures/crt_pfmdr_data.png", scale = 1.7, height = 6.5, width = 5)
+ggsave("figures/crt_pfmdr_data.png", height = 9, width = 7)
 
 
 partners <- partners %>%
