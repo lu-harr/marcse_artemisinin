@@ -92,7 +92,8 @@ pred_time_plot <- function(path,
                            agg_fact = 10,
                            incid = NULL,
                            ylim = c(0, 1),
-                           ylab = "Prevalence"){
+                           ylab = "Prevalence",
+                           cut_year = NULL){
   
   preds <- rast(paste0(path, "preds_medians.tif")) %>%
     aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE)
@@ -124,6 +125,10 @@ pred_time_plot <- function(path,
     ungroup() %>%
     mutate(year = as.numeric(year))
   
+  if (!is.null(cut_year)){
+    df <- df %>% filter(year <= cut_year)
+  }
+  
   p <- ggplot(df) +
     # removing min and max lines as they were a little distracting:
     # geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
@@ -139,7 +144,7 @@ pred_time_plot <- function(path,
     labs(title = title) +
     ylim(ylim[1], ylim[2]) +
     scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
-    geom_vline(xintercept = 2025, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
+    geom_vline(xintercept = 2024.5, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
     theme_bw() +
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
@@ -175,7 +180,7 @@ pred_time_plot <- function(path,
                             size=tested), 
                         colour="grey", pch = 21,
                         mut_data) +
-      scale_size_continuous(name = "Tested", trans = "sqrt", 
+      scale_size_continuous(name = "Sample size", trans = "sqrt", 
                             range = c(0.2, 5), limits = c(5, 5200), breaks = c(10, 100, 1000, 5000)) # +
     # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
     #              mut_data, fill = NA, outliers = FALSE)
@@ -261,7 +266,7 @@ factor_incidence <- function(preds, incid){
   preds
 }
 
-pred_time_plot_quantiles <- function(path, 
+pred_time_factoring_incidence <- function(path, 
                                      incid,
                                      title = "",
                                      pal = iddoPal::iddo_palettes$soft_reds,
@@ -272,6 +277,7 @@ pred_time_plot_quantiles <- function(path,
                                      agg_fact = 10,
                                      ylim = NULL,
                                      proportional = FALSE,
+                                     cut_year = NULL,
                                      ylab = "Annual cases"){
   # this could also be a fraction of annual estimated cases .........
   incid <- aggregate(incid, agg_fact, fun = "sum", na.rm = TRUE)
@@ -306,26 +312,27 @@ pred_time_plot_quantiles <- function(path,
     df <- mutate(df, across(med:upper, ~.x / annual_estimated_cases))
   }
   
+  if(!is.null(cut_year)){df <- df %>% filter(year <= cut_year)}
+  
   if(is.null(ylim)){ylim <- c(min(df$lower), max(df$upper))}
   
   p <- ggplot(df) +
     geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) +
     geom_ribbon(aes(x = year, ymin = med, ymax = med, fill = "50%")) +
     geom_line(aes(x = year, y = med), linewidth = 1, col = pal[1]) +
-    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[6], "50%" = pal[1])) +
+    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[4], "50%" = pal[1])) +
     theme_bw() +
     xlab("Year") +
     labs(title = title) +
     ylab(ylab) +
     ylim(ylim[1], ylim[2]) +
     scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
-    geom_vline(xintercept = 2024.5, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
+    geom_vline(xintercept = 2024.5, colour = iddo_palettes$BlGyRd[1], linetype = 2) +
     theme(legend.spacing.y = unit(-10, "cm"),
           legend.background = element_rect(fill = NA))
   
   p
 }
-
 
 
 

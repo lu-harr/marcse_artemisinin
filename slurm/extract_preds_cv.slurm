@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=concat
+#SBATCH --job-name=extr_pre
 #SBATCH --output=output_%j.log
 #SBATCH --error=error_%j.log
 #SBATCH --time=2:00:00           # Max runtime (HH:MM:SS)
@@ -22,16 +22,12 @@ pwd
 
 # provide marker and model ...
 
-Rscript code/concat_outputs_slurm.R k13_marcse bb_gne
-# Rscript code/concat_outputs_slurm.R mdr86 bb_gne
-# Rscript code/concat_outputs_slurm.R mdr184 bb_gne
-# Rscript code/concat_outputs_slurm.R mdr1246 bb_gne
-# Rscript code/concat_outputs_slurm.R crt76 bb_gne
-# Rscript code/concat_outputs_slurm.R k13snp_A675V bb_gne
-# Rscript code/concat_outputs_slurm.R k13snp_C469Y bb_gne
-# Rscript code/concat_outputs_slurm.R k13snp_P441L bb_gne
-# Rscript code/concat_outputs_slurm.R k13snp_R561H bb_gne
-# Rscript code/concat_outputs_slurm.R k13snp_R622I bb_gne
+Rscript code/extract_preds_cv.R k13_marcse bb_gne
+Rscript code/extract_preds_cv.R mdr86 bb_gne
+Rscript code/extract_preds_cv.R mdr184 bb_gne
+Rscript code/extract_preds_cv.R mdr1246 bb_gne
+Rscript code/extract_preds_cv.R crt76 bb_gne
+
 
 
 

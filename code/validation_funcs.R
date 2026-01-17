@@ -1,6 +1,5 @@
 # fucntions for validation script
 
-# will need to build folds in at some point
 extract_preds <- function(data_path,
                           pred_path,
                           ave_tag = "_50",
@@ -40,7 +39,62 @@ extract_preds <- function(data_path,
 #                           pred_path = "output/k13_marcse/bb_gne/preds_medians.tif")
 # plot(mut_data$present / mut_data$tested, mut_data$pred)
 
+extract_preds_cv <- function(data_path,
+                              pred_path,
+                              folds,
+                              ave_tag = "_50",
+                              buffer = 0){
+  
+  folds <- lapply(1:length(folds), function(idx){
+    data.frame(fold = idx,
+               pts = folds[[idx]])
+  }) %>%
+    do.call(bind_rows, .) %>%
+    arrange(pts)
+  
+  # bring in coords associated with predictions + associate with fold
+  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR) %>%
+    mutate(fold = folds$fold)
+  
+  preds_avail <- list.files(pred_path)
+  preds_avail <- preds_avail[grep("preds_medians", preds_avail)]
+  
+  folds_avail <- str_extract(preds_avail, ".(?=\\.tif$)")
+  
+  # get predictions for each row in `mut_data`
+  mut_data$pred <- NA
+  
+  for (fidx in 1:length(folds_avail)){
+    preds <- rast(paste0(pred_path, preds_avail[fidx]))
+    yrs_pred <- str_extract(names(preds), "\\d{4}")
+    
+    yrs_to_extract <- mut_data %>%
+      filter(fold == folds_avail[fidx]) %>%
+      dplyr::select(year) %>%
+      unique() %>%
+      unlist()
+    
+    
+    for (yr in yrs_to_extract){
+      if (yr %in% yrs_pred){
+        idx <- which(mut_data$year == yr & mut_data$fold == folds_avail[fidx])
+        
+        val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
+                              mut_data[idx, c("x", "y")],
+                              ID = FALSE, search_radius = buffer)
+  
+        mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+      }
+    }
+  }
+  mut_data
+}
 
+# folds <- read_rds("output/k13_marcse/bb_gne/cv_folds.rds")
+
+# tmp = extract_preds_cv(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
+#                  pred_path = "output/k13_marcse/bb_gne/cv_preds/",
+#                  folds = folds)
 
 nn_measure <- function(mut_data, draws_path){
   # from YSF: include nearest neighbour measure/ some other proximity measure
@@ -203,6 +257,9 @@ obs_prev_panel <- function(data_path,
   plot_grid(p1, p2, ncol = 1) %>%
     plot_grid(p3, rel_widths = c(0.4, 0.7))
 }
+
+
+
 
 
 

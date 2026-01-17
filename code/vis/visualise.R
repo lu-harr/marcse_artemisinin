@@ -7,6 +7,7 @@ library(sf)
 library(gridExtra)
 library(grid)
 library(cowplot)
+library(patchwork)
 
 library(viridisLite)
 library(RColorBrewer)
@@ -75,15 +76,20 @@ ggsave("figures/surveillance_effort_all_marcse.png", p,
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13", show_pts = TRUE)
+                     title = "(a) Pfkelch13", show_pts = TRUE,
+                     cut_year = 2027)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T", show_pts = TRUE)
+                     title = "(b) Pfcrt K76T", show_pts = TRUE,
+                     cut_year = 2027)
 p3 <- pred_time_plot("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
+                     title = "(c) Pfmdr1 N86Y", show_pts = TRUE,
+                     cut_year = 2027)
 p4 <- pred_time_plot("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
+                     title = "(d) Pfmdr1 Y184F", show_pts = TRUE,
+                     cut_year = 2027)
 p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
+                     title = "(e) Pfmdr1 D1246Y", show_pts = TRUE,
+                     cut_year = 2027)
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -91,15 +97,20 @@ ggsave("figures/all_markers_time_bb_astmh.png", scale = 1.5, height = 7, width =
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13")
+                     title = "(a) Pfkelch13",
+                     cut_year = 2027)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T")
+                     title = "(b) Pfcrt K76T",
+                     cut_year = 2027)
 p3 <- pred_time_plot("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y")
+                     title = "(c) Pfmdr1 N86Y",
+                     cut_year = 2027)
 p4 <- pred_time_plot("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F")
+                     title = "(d) Pfmdr1 Y184F",
+                     cut_year = 2027)
 p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y")
+                     title = "(e) Pfmdr1 D1246Y",
+                     cut_year = 2027)
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -128,37 +139,52 @@ p1 + p2 + p3 + p4 + p5 +
 # where incidence is very low ... really need to show quantiles of prevalence * annual incidence
 # surface which will require a fairly different function
 
-p1 <- pred_time_plot_quantiles("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases")
-p2 <- pred_time_plot_quantiles("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases")
-p3 <- pred_time_plot_quantiles("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases")
-p4 <- pred_time_plot_quantiles("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases")
-p5 <- pred_time_plot_quantiles("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases")
+p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases",
+                     cut_year = 2027)
+p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases",
+                     cut_year = 2027)
+p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases",
+                     cut_year = 2027)
+p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases",
+                     cut_year = 2027)
+p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases",
+                     cut_year = 2027)
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot_quantiles("output/k13_marcse/bb_gne/",
+p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
                                title = "(a) Pfkelch13", incid = incid, 
-                               ylab = "Proportion of annual cases", proportional = TRUE)
-p2 <- pred_time_plot_quantiles("output/crt76/bb_gne/",
+                               ylab = "Proportion of annual cases", 
+                               proportional = TRUE,
+                               cut_year = 2027)
+p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
                                title = "(b) Pfcrt K76T", incid = incid, 
-                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
-p3 <- pred_time_plot_quantiles("output/mdr86/bb_gne/",
+                               ylab = "Proportion of annual cases", 
+                               proportional = TRUE, ylim = c(0,1),
+                               cut_year = 2027)
+p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
                                title = "(c) Pfmdr1 N86Y", incid = incid, 
-                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
-p4 <- pred_time_plot_quantiles("output/mdr184/bb_gne/",
+                               ylab = "Proportion of annual cases", 
+                               proportional = TRUE, ylim = c(0,1),
+                               cut_year = 2027)
+p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
                                title = "(d) Pfmdr1 Y184F", incid = incid, 
-                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
-p5 <- pred_time_plot_quantiles("output/mdr1246/bb_gne/",
+                               ylab = "Proportion of annual cases", 
+                               proportional = TRUE, ylim = c(0,1),
+                               cut_year = 2027)
+p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
                                title = "(e) Pfmdr1 D1246Y", incid = incid, 
-                               ylab = "Proportion of annual cases", proportional = TRUE, ylim = c(0,1))
+                               ylab = "Proportion of annual cases", 
+                               proportional = TRUE, ylim = c(0,1),
+                               cut_year = 2027)
 
 p1 + p2 + p3 + p4 + p5 + 
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -255,7 +281,7 @@ p <- ggplot(df %>%
         panel.spacing = unit(0, "lines")) +
   guides(fill = guide_colourbar(title.position = "top"),
          size = guide_legend(title.position = "top"))
-ggsave("figures/crt_mdr_out_bb.png", p, height = 9, width = 6.5)
+ggsave("figures/crt_mdr_out_bb.png", p, height = 8, width = 6.5)
 
 #########################################################################
 # here is uncertainties:
@@ -649,6 +675,9 @@ snp_subplot <- function(df,
                         marker,
                         strip.text = element_blank(),
                         strip.background = element_blank(),
+                        axis.title.x = element_blank(),
+                        xbreaks = waiver(),
+                        ybreaks = waiver(),
                         fill_lims = c(0,0.5)){
   ggplot(data = df %>% filter(snp == marker)) +
     geom_tile(aes(x = x, y = y, fill = val)) +
@@ -656,10 +685,13 @@ snp_subplot <- function(df,
               st_crop(ext(exts[[marker]])), fill = NA, col = "grey80") +
     facet_grid(snp ~ year) +
     scale_fill_viridis_c("Prevalence", limits = fill_lims, trans = "sqrt") +
+    scale_x_continuous(breaks = xbreaks, "Longitude") +
+    scale_y_continuous(breaks = ybreaks) +
     theme_bw() +
     theme(strip.text.x = strip.text,
           strip.background.x = strip.background,
-          axis.title = element_blank(),
+          axis.title.x = axis.title.x,
+          axis.title.y = element_blank(),
           panel.spacing = unit(0, "lines"),
           plot.margin = margin(2, 2, 0, 0),
           legend.position = "bottom",
@@ -674,12 +706,20 @@ p1 <- snp_subplot(df, "A675V",
                   strip.background = element_rect(
                     fill   = "grey85",
                     colour = "grey20"
-                  )) %>% 
+                  ),
+                  xbreaks = seq(20, 35, 5)) %>% 
   suppressWarnings()
-p2 <- snp_subplot(df, "C469Y") %>% suppressWarnings()
-p3 <- snp_subplot(df, "P441L") %>% suppressWarnings()
-p4 <- snp_subplot(df, "R561H") %>% suppressWarnings()
-p5 <- snp_subplot(df, "R622I") %>% suppressWarnings()
+p2 <- snp_subplot(df, "C469Y") %>% 
+  suppressWarnings()
+p3 <- snp_subplot(df, "P441L",
+                  xbreaks = seq(15, 35, 10)) %>% 
+  suppressWarnings()
+p4 <- snp_subplot(df, "R561H") %>% 
+  suppressWarnings()
+p5 <- snp_subplot(df, "R622I",
+                  axis.title.x = element_text(),
+                  xbreaks = seq(32, 40, 4)) %>% 
+  suppressWarnings()
 
 p <- plot_grid(p1 + theme(legend.position = "none"), 
           p2 + theme(legend.position = "none"), 
@@ -687,10 +727,16 @@ p <- plot_grid(p1 + theme(legend.position = "none"),
           p4 + theme(legend.position = "none"), 
           p5, 
           # alas rel_widths = rep(1, 5), doesn't do the job
-          rel_heights = c(1.21, 1, 1.2, 1, 1.5),
+          rel_heights = c(1.21, 1, 1.2, 1, 1.58),
           ncol = 1)
 
-ggsave("figures/k13_snps.png", p, height = 7.7, width = 6, scale = 1.2)
+pl <- ggdraw(p + theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 15))) +
+  draw_label("Latitude", x = 0.01, y = 0.5, 
+    hjust = 0.5, vjust = 0.5, angle = 90, size = 12
+  )
+ggsave("figures/k13_snps.png", pl, height = 7.55, width = 6, scale = 1.3)
+
+ggsave("figures/k13_snps.png", p, height = 7.75, width = 6, scale = 1.3)
 
 ##############################################################################
 # compare obs to pred

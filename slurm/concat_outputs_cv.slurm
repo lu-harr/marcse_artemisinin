@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=pre_bb_cv
+#SBATCH --job-name=concat
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-#SBATCH --time=3:00:00           # Max runtime (HH:MM:SS)
-#SBATCH --mem=60G                  # Memory per node
+#SBATCH --time=1:00:00           # Max runtime (HH:MM:SS)
+#SBATCH --mem=5G                  # Memory per node
 #SBATCH --array=0-49                 # should be up to nmarkers*nfolds
-#SBATCH --cpus-per-task=20         # Number of CPU cores per task
+#SBATCH --cpus-per-task=1         # Number of CPU cores per task
 
 #SBATCH --mail-type=BEGIN,END,FAIL  # Send email when job begins, ends, or fails
 #SBATCH --mail-user=lucy.harrison@wwarn.org  # Replace with your email address
@@ -39,25 +39,17 @@ marker=${markers[idx / nfolds]}
 
 echo $idx $marker $fold
 
-make_preds() {
+concat_preds() {
     local MARKER=$1
     local MODEL=$2
-    local MIN_YEAR=$3
-    local MAX_YEAR=$4
-    local FOLD=$5
+    local FOLD=$3
     
-    echo "Running task for marker: $MARKER, model: $MODEL, years: $MIN_YEAR to $MAX_YEAR, fold: $FOLD"
+    echo "Running task for marker: $MARKER, model: $MODEL, fold: $FOLD"
 
-    # Loop over the years from MIN_YEAR to MAX_YEAR
-    for year in $(seq $MIN_YEAR $MAX_YEAR); do
-        echo "Running for year: $year"
-    
-        # Run the R script with the parameters
-        Rscript code/pred_slurm_cv.R $MARKER $MODEL $year $FOLD
-    done
+    Rscript code/concat_outputs_cv_slurm.R $MARKER $MODEL $FOLD
 }
 
-make_preds "$marker" "bb_gne" 2000 2027 "$fold"
+concat_preds "$marker" "bb_gne" "$fold"
 
 
 echo "Job done! ${SLURM_ARRAY_TASK_ID}"

@@ -498,24 +498,31 @@ calculate_coverages <- function(sims, dat, yr, ras, incs = 100){
 #' Concatenate multiple (annual) coverage sheets together
 #'
 #' @param path character
+#' @param fold numeric - for cross validation
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-concat_coverages <- function(path){
-  message(path)
-  message(paste0(path, "coverages/"))
-
-  files <- path %>%
-    paste0("coverages/") %>%
-    list.files()
-
-  message(paste(files))
+concat_coverages <- function(path, fold = NULL){
   
-  files <- files[grep(pattern = "\\d{4}", files)] %>%
-    paste0(path, "coverages/", .)
+  if(is.null(fold)){
+    path <- paste0(path, "coverages/")
+    fold <- ""
+  }
+
+  files <- path %>% list.files()
   
+  if(length(grep(pattern = "\\d{4}_coverages", files)) == 0){
+    message("Nothing to concat!")
+    return(0)
+  }
+  files <- paste0(path, files[grepl(pattern = "\\d{4}_coverages", files)])
+
+  if(fold != ""){
+    files <- files[str_extract(files, ".(?=\\.csv$)") == as.character(fold)]
+  }
+
   # open all of the files and rbind them together
   coverages <- sapply(files, read.csv) %>%
     rbind() %>%
@@ -525,60 +532,76 @@ concat_coverages <- function(path){
     mutate(year = str_extract(rownames(.), "\\d{4}")) %>%
     unnest(cols = everything())
   
-  write.csv(coverages, paste0(path, "coverages/all_coverages.csv"), row.names = FALSE)
+  write.csv(coverages, paste0(path, "all_coverages", fold, ".csv"), row.names = FALSE)
   message("coverages concatted")
   
   return(str_extract(files, "\\d{4}"))
 }
 
+# use cases:
+# concat_coverages("output/k13_marcse/bb_gne/")
+# 
+# concat_coverages("output/k13_marcse/bb_gne/cv_preds/", 9)
 
 # write annual preds objects as medians/sds preds objects
-concat_preds <- function(path, medians = TRUE, 
-                         sds = FALSE, sdscaled = FALSE, ciwidth = FALSE,
-                         upper = FALSE, lower = FALSE){
-  to_read <- grep("\\d{4}_preds.grd$", list.files(path), value = TRUE)
-
+concat_preds <- function(path, 
+                         medians = TRUE, 
+                         sds = FALSE, 
+                         sdscaled = FALSE, 
+                         ciwidth = FALSE,
+                         upper = FALSE, 
+                         lower = FALSE,
+                         fold = ""){
+  if (fold != ""){fold <- paste0("_", fold)}
+  
+  to_read <- grep(paste0("\\d{4}_preds", fold, ".grd$"), 
+                  list.files(path), value = TRUE)
+  
+  if(length(to_read) == 0){
+    message("Nothing to concat!")
+    return(0)
+  }
+  
   razzes <- rast(paste0(path, "/", to_read))
   
   to_write <- c()
-  
-  message(paste(str_extract(names(razzes), "\\d{4}")))
 
   if (medians){
     to_write <- names(razzes)[grep("50", names(razzes))]
+    
     terra::writeRaster(subset(razzes, to_write), 
-                        file.path(path, "preds_medians.tif"), 
+                        paste0(path, "preds_medians", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
   if (sds){
     to_write <- names(razzes)[grep("sd$", names(razzes))]
     terra::writeRaster(subset(razzes, to_write), 
-                        file.path(path, "preds_sds.tif"), 
+                        paste0(path, "preds_sds", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
   if (sdscaled){
     to_write <- names(razzes)[grep("sdscaled", names(razzes))]
     terra::writeRaster(subset(razzes, to_write), 
-                        file.path(path, "preds_sdscaled.tif"), 
+                        paste0(path, "preds_sdscaled", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
   if (upper){
     to_write <- names(razzes)[grep("97\\.5", names(razzes))]
     terra::writeRaster(subset(razzes, to_write), 
-                        file.path(path, "preds_upper.tif"), 
+                       paste0(path, "preds_upper", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
   if (lower){
     to_write <- names(razzes)[grep("2\\.5", names(razzes))]
     terra::writeRaster(subset(razzes, to_write), 
-                        file.path(path, "preds_lower.tif"), 
+                       paste0(path, "preds_lower", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
   if (ciwidth){
     ci_width = subset(razzes, grepl("97\\.5", names(razzes))) - subset(razzes, grepl("2\\.5", names(razzes)))
     names(ci_width) = paste0(str_extract(names(ci_width), "\\d{4}"), "_CI")
     terra::writeRaster(ci_width, 
-                        file.path(path, "preds_ciwidths.tif"), 
+                       paste0(path, "preds_ciwidths", fold, ".tif"), 
                         overwrite = TRUE, filetype = "GTiff")
   }
 
@@ -591,7 +614,12 @@ concat_preds <- function(path, medians = TRUE,
   message("preds concatted")
 }
 
-
+# use cases
+# concat_preds("output/k13_marcse/bb_gne/",
+#              medians = TRUE)
+# 
+# concat_preds("output/k13_marcse/bb_gne/cv_preds/", 
+#              medians = TRUE, fold = 1)
 
 
 

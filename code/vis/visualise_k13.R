@@ -185,20 +185,20 @@ zambezi_bits <- gg_ras_prep(preds, zambezi, afr)
 victoria_bits <- gg_ras_prep(preds, victoria, afr)
 eswatini_bits <- gg_ras_prep(preds, eswatini, afr)
 
-years_to_plot <- c("2012", "2018", "2024")
+years_to_plot <- c("2014", "2020", "2026")
 
 zoom_pan <- function(bits, 
                      yearr, 
                      tagg = "50",
                      pal = viridis(100), 
-                     scale_lims = c(0, 0.64), #c(0, 0.42),
+                     scale_lims = NULL, #c(0, 0.42),
                      panel_col = "black"){
   message(yearr)
   ggplot() +
     geom_tile(data = bits$df %>%
                 filter(year == yearr & tag == tagg), 
               mapping = aes(x = x, y = y, fill = val)) +
-    geom_sf(data = bits$shp, fill = NA, col = "grey") +
+    geom_sf(data = bits$shp, fill = NA, col = "grey80", linewidth = 0.5) +
     scale_fill_gradientn(colours = pal, limits = scale_lims, trans = "sqrt") +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5),
@@ -207,7 +207,7 @@ zoom_pan <- function(bits,
           legend.position = "none",
           axis.text = element_blank(),
           axis.ticks = element_blank(),
-          plot.margin = unit(rep(0.2,4), "cm"),
+          plot.margin = unit(rep(0,4), "cm"),
           panel.border = element_rect(colour = panel_col,
                                       linewidth = 1.5))
 }
@@ -218,6 +218,7 @@ medians <- ggplot() +
   geom_tile(data = df %>%
               filter(year %in% years_to_plot & tag == "50"),
             mapping = aes(x = x, y = y, fill = val)) +
+  geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
   facet_wrap(~year, ncol = 1, strip.position = "left") +
   # geom_tile(data = df %>%
   #             filter(year =="2022" & tag == "medi"),
@@ -226,7 +227,7 @@ medians <- ggplot() +
   # xlab("Longitude") +
   # ylab("Latitude") +
   # labs(title = "Median") +
-  geom_rect(zoom_df %>% mutate(year = years_to_plot[1]), 
+  geom_rect(zoom_df %>% mutate(year = years_to_plot[1]),
             mapping = aes(xmin = xmin,
                 xmax = xmax,
                 ymin = ymin,
@@ -242,38 +243,41 @@ medians <- ggplot() +
         legend.justification = "top") 
 medians
 
-# yr1 <- plot_grid(zoom_pan(zambezi_bits, "2014", panel_col = case_pal[1]),
-#                  zoom_pan(victoria_bits, "2014", panel_col = case_pal[2]),
-#                  NULL,
-#                  zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3])) +
-#   theme(plot.margin = unit(rep(0.2,4), "cm"))
-# 
-# yr2 <- plot_grid(zoom_pan(zambezi_bits, "2018", panel_col = case_pal[1]),
-#                  zoom_pan(victoria_bits, "2018", panel_col = case_pal[2]),
-#                  NULL,
-#                  zoom_pan(eswatini_bits, "2018", panel_col = case_pal[3])) +
-#   theme(plot.margin = unit(rep(0.2,4), "cm"))
-# 
-# yr3 <- plot_grid(zoom_pan(zambezi_bits, "2022", panel_col = case_pal[1]),
-#                  zoom_pan(victoria_bits, "2022", panel_col = case_pal[2]),
-#                  NULL,
-#                  zoom_pan(eswatini_bits, "2022", panel_col = case_pal[3])) +
-#   theme(plot.margin = unit(rep(0.2,4), "cm"))
-# zooms <- plot_grid(yr1, yr2, yr3, ncol = 1)
+fill_lims <- df %>%
+  filter(year %in% years_to_plot & tag == "50") %>%
+  dplyr::select(val) %>%
+  range()
 
-
-zooms <- plot_grid(zoom_pan(eswatini_bits, "2014", panel_col = case_pal[3]),
-                   zoom_pan(victoria_bits, "2014", panel_col = case_pal[2]),
-                   zoom_pan(zambezi_bits, "2014", panel_col = case_pal[1]),
-                   zoom_pan(eswatini_bits, "2018", panel_col = case_pal[3]),
-                   zoom_pan(victoria_bits, "2018", panel_col = case_pal[2]),
-                   zoom_pan(zambezi_bits, "2018", panel_col = case_pal[1]),
-                   zoom_pan(eswatini_bits, "2022", panel_col = case_pal[3]),
-                   zoom_pan(victoria_bits, "2022", panel_col = case_pal[2]),
-                   zoom_pan(zambezi_bits, "2022", panel_col = case_pal[1]),
+zooms <- plot_grid(zoom_pan(eswatini_bits, years_to_plot[1], 
+                            panel_col = case_pal[3],
+                            scale_lims = fill_lims),
+                   zoom_pan(victoria_bits, years_to_plot[1], 
+                            panel_col = case_pal[2],
+                            scale_lims = fill_lims),
+                   zoom_pan(zambezi_bits, years_to_plot[1], 
+                            panel_col = case_pal[1],
+                            scale_lims = fill_lims),
+                   zoom_pan(eswatini_bits, years_to_plot[2], 
+                            panel_col = case_pal[3],
+                            scale_lims = fill_lims),
+                   zoom_pan(victoria_bits, years_to_plot[2], 
+                            panel_col = case_pal[2],
+                            scale_lims = fill_lims),
+                   zoom_pan(zambezi_bits, years_to_plot[2], 
+                            panel_col = case_pal[1],
+                            scale_lims = fill_lims),
+                   zoom_pan(eswatini_bits, years_to_plot[3], 
+                            panel_col = case_pal[3],
+                            scale_lims = fill_lims),
+                   zoom_pan(victoria_bits, years_to_plot[3], 
+                            panel_col = case_pal[2],
+                            scale_lims = fill_lims),
+                   zoom_pan(zambezi_bits, years_to_plot[3], 
+                            panel_col = case_pal[1],
+                            scale_lims = fill_lims),
                    ncol = 1) +
-  theme(plot.margin = unit(rep(0.1,4), "cm"))
-
+  theme(plot.margin = unit(c(0.25,0,0.2,0), "cm"))
+ggsave("~/Desktop/test.png", zooms, height=10, width = 2)
 
 
 sds <- ggplot() +
@@ -281,6 +285,7 @@ sds <- ggplot() +
   geom_tile(data = df %>%
               filter(year %in% years_to_plot & tag == "sd"), 
             mapping = aes(x = x, y = y, fill = val)) +
+  geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
   facet_wrap(~year, ncol = 1) +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
@@ -321,7 +326,7 @@ legs <- plot_grid(get_legend(medians),
 #                            label = lab), angle = 90)
   
 rect <- data.frame(xmin = c(0.04, 0.525),
-                 xmax = c(0.5, 0.873),
+                 xmax = c(0.52, 0.873),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.02, 1),
                  lab = c("Median", "Standard deviation"))
