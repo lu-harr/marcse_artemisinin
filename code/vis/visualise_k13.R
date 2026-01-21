@@ -7,10 +7,6 @@ source("code/setup.R")
 source("code/build_design_matrix.R")
 
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
-# preds <- rast("output/k13_marcse/circmat_sparse/preds_all.grd")
-# preds <- rast("output/k13_marcse/gneiting_ahmc/preds_all.tif")
-preds <- c(rast("output/k13_marcse/gneiting_sparse/preds_medians.tif"),
-           rast("output/k13_marcse/gneiting_sparse/preds_sds.tif"))
 preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
            rast("output/k13_marcse/bb_gne/preds_sds.tif"))
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")
@@ -30,6 +26,14 @@ afr <- world %>%
 preds <- preds %>% 
   aggregate(fact = 2) #%>%
   # subset(1:73)
+
+
+tmp <- preds$`2026_50`
+tmp[tmp < 0.1] <- NA
+
+
+plot(tmp)
+plot(st_geometry(afr), add=TRUE)
 
 ###############################################################################
 # surveillance effort
@@ -455,71 +459,77 @@ ggsave("~/Desktop/presentations/MARCSE/k13_sdsscaledbb.png", height = 5, width =
 ################################################################################
 # WITHOUT ZOOM PANS
 
-medians <- ggplot() +
-  geom_sf(data = afr, fill = "white") +
-  geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "50"),
-            mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1, strip.position = "left") +
-  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") + theme_bw() +
-  labs(title = "Median") +
-  theme(axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        #plot.title = element_blank(), 
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
+years_to_plot <- c("2014", "2020", "2026")
+preds <- rast("output/k13_marcse/bb_gne/preds_sdscaled.tif")
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
+df <- gg_ras_prep(preds)$df
 
-medians
+# medians <- ggplot() +
+#   geom_sf(data = afr, fill = "white") +
+#   geom_tile(data = df %>%
+#               filter(year %in% years_to_plot & tag == "50"),
+#             mapping = aes(x = x, y = y, fill = val)) +
+#   facet_wrap(~year, ncol = 1, strip.position = "left") +
+#   scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") + theme_bw() +
+#   labs(title = "Median") +
+#   theme(axis.title = element_blank(),
+#         axis.text = element_blank(),
+#         axis.ticks = element_blank(),
+#         #plot.title = element_blank(), 
+#         plot.title = element_text(hjust = 0.5),
+#         legend.justification = "top")
+# 
+# medians
 
 sds <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "sdscaled"), 
+              filter(year %in% years_to_plot & tag == "sdscaled") %>%
+              mutate(tag = "Standard deviation"), 
             mapping = aes(x = x, y = y, fill = val)) +
-  facet_wrap(~year, ncol = 1) +
+  geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
+  facet_grid(year ~ tag, switch = "y") +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
-                       "Uncertainty", 
+                       "Uncertainty\n(unscaled)", 
                        direction = 1,
                        trans = "sqrt") +
-  labs(title = "Standard deviation") +
+  # labs(title = "Standard deviation") +
   theme_bw() +
-  theme(strip.background = element_blank(),
-        strip.text.x = element_blank(),
-        axis.title = element_blank(),
+  theme(axis.title = element_blank(),
         axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        #plot.title = element_blank(), 
+        axis.ticks = element_blank(), 
         plot.title = element_text(hjust = 0.5),
         legend.justification = "top") 
 sds
 
-legs <- plot_grid(get_legend(medians),
-                  get_legend(sds),
-                  # this is a bit hacky
-                  NULL,
-                  NULL,
-                  ncol = 1)
+ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 6, width = 3, scale = 1.7)
 
-rects <- data.frame(xmin = c(0.046, 0.47),
-                 xmax = c(0.45, 0.873),
-                 ymin = rep(0.968, 2),
-                 ymax = rep(0.995, 1),
-                 lab = c("Median", "Standard deviation (unscaled)"))
-
-plot_grid(medians + theme(legend.position = "none"), 
-          sds + theme(legend.position = "none"), 
-          legs,
-          ncol = 3, rel_widths = c(1,0.933,0.25)) +
-  theme(plot.margin = unit(c(0,0,0,0), "cm")) +
-  geom_rect(data = rects, aes(xmin=xmin, xmax=xmax, ymin=ymin,
-                           ymax=ymax),
-            colour="grey10", fill="grey85", linewidth=0.3) +
-  geom_text(data = rects, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
-                            label = lab))
-
-ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 6, width = 4.5, scale = 1.7)
+# legs <- plot_grid(get_legend(medians),
+#                   get_legend(sds),
+#                   # this is a bit hacky
+#                   NULL,
+#                   NULL,
+#                   ncol = 1)
+# 
+# rects <- data.frame(xmin = c(0.046, 0.47),
+#                  xmax = c(0.45, 0.873),
+#                  ymin = rep(0.968, 2),
+#                  ymax = rep(0.995, 1),
+#                  lab = c("Median", "Standard deviation (unscaled)"))
+# 
+# plot_grid(medians + theme(legend.position = "none"), 
+#           sds + theme(legend.position = "none"), 
+#           legs,
+#           ncol = 3, rel_widths = c(1,0.933,0.25)) +
+#   theme(plot.margin = unit(c(0,0,0,0), "cm")) +
+#   geom_rect(data = rects, aes(xmin=xmin, xmax=xmax, ymin=ymin,
+#                            ymax=ymax),
+#             colour="grey10", fill="grey85", linewidth=0.3) +
+#   geom_text(data = rects, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
+#                             label = lab))
+# 
+# ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 6, width = 4.5, scale = 1.7)
 
 
 # surveillance effort

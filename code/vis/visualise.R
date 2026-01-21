@@ -191,6 +191,19 @@ p1 + p2 + p3 + p4 + p5 +
 ggsave("figures/all_markers_time_bb_incidence_weighted_proportional.png", scale = 1.5, height = 7, width = 6)
 
 
+plot(incid$incid_2024)
+plot(sqrt(incid$incid_2024))
+plot(log10(incid$incid_2024))
+preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
+plot(preds$`2026_50`)
+plot(sqrt(preds$`2026_50` * incid$incid_2024))
+lower <- rast("output/k13_marcse/bb_gne/preds_lower.tif")
+upper <- rast("output/k13_marcse/bb_gne/preds_upper.tif")
+
+median(values(preds$`2026_50`), na.rm = TRUE)
+median(values(lower$`2026_2.5`), na.rm = TRUE)
+median(values(upper$`2026_97.5`), na.rm = TRUE)
+
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
 # after all that, not sure this adds much?
 # zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
@@ -678,7 +691,7 @@ snp_subplot <- function(df,
                         axis.title.x = element_blank(),
                         xbreaks = waiver(),
                         ybreaks = waiver(),
-                        fill_lims = c(0,0.5)){
+                        fill_lims = c(0,0.47)){
   ggplot(data = df %>% filter(snp == marker)) +
     geom_tile(aes(x = x, y = y, fill = val)) +
     geom_sf(data = afr %>%
@@ -737,6 +750,13 @@ pl <- ggdraw(p + theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 15))) +
 ggsave("figures/k13_snps.png", pl, height = 7.55, width = 6, scale = 1.3)
 
 ggsave("figures/k13_snps.png", p, height = 7.75, width = 6, scale = 1.3)
+
+ggplot(df %>% filter(year == "2026")) + 
+  geom_tile(aes(fill = val, x = x, y = y)) +
+  scale_fill_viridis_c(trans = "sqrt", limits = c(0, 0.3)) +
+  facet_wrap(~snp)
+
+# just wondering if this might not be more informative as a contour plot ...
 
 ##############################################################################
 # compare obs to pred

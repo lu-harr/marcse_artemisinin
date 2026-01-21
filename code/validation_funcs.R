@@ -20,13 +20,12 @@ extract_preds <- function(data_path,
                             mut_data[idx, c("x", "y")],
                             ID = FALSE, search_radius = buffer)
       #message(paste(dim(val)))
-      # if(ncol(val) < 3){
-      #   # idk why we have to have an inconsistent return when |idx| == 1
-      #   message("here")
-      #   mut_data[idx, "pred"] <- val[1,1]}
-      #else{
+      if(ncol(val) < 3){
+        # we have to have an inconsistent return when |idx| == 1
+        mut_data[idx, "pred"] <- val[1,1]}
+      else{
       mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
-      #}
+      }
     #plot(mut_data$present[idx] / mut_data$tested[idx], mut_data$pred[idx], main = yr)
     }
   }
@@ -52,14 +51,22 @@ extract_preds_cv <- function(data_path,
     do.call(bind_rows, .) %>%
     arrange(pts)
   
+  message(nrow(folds))
+  
   # bring in coords associated with predictions + associate with fold
   mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR) %>%
     mutate(fold = folds$fold)
   
+  message(nrow(mut_data))
+  
   preds_avail <- list.files(pred_path)
   preds_avail <- preds_avail[grep("preds_medians", preds_avail)]
   
-  folds_avail <- str_extract(preds_avail, ".(?=\\.tif$)")
+  message(preds_avail)
+  
+  folds_avail <- unique(str_extract(preds_avail, ".(?=\\.tif$)"))
+  
+  message(folds_avail)
   
   # get predictions for each row in `mut_data`
   mut_data$pred <- NA
@@ -68,12 +75,15 @@ extract_preds_cv <- function(data_path,
     preds <- rast(paste0(pred_path, preds_avail[fidx]))
     yrs_pred <- str_extract(names(preds), "\\d{4}")
     
+    message(fidx)
+    
     yrs_to_extract <- mut_data %>%
       filter(fold == folds_avail[fidx]) %>%
       dplyr::select(year) %>%
       unique() %>%
       unlist()
     
+    message(yrs_to_extract)
     
     for (yr in yrs_to_extract){
       if (yr %in% yrs_pred){
@@ -82,6 +92,8 @@ extract_preds_cv <- function(data_path,
         val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                               mut_data[idx, c("x", "y")],
                               ID = FALSE, search_radius = buffer)
+        
+        message(paste(length(idx), ",", sum(is.na(val))))
   
         mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
       }
@@ -95,6 +107,13 @@ extract_preds_cv <- function(data_path,
 # tmp = extract_preds_cv(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
 #                  pred_path = "output/k13_marcse/bb_gne/cv_preds/",
 #                  folds = folds)
+
+rmse <- function(mut_data){
+  # root mean square error on probability scale
+  sqrt(sum((mut_data$pred - mut_data$present/mut_data$tested)**2, na.rm = TRUE) / 
+         sum(!is.na(mut_data$pred)))
+}
+
 
 nn_measure <- function(mut_data, draws_path){
   # from YSF: include nearest neighbour measure/ some other proximity measure
@@ -163,6 +182,7 @@ obs_prev_panel <- function(data_path,
   #                  sum((mut_data$present / mut_data$tested) ** 2)))
   message(paste0("Mean error: ", mean(mut_data$pred - mut_data$present/mut_data$tested)))
   message(paste0("Mean abs error: ", mean(abs(mut_data$pred - mut_data$present/mut_data$tested))))
+  message(paste0("RMSE: ", rmse(mut_data)))
   
   mut_data$diffs <- mut_data$present / mut_data$tested - mut_data$pred
   mut_data <- arrange(mut_data, abs(diffs))

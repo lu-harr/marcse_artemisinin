@@ -25,7 +25,7 @@ data_path_lookup <- list("k13_marcse" = "data/clean/moldm_marcse_k13_nomarker.cs
 
 folds <- read_rds(paste0("output/", marker, "/", mod, "/cv_folds.rds"))
 
-dat <- extract_preds_cv(data_path = data_path_lookup[marker],
+dat <- extract_preds_cv(data_path = data_path_lookup[[marker]],
                  pred_path = paste0("output/", marker, "/", mod, "/cv_preds/"),
                  folds = folds)
 

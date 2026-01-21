@@ -129,6 +129,11 @@ pred_time_plot <- function(path,
     df <- df %>% filter(year <= cut_year)
   }
   
+  message(paste0("2026 summary stats: ", 
+                 df %>% filter(year == 2026) %>% dplyr::select(`50%`), "; (",
+                 df %>% filter(year == 2026) %>% dplyr::select(`2.5%`), ", ",
+                 df %>% filter(year == 2026) %>% dplyr::select(`97.5%`), ")"))
+  
   p <- ggplot(df) +
     # removing min and max lines as they were a little distracting:
     # geom_line(aes(x = year, y = `0%`, linetype = "0% - 100%")) +
@@ -316,6 +321,11 @@ pred_time_factoring_incidence <- function(path,
   
   if(is.null(ylim)){ylim <- c(min(df$lower), max(df$upper))}
   
+  message(paste0("2026 summary stats: ", 
+                 df %>% filter(year == 2026) %>% dplyr::select(med), "; (",
+                 df %>% filter(year == 2026) %>% dplyr::select(lower), ", ",
+                 df %>% filter(year == 2026) %>% dplyr::select(upper), ")"))
+  
   p <- ggplot(df) +
     geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) +
     geom_ribbon(aes(x = year, ymin = med, ymax = med, fill = "50%")) +
@@ -465,14 +475,6 @@ map_pred_row <- function(in_path,
 # obs_prev_panel_base("data/clean/moldm_k13_nomarker.csv",
 #                "output/k13/gneiting_sparse/preds_all.grd",
 #                "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
-
-
-
-
-
-
-
-
 
 
 
