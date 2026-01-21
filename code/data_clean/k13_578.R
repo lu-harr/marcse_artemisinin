@@ -47,22 +47,15 @@ raw_moldm <- function(path){
     suppressWarnings()
 }
 
-moldm <- raw_moldm("data/raw/db_20250922/novartis.csv") %>%
+moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
   mutate(Marker = strip_marker)
-# head(moldm)
 
-# from MARC-SE GH README:
-# markers <- "C580Y, P574L, R561H, P553L, I543T, R539T, Y493H, M476I, N458Y, 
-#           F446I, C469Y, C469F, A675V, P441L, R622I, G625R, A578S, N537S" %>%
-#   str_split(markers, ", ") %>% 
-#   unlist()
-# note 578 and 537 not included in WHO lists but included due to prevalence
+library(readxl)
 
-marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
+marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xlsx") %>%
   mutate_at(c("Present", "Tested"), as.numeric) %>%
-  bind_rows(read_xlsx("../MARC_SEA_dashboard/September_25_Lucy.xlsx") %>%
-              dplyr::select(-c("...19", "Site Name"))) %>%
-  rename(Notes = "...18",
+  dplyr::select(-c("...19": "...22")) %>%
+  rename(Notes = `...18`,
          Site.Name.District.Country = `Site Name/District/Country`,
          Start.Year = `Start Year`,
          End.Year = `End Year`,
@@ -83,49 +76,12 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/k13_marcse_africa_GHR.xlsx") %>%
          Prevalence = as.numeric(Prevalence),
          # for one study, Tested was not provided but Present and Prev were
          Tested = ifelse(Title == "Detection of Low-Frequency Artemisinin Resistance Mutations C469Y. P553L and A675V in Asymptomatic Primary School Children in Kenya",
-                         Present / (Prevalence / 100), Tested)) %>%
+                         Present / (Prevalence / 100), Tested),
+         Present = ifelse(is.na(Present),
+                          Tested * Prevalence,
+                          Present)) %>%
   left_join(marker_reference, by = join_by(Marker == marker)) %>%
   suppressMessages()
-# head(marcse)
-# names(marcse)
-
-# Bagamoyo Longitude: 38.900002? .. will need to reassign:
-
-# unique(marcse$PubMedID)
-# unique(marcse$Marker)
-# unique(marcse$Marker_Classification)
-
-# marcse[,c("Marker", "Marker_Classification", "status")] %>% unique() %>% as.data.frame()
-# A626S, A675V not picked up in LH's set
-# R515K not picked up in SvW's set
-# then there's also A578S
-# there aren't any 537 classified as "Widespread other"
-
-# let's check for weirdness here:
-# marcse %>%
-#   filter(!PubMedID %in% moldm$PubMedID) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-# marcse %>%
-#   filter(str_length(PubMedID) != 8) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-
-# check for weirdness here:  
-# moldm %>%
-#   filter(!PubMedID %in% marcse$PubMedID) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-# moldm %>%
-#   filter(str_length(PubMedID) != 8) %>%
-#   dplyr::select(PubMedID) %>%
-#   unique() %>%
-#   as.vector()
-# there's one particularly weird pmid 9999971 but satisfied that it's not published ..
-
 
 # there are a couple with weird PMIDs and Title == "WHO Threats Map"
 pmid_checks <- c(
@@ -150,32 +106,6 @@ pmid_checks <- c(
   matrix(byrow = TRUE, ncol = 2) %>%
   as.data.frame() %>%
   setNames(c("from", "to"))
-
-# filter(marcse, Title == "WHO Threats Map") %>%
-#   dplyr::select(PubMedID) %>% as.data.frame()
-
-# filter(moldm, PubMedID == "null") %>% dplyr::select("Title") %>% unique()
-
-# "null":
-# (Unpublished)                                                                                                                
-# (Unpublished) Presence of k13 561H artemisinin resistance mutations in Plasmodium falciparum infections from Rwanda http://malariamatters.org/presence-of-k13-561h-artemisinin-resistance-mutations-in-plasmodium-falciparum-infections-from-rwanda/
-# (38840941) Screening for antifolate and artemisinin resistance in Plasmodium falciparum clinical isolates from three hospitals of Eritrea
-# (38440764) Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire
-# (Unpublished - thesis? Or 37349311) UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING
-# (Preprint https://www.medrxiv.org/content/10.1101/2025.01.09.25320247v1.full-text) High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia
-# (38461239) Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021
-# (?) Antimalarial Drug Resistance Marker Prevalence Survey - 2016
-# (doi: 10.61186/rabms.11.1.75) Molecular surveillance of artemisinin resistance-linked PFK13 gene polymorphisms in Adamawa State, Nigeria
-
-# I've pasted this but forgotten what it belongs to "33864801"
-
-# find "unpublished" rows
-marcse %>%
-  left_join(pmid_checks, by = join_by(PubMedID == from)) %>% 
-  filter(PubMedID == "Unpublished_MARCSE") %>% 
-  group_by(Title) %>% 
-  summarise(n=n()) %>%
-  as.data.frame()
 
 marcse <- marcse %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
@@ -205,6 +135,15 @@ marcse <- marcse %>%
   dplyr::select(-c(to))
 
 #tmp %>% dplyr::select(PubMedID, to) %>% unique() %>% as.data.frame()
+
+ggplot(data = marcse %>% filter(Marker == "A578S" & year > 2021 & Present > 0)) + 
+  geom_sf(data = afr) + 
+  geom_point(aes(x = Longitude, y = Latitude, size = Tested, col = Present/Tested))
+marcse %>% 
+  filter(Marker == "A578S" & year > 2021 & Present > 0) %>%
+  filter(Longitude > 35 & Latitude > -10 & Latitude < 0) %>%
+  as.data.frame()
+
 
 moldm <- moldm %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
@@ -250,11 +189,57 @@ moldm <- bind_rows(moldm,
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
   mutate(mutant = !is.na(status) & status != "Not associated")
 
-# notes:
-# S446I possible typo?
-# haplotypes are falling out here but that's a super limited number
-# mixeds where they are documented ...
-# "C469C/Y", "C469F/Y", "M476M/I", "Y493Y/H", "R539R/T", ..........
+mutants <- moldm %>%
+  filter(mutant) %>%
+  group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
+  summarise(Present = sum(Present), 
+            pubs = paste0(unique(PubMedID), collapse=",")) %>%
+  mutate(Site.Name = gsub(",", "", Site.Name)) %>%
+  arrange(year) %>%
+  dplyr::select(Longitude, Latitude, year, Tested, Present, Site.Name, Country, pubs) %>%
+  ungroup() %>%
+  suppressMessages()
+
+tmp <- moldm %>% 
+  filter(mutant) %>% 
+  group_by(Marker) %>%
+  summarise(n_present = sum(Present), n_tested = sum(Tested)) %>%
+  filter(n_present > 0) %>%
+  #filter(npres >= 10) %>%
+  full_join(marker_reference, join_by(Marker == marker)) %>%
+  arrange(desc(n_present)) %>%
+  filter(!is.na(n_present))
+message("TF-associated mutations in dataset")
+tmp %>% as.data.frame()
+
+wildtypes <- moldm %>%
+  filter(Marker == "wildtype") %>%
+  group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
+  summarise(Present = sum(Present), n=n(), 
+            pubs = paste0(unique(PubMedID), collapse=",")) %>% 
+  # check how many simultaneous wildtype entries we have?
+  mutate(Site.Name = gsub(",", "", Site.Name)) %>%
+  arrange(year) %>%
+  dplyr::select(Longitude, Latitude, year, Tested, Site.Name, Country, Present, pubs) %>%
+  ungroup() %>%
+  suppressMessages()
+
+wildtypes_to_add <- anti_join(
+  # locations in `wildtypes` that do not occur in `mutants`,
+  # paying attention to `Tested` but NOT to `pubs`
+  wildtypes %>%
+    dplyr::select(Longitude, Latitude, year, Tested, Site.Name, Country),
+  mutants %>%
+    dplyr::select(Longitude, Latitude, year, Tested, Site.Name, Country)) %>%
+  mutate(Present = 0) %>%
+  suppressMessages()
+
+message(paste("Number of rows of wildtypes to add:", nrow(wildtypes_to_add)))
+# 536 - 413 == 123 added rows
+
+with_wildtypes <- full_join(mutants, wildtypes_to_add) %>%
+  filter(Tested > MIN_SAMPLE_SIZE) %>%
+  suppressMessages()
 
 message(paste("Number of studies:", length(unique(moldm$Title))))
 

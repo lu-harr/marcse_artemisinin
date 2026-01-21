@@ -114,6 +114,15 @@ rmse <- function(mut_data){
          sum(!is.na(mut_data$pred)))
 }
 
+unadjusted_rsq <- function(dat){
+  tmp <- filter(dat, !is.na(pred))
+  ss_res <- sum((tmp$pred - tmp$present/tmp$tested) ** 2) 
+  ss_tot <- sum((tmp$present / tmp$tested - mean(tmp$present / tmp$tested)) ** 2)
+  1 - ss_res/ss_tot
+}
+
+# or using the built-in:
+# unadjusted_rsq <- function (x, y) cor(x, y) ^ 2
 
 nn_measure <- function(mut_data, draws_path){
   # from YSF: include nearest neighbour measure/ some other proximity measure
@@ -178,8 +187,7 @@ obs_prev_panel <- function(data_path,
   # message(paste0("Goodness of fit: ", 
   #                sum((mut_data$pred * mut_data$tested - mut_data$present)**2 / 
   #                         (mut_data$pred*mut_data$tested))))
-  # message(paste0("R sq:", 1 - sum((mut_data$pred - mut_data$present/mut_data$tested) ** 2) / 
-  #                  sum((mut_data$present / mut_data$tested) ** 2)))
+  message(paste0("R sq:", rsq))
   message(paste0("Mean error: ", mean(mut_data$pred - mut_data$present/mut_data$tested)))
   message(paste0("Mean abs error: ", mean(abs(mut_data$pred - mut_data$present/mut_data$tested))))
   message(paste0("RMSE: ", rmse(mut_data)))

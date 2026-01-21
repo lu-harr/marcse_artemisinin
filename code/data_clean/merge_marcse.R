@@ -1,6 +1,8 @@
 # merge IDDO Surveyor data in data/raw/ with MARCSE data in ../MARC_SEA_dashboard
 # cloned from github: https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard.git
 
+marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
+
 # at this point, ya need to run the top of data_clean_k13.R
 # ... I could put everything in the same place or put the functions somewhere on
 # they're own but I'm going to keep things separate for now
@@ -46,7 +48,7 @@ library(readxl)
 #   left_join(marker_reference, by = join_by(Marker == marker)) %>%
 #   suppressMessages()
 
-marcse_tmp <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xlsx") %>%
+marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xlsx") %>%
   mutate_at(c("Present", "Tested"), as.numeric) %>%
   dplyr::select(-c("...19": "...22")) %>%
   rename(Notes = `...18`,
@@ -74,19 +76,41 @@ marcse_tmp <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026
          Present = ifelse(is.na(Present),
                           Tested * Prevalence,
                           Present)) %>%
+  # something has corrupted PubMedID field ........... 
+  mutate(PubMedID = case_when(
+    Title == "A Novel Plasmodium falciparum Kelch13 A675T Mutation and High Levels of Chloroquine and Sulfadoxine-Pyrimethamine Resistance in Burundi" ~ "12262749",
+    Title == "Antimalarial drug resistance and population structure of Plasmodium falciparum in Mozambique using genomic surveillance at health facilities (2021-2022)" ~ "12340125",
+    Title == "Artemisinin Partial Resistance Mutations in Zanzibar and Tanzania Suggest Regional Spread and African Origins. 2023" ~ "40802860",
+    Title == "Changes in susceptibility of Plasmodium falciparum to antimalarial drugs in Uganda over time: 2019-2024." ~ "12335539",
+    Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern. Northeastern and Eastern Uganda" ~ "12164153",
+    Title == "Detection of Twenty-Four Plasmodium Falciparum Kelch 13 Mutations Including C469Y. P553L. R561H. and A675V Across Kenya" ~ "10.2139/ssrn.5020665", # doi will have to do
+    Title == "Efficacies of artemether-lumefantrine. artesunate-amodiaquine. dihydroartemisinin-piperaquine. and artesunate-pyronaridine for the treatment of uncomplicated Plasmodium falciparum malaria in children aged 6 months to 10 years in Uganda: a randomised. open-label. phase 4 clinical trial." ~ "40845863",
+    Title == "Efficacy and Safety of Artemether-Lumefantrine Against Uncomplicated Falciparum Malaria Infection in Tanzania. 2022: A Single-Arm Clinical Trial." ~ "39186698",
+    Title == "Efficacy and Safety of Artesunate–Amodiaquine and Artemether–Lumefantrine for the Treatment of Uncomplicated Plasmodium falciparum Malaria in Madagascar. 2020" ~ "41187342",
+    Title == "Efficacy of artesunate-amodiaquine and artemether-lumefantrine for uncomplicated Plasmodium falciparum malaria in Madagascar. 2022" ~ "36376921",
+    Title == "Genomic Surveillance Reveals Clusters of Plasmodium falciparum Antimalarial Resistance Markers in Eswatini. a Low-Transmission Setting" ~ "10.1101/2025.07.30.25332463",
+    Title == "Global assessment of partial artemisinin resistance: multicenter trial across Kenya. Peru. and Thailand in patients with uncomplicated Plasmodium falciparum malaria." ~ "40614930",
+    Title == "High Prevalence of Molecular Markers Associated with Artemisinin. Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "40744004",
+    Title == "KEMRI Report: TES report for Malawi July 2025" ~ "Unpublished",
+    Title == "MIM Conference. Kawela M et al Preliminary Regional Results from GenE8" ~ "Unpublished",
+    Title == "Malaria prevalence. transmission potential and efficacy of artemisinin-based combination therapy in the Kenyan Central highlands: a zone previously characterized as malaria-free." ~ "39800719",
+    Title == "Pharmacometric evaluation of amodiaquine-sulfadoxine-pyrimethamine and dihydroartemisinin-piperaquine seasonal malaria chemoprevention in northern Uganda" ~ "41231725",
+    Title == "Plasmodium falciparum Kelch-13 artemisinin partial resistance markers in Fort Portal. Western Uganda. 2024" ~ "40265952",
+    Title == "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia" ~ "40744006",
+    Title == "Prevalence of Plasmodium species in asymptomatic individuals in North-Eastern South Africa: 2018 - 2019." ~ "41378557",
+    Title == "Prevalence of resistance markers of artemisinin. partner drugs. and sulfadoxine-pyrimethamine in Nanyumbu and Masasi Districts. Tanzania between 2020 and 2021." ~ "40938322",
+    Title == "SAMEC SCAT Feb 2025" ~ "Unpublished",
+    Title == "The E8-led Regional Malaria Molecular Surveillance Initiative: Successes. Challenges. and Opportunities" ~ "Unpublished",
+    Title == "Very low prevalence of validated kelch13 mutations and absence of hrp2/3 double gene deletions in South African malaria-eliminating districts (2022-2024)." ~ "11998825",
+    Title == "WHO Threats Map" ~ "WHO Threats Map",
+    Title == "2025" ~ "Unpublished",
+    TRUE ~ PubMedID)) %>%
   left_join(marker_reference, by = join_by(Marker == marker)) %>%
   suppressMessages()
 
 # head(marcse)
 # names(marcse)
 
-# unclear what to do with these:
-marcse_tmp %>% filter(is.na(Tested)) %>% as.data.frame()
-# can derive Present from Prevalence and Tested: (above - all are WTs)
-marcse_tmp %>% filter(is.na(Present)) %>% as.data.frame()
-
-# Bagamoyo Longitude: 38.900002? .. will need to reassign:
-marcse_tmp %>% filter(is.na(Longitude))
 # unique(marcse$PubMedID)
 # unique(marcse$Marker)
 # unique(marcse$Marker_Classification)
@@ -146,6 +170,12 @@ pmid_checks <- c(
   matrix(byrow = TRUE, ncol = 2) %>%
   as.data.frame() %>%
   setNames(c("from", "to"))
+
+marcse %>%
+  filter(str_length(PubMedID) != 8 & ! PubMedID %in% pmid_checks$from) %>%
+  dplyr::select(Title, PubMedID) %>%
+  unique() %>%
+  as.data.frame()
                  
 # filter(marcse, Title == "WHO Threats Map") %>%
 #   dplyr::select(PubMedID) %>% as.data.frame()
@@ -168,7 +198,7 @@ pmid_checks <- c(
 # find "unpublished" rows
 marcse %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>% 
-  filter(PubMedID == "Unpublished_MARCSE") %>% 
+  filter(PubMedID == "Unpublished") %>% 
   group_by(Title) %>% 
   summarise(n=n()) %>%
   as.data.frame()
@@ -180,17 +210,17 @@ marcse <- marcse %>%
                               Title == "NMCP. Victor Asua" ~ "Unpublished",
                               Title == "https://www.nicd.ac.za/wp-content/uploads/2022/08/310822-NICD-Monthly-Communique-Aug-NW5.pdf" ~ "Unpublished", # difficult to know if this ended up elsewhere
                               Title == "WHO Threats Map" ~ "WHO Threats Map",
-                              Title == "Efficacy of artesunate-amodiaquine and artemether-lumefantrine for uncomplicated Plasmodium falciparum malaria in Madagascar. 2022" ~ "Unpublished", # see 34732201
-                              Title == "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia" ~ "40744006", # preprint: https://doi.org/10.1101/2025.02.19.25322554; AJTMH "ahead of print"?
-                              Title == "Detection of Twenty-Four Plasmodium Falciparum Kelch 13 Mutations Including C469Y. P553L. R561H. and A675V Across Kenya" ~ "Unpublished", # preprint: https://dx.doi.org/10.2139/ssrn.5020665
+                              # Title == "Efficacy of artesunate-amodiaquine and artemether-lumefantrine for uncomplicated Plasmodium falciparum malaria in Madagascar. 2022" ~ "Unpublished", # see 34732201
+                              # Title == "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia" ~ "40744006", # preprint: https://doi.org/10.1101/2025.02.19.25322554; AJTMH "ahead of print"?
+                              # Title == "Detection of Twenty-Four Plasmodium Falciparum Kelch 13 Mutations Including C469Y. P553L. R561H. and A675V Across Kenya" ~ "Unpublished", # preprint: https://dx.doi.org/10.2139/ssrn.5020665
                               Title == "High Prevalence of Molecular Markers Associated with Artemisinin. Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "Already in moldm", # preprint: https://doi.org/10.1101/2025.01.09.25320247
                               Title == "Antimalarial drug resistance and population structure of Plasmodium falciparum in Mozambique using genomic surveillance at health facilities (2021-2022)" ~ "40790052", # now published
                               Title == "Malaria update: Increase in frequency of Kelch 13 mutations found" ~ "Unpublished", # https://www.nicd.ac.za/wp-content/uploads/2022/08/Malaria-update.pdf
                               Title == "The E8-led Regional Malaria Molecular Surveillance Initiative: Successes. Challenges. and Opportunities" ~ "Unpublished", # appears to be a presentation given by Dr Jaishree Raman https://www.marcse-africa.org/news/blog/uniting-against-malaria-9th-southern-africa-research-conference
-                              Title == "Genomic Surveillance Reveals Clusters of Plasmodium falciparum Antimalarial Resistance Markers in Eswatini, a Low-Transmission Setting" ~ "Unpublished", # preprint - doi doesn't seem to be in moldm https://doi.org/10.1101/2025.07.30.25332463
-                              Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern, Northeastern and Eastern Uganda" ~ "40514714", # published
+                              # Title == "Genomic Surveillance Reveals Clusters of Plasmodium falciparum Antimalarial Resistance Markers in Eswatini, a Low-Transmission Setting" ~ "Unpublished", # preprint - doi doesn't seem to be in moldm https://doi.org/10.1101/2025.07.30.25332463
+                              # Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern, Northeastern and Eastern Uganda" ~ "40514714", # published
                               Title == "Plasmodium falciparum Kelch-13 artemisinin partial resistance markers in Fort Portal, Western Uganda, 2024" ~ "40265952", # published
-                              Title == "A Novel Plasmodium falciparum Kelch13 A675T Mutation and High Levels of Chloroquine and Sulfadoxine-Pyrimethamine Resistance in Burundi" ~ "40666336", # preprint
+                              # Title == "A Novel Plasmodium falciparum Kelch13 A675T Mutation and High Levels of Chloroquine and Sulfadoxine-Pyrimethamine Resistance in Burundi" ~ "40666336", # preprint
                               TRUE ~ PubMedID)) %>%
   mutate(PubMedID = case_when(!is.na(to) ~ to,
                               TRUE ~ PubMedID)) %>%
@@ -588,8 +618,6 @@ p2 <- ggdraw(p2) +
 
 plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 
-# would be sick if I could make the word "absence" bigger but I've had enough of 
-# snarky people on ggplot stack overflow for about three years
 ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
 
 

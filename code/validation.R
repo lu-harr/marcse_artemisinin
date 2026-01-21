@@ -47,7 +47,7 @@ mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
   setNames(names(nice_name_lookup))
 
 rmses <- lapply(mut_dat_assoc_with_preds, function(x){rmse(x)})
-
+rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
 
 
 # given predicted prevalence, take posterior samples at location of all observations
