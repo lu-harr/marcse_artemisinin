@@ -13,19 +13,23 @@ extract_preds <- function(data_path,
   mut_data$pred <- NA
   yrs_to_extract <- unique(mut_data$year)
   for (yr in yrs_to_extract){
-    #message(yr)
+
     if (yr %in% yrs_pred){
       idx <- which(mut_data$year == yr)
       val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                             mut_data[idx, c("x", "y")],
                             ID = FALSE, search_radius = buffer)
-      #message(paste(dim(val)))
-      if(ncol(val) < 3){
-        # we have to have an inconsistent return when |idx| == 1
-        mut_data[idx, "pred"] <- val[1,1]}
-      else{
+      # message(paste(dim(val), collapse = ","))
+      
+      # bug jumped out of nowhere: no longer getting data.frame of > 3 cols
+      # if(ncol(val) < 3){
+      #   # we have to have an inconsistent return when |idx| == 1
+      #   mut_data[idx, "pred"] <- val[1,1]}
+      # else{
+      # mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+      # }
+      
       mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
-      }
     #plot(mut_data$present[idx] / mut_data$tested[idx], mut_data$pred[idx], main = yr)
     }
   }
@@ -116,9 +120,11 @@ rmse <- function(mut_data){
 
 unadjusted_rsq <- function(dat){
   tmp <- filter(dat, !is.na(pred))
-  ss_res <- sum((tmp$pred - tmp$present/tmp$tested) ** 2) 
-  ss_tot <- sum((tmp$present / tmp$tested - mean(tmp$present / tmp$tested)) ** 2)
-  1 - ss_res/ss_tot
+  preds <- tmp$pred
+  actual <- tmp$present/tmp$tested
+  rss <- sum((preds - actual) ^ 2)
+  tss <- sum((actual - mean(actual)) ^ 2)
+  1 - rss/tss
 }
 
 # or using the built-in:
@@ -163,8 +169,7 @@ nn_measure <- function(mut_data, draws_path){
 
 
 
-obs_prev_panel <- function(data_path, 
-                           pred_path, 
+obs_prev_panel <- function(mut_dat, 
                            main = "", 
                            show_nas = FALSE, 
                            pal = colorRamp(iddo_palettes$BlGyRd),
@@ -173,42 +178,31 @@ obs_prev_panel <- function(data_path,
                            facet_bins = NULL, # apply facets over time?
                            ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
                            buffer = 1, # option to reland points?
-                           bb = NULL # bounding box for inset
-                           ){
+                           bb = NULL, # bounding box for inset
+                           as_row = FALSE){
   # observed vs predicted values: give me a three-panelled plot
   
-  mut_data <- extract_preds(data_path, pred_path, ave_tag, buffer)
+  mut_dat$cex <- scale_cex(mut_dat$tested, sqrt, max_cex = 5)
+  un_pred <- mut_dat[is.na(mut_dat$pred),]
+  mut_dat <- mut_dat[!is.na(mut_dat$pred),]
   
-  mut_data$cex <- scale_cex(mut_data$tested, sqrt, max_cex = 5)
-  un_pred <- mut_data[is.na(mut_data$pred),]
-  mut_data <- mut_data[!is.na(mut_data$pred),]
-  
-  message(paste0("Sites with preds: ", nrow(mut_data)))
-  # message(paste0("Goodness of fit: ", 
-  #                sum((mut_data$pred * mut_data$tested - mut_data$present)**2 / 
-  #                         (mut_data$pred*mut_data$tested))))
-  message(paste0("R sq:", rsq))
-  message(paste0("Mean error: ", mean(mut_data$pred - mut_data$present/mut_data$tested)))
-  message(paste0("Mean abs error: ", mean(abs(mut_data$pred - mut_data$present/mut_data$tested))))
-  message(paste0("RMSE: ", rmse(mut_data)))
-  
-  mut_data$diffs <- mut_data$present / mut_data$tested - mut_data$pred
-  mut_data <- arrange(mut_data, abs(diffs))
+  mut_dat$diffs <- mut_dat$present / mut_dat$tested - mut_dat$pred
+  mut_dat <- arrange(mut_dat, abs(diffs))
   
   # grey should end up where diffs == 0:
-  diffs_ext <- max(abs(mut_data$diffs), na.rm=TRUE)
-  mut_data$diffs_scaled = mut_data$diffs / 2 + 0.5
-  mut_data$diffs_scaled = mut_data$diffs / (diffs_ext * 2) + 0.5
+  diffs_ext <- max(abs(mut_dat$diffs), na.rm=TRUE)
+  mut_dat$diffs_scaled = mut_dat$diffs / 2 + 0.5
+  mut_dat$diffs_scaled = mut_dat$diffs / (diffs_ext * 2) + 0.5
   
   if (!is.null(facet_bins)){
-    mut_data$year_bin <- cut(mut_data$year, 
-                             c(min(mut_data$year) - 1, facet_bins, max(mut_data$year)))
+    mut_dat$year_bin <- cut(mut_dat$year, 
+                             c(min(mut_dat$year) - 1, facet_bins, max(mut_dat$year)))
   }
   
-  p1 <- ggplot(mut_data) +
+  p1 <- ggplot(mut_dat) +
     geom_point(mapping = aes(x = present / tested, y = pred), 
-               size = mut_data$cex,
-               col = rgb(pal(mut_data$diffs_scaled), maxColorValue = 255),
+               size = mut_dat$cex,
+               col = rgb(pal(mut_dat$diffs_scaled), maxColorValue = 255),
                shape = 1) +
     geom_abline(slope = 1, intercept = 0) +
     xlim(xlim) +
@@ -218,10 +212,10 @@ obs_prev_panel <- function(data_path,
     theme_bw() #+
   #theme(plot.margin = unit(c(0.2,0.2,2.1,0.2), "cm"))
   
-  p2 <- ggplot(mut_data) +
+  p2 <- ggplot(mut_dat) +
     geom_point(mapping = aes(x = year, y = present / tested - pred), 
-               size = mut_data$cex,
-               col = rgb(pal(mut_data$diffs_scaled), maxColorValue = 255),
+               size = mut_dat$cex,
+               col = rgb(pal(mut_dat$diffs_scaled), maxColorValue = 255),
                shape = 1) +
     geom_hline(yintercept = 0) +
     xlab("Year") +
@@ -230,16 +224,16 @@ obs_prev_panel <- function(data_path,
   
   # this is a bit hacky but I want to constrain the endpoints of my colour scale
   # so that they mean roughly the same between different markers
-  cols = seq(min(mut_data$diffs_scaled, na.rm=T), 
-             max(mut_data$diffs_scaled, na.rm=T), length.out = 100) %>%
+  cols = seq(min(mut_dat$diffs_scaled, na.rm=T), 
+             max(mut_dat$diffs_scaled, na.rm=T), length.out = 100) %>%
     pal() %>%
     rgb(maxColorValue = 255)
   
   p3 <- ggplot() +
     geom_sf(data = st_as_sf(afr), fill = "white") + # not showing anything in the background here ...
-    geom_point(data = mut_data, 
+    geom_point(data = mut_dat, 
                aes(x = x, y = y, col = diffs),
-               shape = 1, size = mut_data$cex) +
+               shape = 1, size = mut_dat$cex) +
     scale_color_gradientn(colours = cols, 
                           name = "Residuals\n(Observed - Predicted)") + 
     # this needs re-scaling (back to what it was..)
@@ -282,12 +276,15 @@ obs_prev_panel <- function(data_path,
     p3 <- p3 + facet_wrap(vars(.data$year_bin), ncol = 1) 
   }
   
-  plot_grid(p1, p2, ncol = 1) %>%
-    plot_grid(p3, rel_widths = c(0.4, 0.7))
+  if (!as_row){
+    plot_grid(p1, p2, ncol = 1) %>%
+      plot_grid(p3, rel_widths = c(0.4, 0.7))
+  } else {
+    plot_grid(p1, p2, p3 + theme(legend.position = "none"), nrow = 1) %>%
+      plot_grid(get_plot_component(p3, "guide-box", return_all = TRUE)[[3]], 
+                ncol = 1, rel_heights = c(1, 0.3))
+  }
 }
-
-
-
 
 
 

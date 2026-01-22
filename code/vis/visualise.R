@@ -855,64 +855,7 @@ ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 ##############################################################################
 # visualise coverages - relocating coverages.png to validation script
 
-# coverages_fig("output/k13_marcse/gneiting_sparse/")
-# coverages_fig("output/k13_marcse/bb_gne/")
-# coverages_fig("output/crt76/gneiting_sparse/")
-# coverages_fig("output/crt76/bb_gne/")
-# coverages_fig("output/mdr184/gneiting_sparse/")
-# coverages_fig("output/mdr184/bb_gne/")
-# coverages_fig("output/mdr86/gneiting_sparse/")
-# coverages_fig("output/mdr86/bb_gne/")
-# coverages_fig("output/mdr1246/gneiting_sparse/")
-# coverages_fig("output/mdr1246/bb_gne/")
-
-# here's what I put in the MS
-# p1 <- coverages_fig(list("output/k13_marcse/gneiting_sparse/", 
-#                          "output/k13_marcse/bb_gne/"))
-# p2 <- coverages_fig(list("output/mdr184/gneiting_sparse/", 
-#                          "output/mdr184/bb_gne/"))
-
-# p <- plot_grid(p1 + theme(legend.position = "none"), 
-#                p2 + theme(legend.position = "none"), nrow = 2, 
-#                labels = "auto", label_x = 0.1, label_y = 0.97)
-# plot_grid(p, get_legend(p1), rel_widths = c(1, 0.25))
-
-# mut_data <- read_rds("output/k13_marcse/gneiting_sparse/mut_data.rds")
-# lower <- rast("output/k13_marcse/gneiting_sparse/preds_lower.tif")
-# upper <- rast("output/k13_marcse/gneiting_sparse/preds_upper.tif")
-
-# lower_upper_panel_crints("output/k13_marcse/gneiting_sparse/")
-# lower_upper_panel_crints("output/k13_marcse/bb_gne/")
-# lower_upper_panel_crints("output/mdr86/gneiting_sparse/")
-# lower_upper_panel_crints("output/mdr86/bb_gne/")
-# # not 100% sure what's going on with crt ... may need refitting ..
-# lower_upper_panel_crints("output/crt76/gneiting_sparse/")
-# lower_upper_panel_crints("output/crt76/bb_gne/")
-# lower_upper_panel_crints("output/mdr1246/gneiting_sparse/")
-# lower_upper_panel_crints("output/mdr1246/bb_gne/")
-# lower_upper_panel_crints("output/mdr184/gneiting_sparse/")
-# lower_upper_panel_crints("output/mdr184/bb_gne/")
-
-
-# p1 <- lower_upper_panel_crints("output/k13_marcse/gneiting_sparse/")
-# p2 <- lower_upper_panel_crints("output/k13_marcse/bb_gne/")
-# p3 <- lower_upper_panel_crints("output/mdr184/gneiting_sparse/")
-# p4 <- lower_upper_panel_crints("output/mdr184/bb_gne/")
-# 
-# legs <- get_legend(p1)
-# # get_plot_component(p1, "guide-box", return_all = TRUE)
-# 
-# p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()), 
-#           p2 + theme(legend.position = "none", axis.title = element_blank()), 
-#           p3 + theme(legend.position = "none", axis.title = element_blank()), 
-#           p4 + theme(legend.position = "none", axis.title = element_blank()),
-#           nrow = 4, align = "v", labels = "auto", label_y = 0.95, label_x = 0.05)
-# plot_grid(p, legs, nrow = 1, rel_widths = c(1, 0.1))
-# ggsave("figures/crints.png", scale = 1, height = 7, width = 9)
-# check this again with zeroes removed
-# and have a look at upper and lower bound surfaces?
-
-# here's bb_gne all models
+# here's bb_gne all models crints
 
 p1 <- lower_upper_panel_crints("output/k13_marcse/bb_gne/")
 p2 <- lower_upper_panel_crints("output/crt76/bb_gne/")
@@ -933,6 +876,8 @@ p <- plot_grid(p1 + theme(legend.position = "none", axis.title = element_blank()
                label_y = 0.95, label_x = 0.07, hjust = 0) %>%
   plot_grid(legs, nrow = 1, rel_widths = c(1, 0.2)) +
   theme(plot.margin = margin(t = 0, r = 0, b = 20, l = 25))
+
+legs <- get_legend(p1)
 
 ggdraw(p) +
   draw_label(

@@ -687,156 +687,156 @@ ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13.png", height = 6, width 
 
 
 ################################################################################
-
-afr_with_centroids <- afr %>%
-  st_centroid() %>%
-  st_coordinates() %>%
-  bind_cols(afr) %>%
-  mutate(region = case_when(Y < -10 ~ "south",
-                            X > 22 & Y > -10 & Y < 22 ~ "east",
-                            X < 22 & Y > -10 & Y < 22 ~ "west")) %>%
-  st_as_sf()
-
-safr <- afr_with_centroids %>%
-  filter(Y < -10) %>%
-  st_as_sf()
-
-eafr <- afr_with_centroids %>%
-  filter(X > 22 & Y > -10 & Y < 22) %>%
-  st_as_sf()
-
-wafr <- afr_with_centroids %>%
-  filter(X < 22 & Y > -10 & Y < 22) %>%
-  st_as_sf()
-
-dat_tagged <- markers_disagg %>%
-  st_as_sf(coords = c("Longitude", "Latitude"), crs = st_crs(afr))
-
-dat_tagged <- dat_tagged %>%
-  mutate(eafr = st_intersects(., eafr) %>% lengths(),
-         wafr = st_intersects(., wafr) %>% lengths(),
-         safr = st_intersects(., safr) %>% lengths(),
-         region = case_when(eafr == 1 ~ "east",
-                            wafr == 1 ~ "west",
-                            safr == 1 ~ "south",
-                            TRUE ~ NA)) %>%
-  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2015, 2018, 2021, 2024)))
-
-p <- ggplot() + 
-  geom_sf(data = afr_with_centroids, fill = "white") + 
-  geom_sf(data = filter(dat_tagged, Present == 0),
-          mapping = aes(size = Tested, col = "grey50"),
-          fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
-  geom_sf(data = dat_tagged %>% 
-            filter(Present > 0) %>%
-            arrange(Present / Tested), 
-          mapping = aes(size = Tested, fill = Present / Tested),
-          col = "grey50", pch=21, stroke = 0.2) +
-  scale_color_manual(name = "", values = c("grey30"), 
-                     labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", 
-                       trans = "sqrt",
-                       limits = c(min(dat_tagged$Present / dat_tagged$Tested),
-                                  max(dat_tagged$Present / dat_tagged$Tested))) +
-  scale_size_continuous(name = "Sample size", 
-                        range = c(0.2, 5), 
-                        trans = "sqrt") +
-  # allows labelling of rows and columns:
-  facet_grid(region ~ year_bin, scales = "free") +
-  #labs(title = "(b) Prevalence of k13 markers in Africa") +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  scale_x_continuous(breaks = seq(-20, 40, 20)) +
-  scale_y_continuous(breaks = seq(-20, 40, 20)) +
-  theme(plot.background = element_rect(fill='transparent', color=NA),
-        strip.text = element_blank())
-
-p
-
-p_safr <- ggplot() + 
-  geom_sf(data = safr, fill = "white") + 
-  geom_sf(data = filter(dat_tagged, Present == 0 & safr == 1),
-             mapping = aes(size = Tested, col = "grey50"),
-             fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
-  geom_sf(data = dat_tagged %>% 
-               filter(Present > 0 & safr == 1) %>%
-               arrange(Present / Tested), 
-             mapping = aes(size = Tested, fill = Present / Tested),
-             col = "grey50", pch=21, stroke = 0.2) +
-  scale_color_manual(name = "", values = c("grey30"), 
-                     labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", 
-                       trans = "sqrt",
-                       limits = c(min(dat_tagged$Present / dat_tagged$Tested),
-                                  max(dat_tagged$Present / dat_tagged$Tested))) +
-  scale_size_continuous(name = "Sample size", 
-                        range = c(0.2, 5), 
-                        trans = "sqrt") +
-  # allows labelling of rows and columns:
-  #facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
-  #facet_wrap(~ year_bin + Marker, drop=FALSE) +
-  facet_wrap(~year_bin, ncol = 1) +
-  #labs(title = "(b) Prevalence of k13 markers in Africa") +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  scale_x_continuous(breaks = seq(-20, 40, 20)) +
-  scale_y_continuous(breaks = seq(-20, 40, 20)) +
-  theme(plot.background = element_rect(fill='transparent', color=NA),
-        strip.text = element_blank())
-
-p_wafr <- ggplot() + 
-  geom_sf(data = wafr, fill = "white") + 
-  geom_sf(data = filter(dat_tagged, Present == 0 & wafr == 1),
-          mapping = aes(size = Tested, col = "grey50"),
-          fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
-  geom_sf(data = dat_tagged %>% 
-            filter(Present > 0 & wafr == 1) %>%
-            arrange(Present / Tested), 
-          mapping = aes(size = Tested, fill = Present / Tested),
-          col = "grey50", pch=21, stroke = 0.2) +
-  scale_color_manual(name = "", values = c("grey30"), 
-                     labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", 
-                       trans = "sqrt", 
-                       limits = c(min(dat_tagged$Present / dat_tagged$Tested),
-                                max(dat_tagged$Present / dat_tagged$Tested))) +
-  scale_size_continuous(name = "Sample size", 
-                        range = c(0.2, 5), 
-                        trans = "sqrt") +
-  facet_wrap(~year_bin, ncol = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  scale_x_continuous(breaks = seq(-20, 40, 20)) +
-  scale_y_continuous(breaks = seq(-20, 40, 20)) +
-  theme(plot.background = element_rect(fill='transparent', color=NA),
-        strip.text = element_blank())
-
-p_eafr <- ggplot() + 
-  geom_sf(data = eafr, fill = "white") + 
-  geom_sf(data = filter(dat_tagged, Present == 0 & eafr == 1),
-          mapping = aes(size = Tested, col = "grey50"),
-          fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
-  geom_sf(data = dat_tagged %>% 
-            filter(Present > 0 & eafr == 1) %>%
-            arrange(Present / Tested), 
-          mapping = aes(size = Tested, fill = Present / Tested),
-          col = "grey50", pch=21, stroke = 0.2) +
-  scale_color_manual(name = "", values = c("grey30"), 
-                     labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", 
-                       trans = "sqrt", 
-                       limits = c(min(dat_tagged$Present / dat_tagged$Tested),
-                                  max(dat_tagged$Present / dat_tagged$Tested))) +
-  scale_size_continuous(name = "Sample size", 
-                        range = c(0.2, 5), 
-                        trans = "sqrt") +
-  facet_wrap(~year_bin, ncol = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  scale_x_continuous(breaks = seq(-20, 40, 20)) +
-  scale_y_continuous(breaks = seq(-20, 40, 20)) +
-  theme(plot.background = element_rect(fill='transparent', color=NA),
-        strip.text = element_blank())
-p_eafr
-
-plot_grid(p_wafr, p_eafr, p_safr, nrow = 1)
+# 
+# afr_with_centroids <- afr %>%
+#   st_centroid() %>%
+#   st_coordinates() %>%
+#   bind_cols(afr) %>%
+#   mutate(region = case_when(Y < -10 ~ "south",
+#                             X > 22 & Y > -10 & Y < 22 ~ "east",
+#                             X < 22 & Y > -10 & Y < 22 ~ "west")) %>%
+#   st_as_sf()
+# 
+# safr <- afr_with_centroids %>%
+#   filter(Y < -10) %>%
+#   st_as_sf()
+# 
+# eafr <- afr_with_centroids %>%
+#   filter(X > 22 & Y > -10 & Y < 22) %>%
+#   st_as_sf()
+# 
+# wafr <- afr_with_centroids %>%
+#   filter(X < 22 & Y > -10 & Y < 22) %>%
+#   st_as_sf()
+# 
+# dat_tagged <- markers_disagg %>%
+#   st_as_sf(coords = c("Longitude", "Latitude"), crs = st_crs(afr))
+# 
+# dat_tagged <- dat_tagged %>%
+#   mutate(eafr = st_intersects(., eafr) %>% lengths(),
+#          wafr = st_intersects(., wafr) %>% lengths(),
+#          safr = st_intersects(., safr) %>% lengths(),
+#          region = case_when(eafr == 1 ~ "east",
+#                             wafr == 1 ~ "west",
+#                             safr == 1 ~ "south",
+#                             TRUE ~ NA)) %>%
+#   mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2015, 2018, 2021, 2024)))
+# 
+# p <- ggplot() + 
+#   geom_sf(data = afr_with_centroids, fill = "white") + 
+#   geom_sf(data = filter(dat_tagged, Present == 0),
+#           mapping = aes(size = Tested, col = "grey50"),
+#           fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
+#   geom_sf(data = dat_tagged %>% 
+#             filter(Present > 0) %>%
+#             arrange(Present / Tested), 
+#           mapping = aes(size = Tested, fill = Present / Tested),
+#           col = "grey50", pch=21, stroke = 0.2) +
+#   scale_color_manual(name = "", values = c("grey30"), 
+#                      labels=c("Absence"), guide = "none") +
+#   scale_fill_viridis_c(name = "Prevalence", 
+#                        trans = "sqrt",
+#                        limits = c(min(dat_tagged$Present / dat_tagged$Tested),
+#                                   max(dat_tagged$Present / dat_tagged$Tested))) +
+#   scale_size_continuous(name = "Sample size", 
+#                         range = c(0.2, 5), 
+#                         trans = "sqrt") +
+#   # allows labelling of rows and columns:
+#   facet_grid(region ~ year_bin, scales = "free") +
+#   #labs(title = "(b) Prevalence of k13 markers in Africa") +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   scale_x_continuous(breaks = seq(-20, 40, 20)) +
+#   scale_y_continuous(breaks = seq(-20, 40, 20)) +
+#   theme(plot.background = element_rect(fill='transparent', color=NA),
+#         strip.text = element_blank())
+# 
+# p
+# 
+# p_safr <- ggplot() + 
+#   geom_sf(data = safr, fill = "white") + 
+#   geom_sf(data = filter(dat_tagged, Present == 0 & safr == 1),
+#              mapping = aes(size = Tested, col = "grey50"),
+#              fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
+#   geom_sf(data = dat_tagged %>% 
+#                filter(Present > 0 & safr == 1) %>%
+#                arrange(Present / Tested), 
+#              mapping = aes(size = Tested, fill = Present / Tested),
+#              col = "grey50", pch=21, stroke = 0.2) +
+#   scale_color_manual(name = "", values = c("grey30"), 
+#                      labels=c("Absence"), guide = "none") +
+#   scale_fill_viridis_c(name = "Prevalence", 
+#                        trans = "sqrt",
+#                        limits = c(min(dat_tagged$Present / dat_tagged$Tested),
+#                                   max(dat_tagged$Present / dat_tagged$Tested))) +
+#   scale_size_continuous(name = "Sample size", 
+#                         range = c(0.2, 5), 
+#                         trans = "sqrt") +
+#   # allows labelling of rows and columns:
+#   #facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
+#   #facet_wrap(~ year_bin + Marker, drop=FALSE) +
+#   facet_wrap(~year_bin, ncol = 1) +
+#   #labs(title = "(b) Prevalence of k13 markers in Africa") +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   scale_x_continuous(breaks = seq(-20, 40, 20)) +
+#   scale_y_continuous(breaks = seq(-20, 40, 20)) +
+#   theme(plot.background = element_rect(fill='transparent', color=NA),
+#         strip.text = element_blank())
+# 
+# p_wafr <- ggplot() + 
+#   geom_sf(data = wafr, fill = "white") + 
+#   geom_sf(data = filter(dat_tagged, Present == 0 & wafr == 1),
+#           mapping = aes(size = Tested, col = "grey50"),
+#           fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
+#   geom_sf(data = dat_tagged %>% 
+#             filter(Present > 0 & wafr == 1) %>%
+#             arrange(Present / Tested), 
+#           mapping = aes(size = Tested, fill = Present / Tested),
+#           col = "grey50", pch=21, stroke = 0.2) +
+#   scale_color_manual(name = "", values = c("grey30"), 
+#                      labels=c("Absence"), guide = "none") +
+#   scale_fill_viridis_c(name = "Prevalence", 
+#                        trans = "sqrt", 
+#                        limits = c(min(dat_tagged$Present / dat_tagged$Tested),
+#                                 max(dat_tagged$Present / dat_tagged$Tested))) +
+#   scale_size_continuous(name = "Sample size", 
+#                         range = c(0.2, 5), 
+#                         trans = "sqrt") +
+#   facet_wrap(~year_bin, ncol = 1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   scale_x_continuous(breaks = seq(-20, 40, 20)) +
+#   scale_y_continuous(breaks = seq(-20, 40, 20)) +
+#   theme(plot.background = element_rect(fill='transparent', color=NA),
+#         strip.text = element_blank())
+# 
+# p_eafr <- ggplot() + 
+#   geom_sf(data = eafr, fill = "white") + 
+#   geom_sf(data = filter(dat_tagged, Present == 0 & eafr == 1),
+#           mapping = aes(size = Tested, col = "grey50"),
+#           fill = "grey70",  pch = 21, alpha = 0.2, stroke = 0.2) +
+#   geom_sf(data = dat_tagged %>% 
+#             filter(Present > 0 & eafr == 1) %>%
+#             arrange(Present / Tested), 
+#           mapping = aes(size = Tested, fill = Present / Tested),
+#           col = "grey50", pch=21, stroke = 0.2) +
+#   scale_color_manual(name = "", values = c("grey30"), 
+#                      labels=c("Absence"), guide = "none") +
+#   scale_fill_viridis_c(name = "Prevalence", 
+#                        trans = "sqrt", 
+#                        limits = c(min(dat_tagged$Present / dat_tagged$Tested),
+#                                   max(dat_tagged$Present / dat_tagged$Tested))) +
+#   scale_size_continuous(name = "Sample size", 
+#                         range = c(0.2, 5), 
+#                         trans = "sqrt") +
+#   facet_wrap(~year_bin, ncol = 1) +
+#   xlab("Longitude") +
+#   ylab("Latitude") +
+#   scale_x_continuous(breaks = seq(-20, 40, 20)) +
+#   scale_y_continuous(breaks = seq(-20, 40, 20)) +
+#   theme(plot.background = element_rect(fill='transparent', color=NA),
+#         strip.text = element_blank())
+# p_eafr
+# 
+# plot_grid(p_wafr, p_eafr, p_safr, nrow = 1)

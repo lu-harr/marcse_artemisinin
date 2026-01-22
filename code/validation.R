@@ -41,14 +41,48 @@ mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   setNames(names(nice_name_lookup)) %>%
   suppressMessages()
 
-mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
-  read.csv(paste0(bb_paths[[marker]], "mut_dat_cv_preds_extracted.csv"))
-}) %>%
-  setNames(names(nice_name_lookup))
+# plot(mut_dat_assoc_with_preds$k13_marcse$present / mut_dat_assoc_with_preds$k13_marcse$tested, 
+#      mut_dat_assoc_with_preds$k13_marcse$pred)
+
+# still working on this:
+# mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
+#   read.csv(paste0(bb_paths[[marker]], "mut_dat_cv_preds_extracted.csv"))
+# }) %>%
+#   setNames(names(nice_name_lookup))
 
 rmses <- lapply(mut_dat_assoc_with_preds, function(x){rmse(x)})
 rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
+# using the built-in cor function gives similar but not equal results:
+# rsq <- lapply(mut_dat_assoc_with_preds, function(x){
+#   tmp <- filter(x, !is.na(pred))
+#   unadjusted_rsq(tmp$pred, tmp$present/tmp$tested)
+# })
 
+abcde = c("a", "b", "c", "d", "e")
+tmp = lapply(mut_dat_assoc_with_preds, obs_prev_panel, as_row = TRUE)
+p <- plot_grid(tmp$k13_marcse,
+               tmp$crt76,
+               tmp$mdr86,
+               tmp$mdr184,
+               tmp$mdr1246, 
+               ncol = 1) +
+  theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
+               # this ain't working for me today:
+               # labels = paste0("(", abcde, ") ", nice_name_lookup),
+               # label_x = -0.07, label_y = 1.07)
+ggsave("~/Desktop/test.png", 
+       p + geom_text(aes(x = 0, 
+                         y = rev(seq(0.21, 1.01, length.out = 5)), 
+                         label = paste0("(", abcde, ") ", nice_name_lookup)),
+                     hjust = 0), 
+       height = 11, scale = 1.5, width = 6)
+
+library(xtable)
+dat <- data.frame(mod = unlist(nice_name_lookup[names(rmses)]),
+                  rmse = unlist(rmses),
+                  rsq = unlist(rsq))
+colnames(dat) <- c("", "RMSE", "$r^2$")
+print(xtable(dat), sanitize.text.function=function(x){x}, include.rownames = FALSE)
 
 # given predicted prevalence, take posterior samples at location of all observations
 # and compare quantiles of samples to observed number of cases with marker
@@ -142,10 +176,6 @@ plot_grid(
 ggsave("figures/coverages.png", width = 7, height = 7)
 
 
-
-
-
-
 # mut_data <- mut_data %>%
 #   mutate(nn = nn_measure(mut_data, 
 #                          draws_path),
@@ -172,15 +202,6 @@ obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
                "output/k13_marcse/bb_gne/preds_medians.tif",
                xlim = c(0, 0.6), ylim = c(0, 0.6),
                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# tmp = extract_preds("data/clean/moldm_marcse_k13_nomarker.csv",
-#               "output/k13_marcse/bb_gne/preds_medians.tif", ave_tag = "_50", 
-#               buffer = 100000)
-
-# obs_prev_panel_nn("data/clean/moldm_marcse_k13_nomarker.csv",
-#                   "output/k13_marcse/gneiting_sparse/preds_medians.tif",
-#                   "output/k13_marcse/gneiting_sparse/",
-#                   xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                   buffer = 100000)
 
 tmp <- lapply(names(data_path_lookup), function(marker){
   message(marker)
