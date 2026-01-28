@@ -60,22 +60,81 @@ rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
 
 abcde = c("a", "b", "c", "d", "e")
 tmp = lapply(mut_dat_assoc_with_preds, obs_prev_panel, as_row = TRUE)
+# p <- plot_grid(tmp$k13_marcse,
+#                tmp$crt76,
+#                tmp$mdr86,
+#                tmp$mdr184,
+#                tmp$mdr1246, 
+#                ncol = 1) +
+#   theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
+#                # this ain't working for me today:
+#                # labels = paste0("(", abcde, ") ", nice_name_lookup),
+#                # label_x = -0.07, label_y = 1.07)
+# ggsave("figures/obs_prev_all.png", 
+#        p + geom_text(aes(x = 0, 
+#                          y = rev(seq(0.21, 1.01, length.out = 5)), 
+#                          label = paste0("(", abcde, ") ", nice_name_lookup)),
+#                      hjust = 0), 
+#        height = 11, scale = 1.5, width = 6)
+
+# splitting the above in two:
 p <- plot_grid(tmp$k13_marcse,
-               tmp$crt76,
-               tmp$mdr86,
+               tmp$crt76, 
+               ncol = 1) +
+  theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
+ggsave("figures/obs_prev_a.png", 
+       p + geom_text(aes(x = 0, 
+                         y = rev(seq(0.51, 1.01, length.out = 2)), 
+                         label = paste0("(", abcde[1:2], ") ", nice_name_lookup[1:2])),
+                     hjust = 0), 
+       height = 5.2, scale = 1.5, width = 6)
+
+p <- plot_grid(tmp$mdr86,
                tmp$mdr184,
                tmp$mdr1246, 
                ncol = 1) +
   theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
-               # this ain't working for me today:
-               # labels = paste0("(", abcde, ") ", nice_name_lookup),
-               # label_x = -0.07, label_y = 1.07)
-ggsave("~/Desktop/test.png", 
+ggsave("figures/obs_prev_b.png", 
        p + geom_text(aes(x = 0, 
-                         y = rev(seq(0.21, 1.01, length.out = 5)), 
-                         label = paste0("(", abcde, ") ", nice_name_lookup)),
+                         y = rev(seq(0.34, 1.01, length.out = 3)), 
+                         label = paste0("(", abcde[3:5], ") ", nice_name_lookup[3:5])),
                      hjust = 0), 
-       height = 11, scale = 1.5, width = 6)
+       height = 7.5, scale = 1.5, width = 6)
+
+tmp$mdr1246
+tmp2 <- mut_dat_assoc_with_ <- $mdr1246 %>%
+  mutate(diff = present/tested - pred) %>%
+  # filter(diff > 0.5)
+  filter(y > -5 & y < 5 & x > 28 & y < 37)
+
+# it looks as though we have lots of points on top of each other .......
+ggplot() +
+  geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
+  geom_jitter(aes(x = x, y = y, size = tested, col = diff),
+              height = 0.1,
+              width = 0.1,
+              alpha = 0.5,
+             tmp2 %>%
+               mutate(year_bin = cut(year, c(1999, 2010, 2019, 2020, 2025))) %>%
+               arrange(diff) %>%
+               mutate(abs_diff = abs(diff))) +
+  facet_wrap(~year_bin) +
+  scale_color_viridis_c(option = "H")
+
+
+ggplot() +
+  geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
+  geom_jitter(aes(x = x, y = y, size = tested, col = abs_diff),
+              height = 0.1,
+              width = 0.1,
+              alpha = 0.5,
+              tmp2 %>%
+                mutate(year_bin = cut(year, c(1999, 2010, 2015, 2020, 2025))) %>%
+                arrange(diff) %>%
+                mutate(abs_diff = abs(diff))) +
+  facet_wrap(~year_bin) +
+  scale_color_viridis_c()
+
 
 library(xtable)
 dat <- data.frame(mod = unlist(nice_name_lookup[names(rmses)]),

@@ -1,14 +1,14 @@
 # cook a stable transmission mask ... 
-# subject to change but would like to be smoothish
-# (get feedback from Jen/Philippe/Karen before publication obvs)
+
 source("code/setup.R")
 library(sf)
 
 ras <- covariates$pfpr_2022 #%>%
   #aggregate(AGG_FACTOR)
 
-wt <- focalMat(ras, 0.5, type = "Gauss")
-ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
+# was initially applying some blurring to get a smoother surface:
+# wt <- focalMat(ras, 0.5, type = "Gauss")
+# ras_blur <- focal(ras - minmax(ras)[1], wt, na.rm=TRUE)
 
 # ras_mask <- ras
 # ras_mask[ras_mask < 0.01] <- NA
@@ -36,16 +36,16 @@ library(rnaturalearthdata)
 world <- ne_countries(scale="medium", returnclass = "sf")
 
 # country shps for plotting/masking
-afr <- world %>%
+ssafr <- world %>%
   filter(continent == "Africa") %>%
   filter(!name %in% c("Algeria", "Libya", "Egypt", "Tunisia", "Morocco")) %>%
   vect() %>%
   crop(ext(-21, 63, -35, 37))
 
 ras_mask <- mask(ras_mask,
-                 afr)
+                 ssafr)
 plot(ras_mask)
-plot(st_geometry(st_as_sf(afr)), add=TRUE)
+plot(st_geometry(st_as_sf(ssafr)), add=TRUE)
 
 writeRaster(ras_mask,
             "data/stable_transmission_mask.grd",

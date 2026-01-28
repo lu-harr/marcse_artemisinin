@@ -86,7 +86,7 @@ raw_moldm <- function(path){
   
   message(paste0("Or more conservatively: ", 
                  out %>%
-                   group_by(Longitude, Latitude, year, Title) %>% 
+                   group_by(Longitude, Latitude, year, PubMedID) %>% 
                    summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
                    ungroup() %>%
                    dplyr::select(Tested) %>%

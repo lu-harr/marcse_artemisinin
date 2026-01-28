@@ -1,6 +1,9 @@
 # merge IDDO Surveyor data in data/raw/ with MARCSE data in ../MARC_SEA_dashboard
 # cloned from github: https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard.git
 
+## TODO
+# double check presences == 0
+
 marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
 
 # at this point, ya need to run the top of data_clean_k13.R
@@ -9,6 +12,23 @@ marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
 moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
   mutate(Marker = strip_marker)
 # head(moldm)
+
+moldm %>%
+  group_by(Longitude, Latitude, year, PubMedID) %>%
+  summarise(Tested = max(Tested)) %>%
+  ungroup() %>%
+  dplyr::select(Tested) %>%
+  sum()
+
+# looks like studies are in there twice?
+moldm %>%
+  group_by(Longitude, Latitude, year, status, Marker, PubMedID) %>%
+  summarise(Present = max(Present), n = n()) %>%
+  ungroup() %>%
+  mutate(status = ifelse(Marker == "wildtype", "wildtype", status)) %>%
+  group_by(status) %>%
+  summarise(Present = sum(Present))
+# perhaps this is how I should be calculating total test size ?
 
 # from MARC-SE GH README:
 # markers <- "C580Y, P574L, R561H, P553L, I543T, R539T, Y493H, M476I, N458Y, 
@@ -101,7 +121,7 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xls
     Title == "Prevalence of resistance markers of artemisinin. partner drugs. and sulfadoxine-pyrimethamine in Nanyumbu and Masasi Districts. Tanzania between 2020 and 2021." ~ "40938322",
     Title == "SAMEC SCAT Feb 2025" ~ "Unpublished",
     Title == "The E8-led Regional Malaria Molecular Surveillance Initiative: Successes. Challenges. and Opportunities" ~ "Unpublished",
-    Title == "Very low prevalence of validated kelch13 mutations and absence of hrp2/3 double gene deletions in South African malaria-eliminating districts (2022-2024)." ~ "11998825",
+    Title == "Very low prevalence of validated kelch13 mutations and absence of hrp2/3 double gene deletions in South African malaria-eliminating districts (2022-2024)." ~ "Already in moldm", # "11998825",
     Title == "WHO Threats Map" ~ "WHO Threats Map",
     Title == "2025" ~ "Unpublished",
     TRUE ~ PubMedID)) %>%
@@ -244,6 +264,7 @@ moldm <- moldm %>%
                               Title == "Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire" ~ "38440764",
                               Title == "Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021" ~ "38461239",
                               Title == "Investigation of Markers of Antimalarial Resistance During a Therapeutic Efficacy Study Conducted in Uganda, 2018–2019" ~ "Unpublished", # can't seem to find a trace of it .. maybe it was a conference presentation
+                              Title == "Molecular surveillance of artemisinin resistance-linked PFK13 gene polymorphisms in Adamawa State, Nigeria" ~ "10.61186/rabms.11.1.75", # no PMID
                               TRUE ~ PubMedID),
          from = "moldm",
          Longitude = as.numeric(Longitude),
@@ -255,6 +276,8 @@ oldv <- moldm
 to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
   filter(PubMedID != "Already in moldm")
 message(paste0("Studies: ", length(unique(to_add$Title))))
+range(as.numeric(to_add$Year.Published), na.rm=TRUE)
+
 message(paste0("Patients: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title, Tested) %>%
                  summarise(n = n()) %>%
@@ -292,6 +315,8 @@ mutants <- moldm %>%
   dplyr::select(Longitude, Latitude, year, Tested, Present, Site.Name, Country, pubs) %>%
   ungroup() %>%
   suppressMessages()
+
+message("TODO: remove presences == 0 here ? Shouldn't have a massive impact ?")
 
 message(paste("Number of rows in mutant table:", nrow(mutants)))
 # added 1035 - 967 == 68 rows here
@@ -382,6 +407,30 @@ moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")
 
 plot(with_wildtypes$year, with_wildtypes$Present/with_wildtypes$Tested, 
      xlab="Year", ylab="Prevalence")
+
+denom <- moldm %>%
+  group_by(Longitude, Latitude, year, PubMedID, Country) %>%
+  summarise(Tested = max(Tested)) %>%
+  ungroup() %>%
+  dplyr::select(Tested) %>%
+  sum()
+
+nume <- moldm %>%
+  group_by(Longitude, Latitude, year, PubMedID, Country) %>%
+  summarise(Tested = max(Tested)) %>%
+  ungroup() %>%
+  filter(Country %in% c("Uganda")) %>%
+  dplyr::select(Tested) %>%
+  sum()
+
+nume/denom
+
+tmp <- moldm %>%
+  mutate(Year.Published = as.numeric(Year.Published)) %>%
+  filter(Country == "South Africa"  & !is.na(status))
+ggplot()+
+  geom_sf(data = afr %>% filter(name == "South Africa")) +
+  geom_point(aes(x = Longitude, y = Latitude, col = Marker), data = tmp)
 
 to_vis <- with_wildtypes %>% 
   mutate(year_bin = cut(year, 
@@ -620,7 +669,32 @@ plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 
 ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
 
+################################################################################
+moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")
+moldm %>% 
+  group_by(Marker) %>%
+  summarise(n = sum(Present)) %>%
+  arrange(desc(n))
 
+tmp <- moldm %>%
+  filter(Marker == "R561H" & 
+           Present > 0 &
+           year > 2017)
+
+ggplot() +
+  geom_sf(data = afr) +
+  geom_jitter(aes(x = Longitude, y = Latitude, col = PubMedID, size = Present),  
+             size = 2, 
+             alpha = 0.5,
+             data = tmp)
+
+tmp %>%
+  group_by(PubMedID, Title, year, Authors, Country) %>%
+  summarise(n = n()) %>%
+  as.data.frame()
+
+tmp %>%
+  filter(PubMedID %in% c("40744004", "40744006"))
 
 ################################################################################
 

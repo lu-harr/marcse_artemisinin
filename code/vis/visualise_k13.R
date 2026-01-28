@@ -23,17 +23,22 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
-preds <- preds %>% 
-  aggregate(fact = 2) #%>%
+# preds <- preds %>% 
+  # aggregate(fact = 2) #%>%
   # subset(1:73)
 
 
 tmp <- preds$`2026_50`
 tmp[tmp < 0.1] <- NA
 
-
-plot(tmp)
+message("for headline result")
+plot(tmp, main = "Area with estimated prevalence > 10%")
 plot(st_geometry(afr), add=TRUE)
+
+sum(!is.na(values(tmp))) / sum(!is.na(values(preds$`2026_50`))) 
+
+plot(preds$`2026_sd`)
+max(values(preds$`2026_sd`), na.rm = TRUE)
 
 ###############################################################################
 # surveillance effort

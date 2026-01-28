@@ -1,3 +1,8 @@
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(readxl)
+library(tidyverse)
+
 # country shps for plotting/masking
 world <- ne_countries(scale="medium", returnclass = "sf")
 
@@ -8,7 +13,7 @@ afr <- world %>%
   st_as_sf()
 
 # national first-line treatment policies from 2025 world malaria report
-dat <- read_xlsx("data/raw/world_malaria_report_treatment_policies.xlsx")
+dat <- read_xlsx("world_malaria_report_treatment_policies.xlsx")
 dat$country
 dat$`Uncomplicated confirmed`
 
@@ -30,7 +35,10 @@ confirmed <- dat %>%
                              country == "Sao Tome and Principe" ~ "São Tomé and Principe",
                              country == "South Sudan" ~ "S. Sudan",
                              country == "Mainland" ~ "Tanzania",
-                             TRUE ~ country))
+                             TRUE ~ country)) %>%
+  mutate(al_asaq = case_when(AL & !`AS+AQ` ~ "AL",
+                             !AL & `AS+AQ` ~ "AS+AQ",
+                             NA ~ "")) # not doing the others as this is just for legend
          
 confirmed <- right_join(afr, confirmed, by = join_by(name == country))
 
@@ -41,10 +49,9 @@ pal = c("yellow", "#43a2ca", "#f03b20")
 library(ggpattern)
 
 ggplot() +
-  # geom_sf(data = afr) +
-  geom_sf(data = confirmed %>% filter(AL | `AS+AQ` | `DHA-PPQ`), 
-          fill = alpha(pal[1], 0.3)) +
-  geom_sf(data = confirmed %>% filter(`AS+AQ`), fill = alpha(pal[2], 0.3)) +
+  # geom_sf(data = afr) + # include to show borders of all countries
+  geom_sf(data = confirmed %>% filter(!is.na(al_asaq)),
+          aes(fill = al_asaq)) +
   geom_sf_pattern(data = confirmed %>% 
                     filter(`DHA-PPQ` | `AL+PQ`) %>%
                     mutate(flag = case_when(`DHA-PPQ` ~ "DHA-PPQ",
@@ -54,7 +61,19 @@ ggplot() +
                   fill = NA,
                   pattern_fill = "grey50",
                   pattern_spacing = 0.02,
-                  pattern_density = 0.001)
+                  pattern_density = 0.001) +
+  scale_pattern_manual(name = "", 
+                       values = c("DHA-PPQ" = "circle", 
+                                  "AL+PQ" = "stripe")) +
+  scale_fill_manual(name = "", 
+                    values = c("AL" = alpha(pal[1], 0.3),
+                               "AS+AQ" = alpha(pal[2], 0.3))) +
+  labs(title = "First-line treatment policies (2025)")
+ggsave("~/Desktop/test.png")
+
+# needs also: AS-PY, AS+MQ, etc .........
+
+
 
 
 
