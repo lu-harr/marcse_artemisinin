@@ -4,7 +4,17 @@
 ## TODO
 # double check presences == 0
 
-marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
+# pulling directly from WHO compendium
+# marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
+marker_reference <- readxl::read_xlsx("../compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
+                                      sheet = "Artemisinins (Pf)") %>%
+  filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
+  rename(marker = `Alteration(s)`,
+         status = Classification) %>%
+  dplyr::select(marker, status)
+
+# P527H, G449A
+# consider also mixed infections ... need to assess extent of these
 
 # at this point, ya need to run the top of data_clean_k13.R
 # ... I could put everything in the same place or put the functions somewhere on
@@ -307,6 +317,7 @@ write.csv(moldm %>%
 
 mutants <- moldm %>%
   filter(mutant) %>%
+  filter(Present > 0) %>%
   group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
   summarise(Present = sum(Present), 
             pubs = paste0(unique(PubMedID), collapse=",")) %>%
@@ -315,8 +326,6 @@ mutants <- moldm %>%
   dplyr::select(Longitude, Latitude, year, Tested, Present, Site.Name, Country, pubs) %>%
   ungroup() %>%
   suppressMessages()
-
-message("TODO: remove presences == 0 here ? Shouldn't have a massive impact ?")
 
 message(paste("Number of rows in mutant table:", nrow(mutants)))
 # added 1035 - 967 == 68 rows here
@@ -425,12 +434,12 @@ nume <- moldm %>%
 
 nume/denom
 
-tmp <- moldm %>%
-  mutate(Year.Published = as.numeric(Year.Published)) %>%
-  filter(Country == "South Africa"  & !is.na(status))
-ggplot()+
-  geom_sf(data = afr %>% filter(name == "South Africa")) +
-  geom_point(aes(x = Longitude, y = Latitude, col = Marker), data = tmp)
+# tmp <- moldm %>%
+#   mutate(Year.Published = as.numeric(Year.Published)) %>%
+#   filter(Country == "South Africa"  & !is.na(status))
+# ggplot()+
+#   geom_sf(data = afr %>% filter(name == "South Africa")) +
+#   geom_point(aes(x = Longitude, y = Latitude, col = Marker), data = tmp)
 
 to_vis <- with_wildtypes %>% 
   mutate(year_bin = cut(year, 
@@ -610,7 +619,7 @@ p2 <- ggplot() +
                            fill = Present / Tested),
              col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_color_manual(name = "", values = c("grey30"), labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
+  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", breaks = c(0.01, 0.05, 0.2, 0.4, 0.6)) +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
   # allows labelling of rows and columns:
   facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
@@ -624,13 +633,13 @@ p2 <- ggplot() +
   theme(plot.background = element_rect(fill='transparent', color=NA),
         legend.position = "bottom",
         legend.title = element_text(hjust = 0.5),
-        legend.spacing.x = unit(10, "lines"),
+        legend.spacing.x = unit(15, "lines"),
         panel.spacing = unit(0, "lines")) +
-  guides(fill = guide_colourbar(title.position = "top"),
+  guides(fill = guide_colourbar(title.position = "top",
+                                theme = theme(legend.key.width = unit(10, "lines"))),
          size = guide_legend(title.position = "top"))
 
 p2
-
 # p2 +
 #    geom_rect(data = data.frame(xmin = 60, xmax = 80, ymin = 0, ymax = 40, year_bin = "(2015,2018]",
 #                                Marker = "R622I"), 
@@ -668,6 +677,14 @@ p2 <- ggdraw(p2) +
 plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 
 ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
+
+# prevalence range
+
+markers_disagg %>% 
+  filter(Present > 0) %>% 
+  mutate(prev = Present/Tested) %>% 
+  dplyr::select(prev) %>% 
+  range()
 
 ################################################################################
 moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")

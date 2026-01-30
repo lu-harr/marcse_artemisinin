@@ -1,3 +1,5 @@
+# do this after you have run merge MARCSE script
+
 dirs <- list.dirs("output")
 snps <- dirs[grepl("k13snp", dirs) & str_count(dirs, "/") == 1]
 snps <- str_extract(snps, "(?<=_).*")

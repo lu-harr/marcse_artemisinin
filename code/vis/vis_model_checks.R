@@ -73,16 +73,16 @@ vis_model_checks <- function(path, out_tag = ""){
   
 }
 
-vis_model_checks("output/k13_marcse/gneiting_sparse/", out_tag = "k13m_bin")
-vis_model_checks("output/k13_marcse/bb_gne/", out_tag = "k13m_bb")
-vis_model_checks("output/mdr1246/gneiting_sparse/", out_tag = "1246_bin")
-vis_model_checks("output/mdr1246/bb_gne/", out_tag = "1246_bb") 
-vis_model_checks("output/mdr184/gneiting_sparse/", out_tag = "184_bin")
-vis_model_checks("output/mdr184/bb_gne/", out_tag = "184_bb") 
-vis_model_checks("output/mdr86/gneiting_sparse/", out_tag = "86_bin")
-vis_model_checks("output/mdr86/bb_gne/", out_tag = "86_bb") 
-vis_model_checks("output/crt76/gneiting_sparse/", out_tag = "76_bin")
-vis_model_checks("output/crt76/bb_gne/", out_tag = "76_bb") 
+# vis_model_checks("output/k13_marcse/gneiting_sparse/", out_tag = "k13m_bin")
+# vis_model_checks("output/k13_marcse/bb_gne/", out_tag = "k13m_bb")
+# vis_model_checks("output/mdr1246/gneiting_sparse/", out_tag = "1246_bin")
+# vis_model_checks("output/mdr1246/bb_gne/", out_tag = "1246_bb") 
+# vis_model_checks("output/mdr184/gneiting_sparse/", out_tag = "184_bin")
+# vis_model_checks("output/mdr184/bb_gne/", out_tag = "184_bb") 
+# vis_model_checks("output/mdr86/gneiting_sparse/", out_tag = "86_bin")
+# vis_model_checks("output/mdr86/bb_gne/", out_tag = "86_bb") 
+# vis_model_checks("output/crt76/gneiting_sparse/", out_tag = "76_bin")
+# vis_model_checks("output/crt76/bb_gne/", out_tag = "76_bb") 
 
 # draws <- read_rds(paste0(output_dir, "draws.rds"))
 # 

@@ -326,6 +326,11 @@ pred_time_factoring_incidence <- function(path,
                  df %>% filter(year == 2026) %>% dplyr::select(lower), ", ",
                  df %>% filter(year == 2026) %>% dplyr::select(upper), ")"))
   
+  message(paste0("2000 summary stats: ", 
+                 df %>% filter(year == 2000) %>% dplyr::select(med), "; (",
+                 df %>% filter(year == 2000) %>% dplyr::select(lower), ", ",
+                 df %>% filter(year == 2000) %>% dplyr::select(upper), ")"))
+  
   p <- ggplot(df) +
     geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) +
     geom_ribbon(aes(x = year, ymin = med, ymax = med, fill = "50%")) +

@@ -70,7 +70,8 @@ hist(crt$End.Year - crt$Start.Year)
 
 # not at all happy with this but ah well
 crt = crt %>%
-  # this now only affects one study ... not too worried
+  filter(Present <= Tested) %>% # I was getting -ves
+  # this now only affects one study ... not too worried - LH no longer sure what this refers to ..
   dplyr::summarise(n = dplyr::n(), Present = first(Present),
                    .by = c(uniq_id_publication, Continent, Country, District, Site.Name, Latitude, Longitude,
                            Site.Name.District.Country, Start.Year, End.Year, Tested, PubMedID, Year.Published, Title, Authors, Publication.URL,
@@ -80,7 +81,8 @@ crt = crt %>%
   # include mixeds if we have them ...
   # what follows is rather silly ...
   filter(!((uniq_id_publication %in% c(614, 1131)  & Mixed.Included == "null") |
-             (uniq_id_publication %in% c(1460, 723) & Mixed.Included == "false"))) %>% # these studies were entered twice - once with mixeds included and once without
+             (uniq_id_publication %in% c(1460, 723) & Mixed.Included == "false"))) %>% 
+  # ^these studies were entered twice - once with mixeds included and once without
   mutate(tot = rowSums(across(starts_with("pfcrt")), na.rm = TRUE),
          Present = case_when(!is.na(`pfcrt 76T`) &
                                Mixed.Included == "true" ~ `pfcrt 76T`,
@@ -111,8 +113,9 @@ crt = crt %>%
   ungroup()
 
 # only one non-conformist ! This is because a mixed has been counted towards all three fields?
+# LH added a filter on Present <= Tested to the raw data above so this problem is resolved early
 which(crt$Present/crt$Tested > 1)
-crt$Present[which(crt$Present/crt$Tested > 1)] <- crt$Tested[which(crt$Present/crt$Tested > 1)]
+# crt$Present[which(crt$Present/crt$Tested > 1)] <- crt$Tested[which(crt$Present/crt$Tested > 1)]
 
 plot(crt$year, crt$Present / crt$Tested)
 

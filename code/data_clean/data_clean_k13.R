@@ -1,5 +1,3 @@
-# vis k13 data
-# note I've just found "K13" - applied to 30 rows ...
 library(ggplot2)
 library(rnaturalearth)
 library(rnaturalearthdata)
@@ -9,7 +7,16 @@ library(terra)
 library(iddoPal)
 library(patchwork)
 
-marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
+# marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
+# from WHO markers compendium:
+marker_reference <- readxl::read_xlsx("../compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
+                                      sheet = "Artemisinins (Pf)") %>%
+  filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
+  rename(marker = `Alteration(s)`,
+         status = Classification) %>%
+  dplyr::select(marker, status)
+
+
 
 YEAR_LOWER_BOUND <- 2000
 MIN_SAMPLE_SIZE <- 10

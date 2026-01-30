@@ -13,6 +13,7 @@ source("code/betabinomial_p_rho.R")
 source("code/setup.R")
 source("code/build_design_matrix.R")
 source("code/wrap_fit.R")
+# source("code/vis/vis_model_checks.R")
 
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -52,9 +53,11 @@ fit_betabinom(mut_data = mut_data,
               covariates = covariates,
               pfpr_years = pfpr_years,
               out_dir = out_dir,
-              nchains = 6,
-              warmup = 3000,
-              nsamples = 20000)
+              nchains = 8,
+              warmup = 5000,
+              nsamples = 25000)
+
+# vis_model_checks(paste0("output/", out_dir), out_tag = marker)
 
 # out <- build_design_matrix(covariates,
 #                            coords = mut_data,

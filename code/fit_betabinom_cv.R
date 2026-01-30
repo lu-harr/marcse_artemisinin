@@ -57,8 +57,8 @@ system.time(mclapply(1:NFOLD, function(x){
             fold = x,
             folds = folds,
             nchains = 6,
-            warmup = 3000,
-            nsamples = 20000)
+            warmup = 5000,
+            nsamples = 30000)
 }, mc.cores = NFOLD))
 
 # test <- folds[[fold]] # don't need you yet !

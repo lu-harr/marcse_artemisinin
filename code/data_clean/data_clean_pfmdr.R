@@ -215,7 +215,7 @@ ggplot() +
                arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = year),
-             col = "grey50", pch=21, stroke = 0.2) +
+             col = "grey50", pch=21, stroke = 0.1, alpha = 0.6) +
   scale_fill_viridis_c(name = "Year") +
   scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
   facet_wrap(~ n_loci) +

@@ -26,11 +26,18 @@ DATASETS=(
   k13_marcse
 )
 
+SEEDS=(
+  244
+  250
+  332
+  124
+  124
+)
+
 # Select dataset for this array task
 DATASET=${DATASETS[$SLURM_ARRAY_TASK_ID]}
 
-# Fixed seed ...
-SEED=124
+SEED=${SEEDS[$SLURM_ARRAY_TASK_ID]}
 
 # Run R script
 Rscript code/fit_betabinom_cv.R "$DATASET" "$SEED"

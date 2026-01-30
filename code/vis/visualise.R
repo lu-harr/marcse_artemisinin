@@ -295,7 +295,7 @@ p <- ggplot(df %>%
         panel.spacing = unit(0, "lines")) +
   guides(fill = guide_colourbar(title.position = "top"),
          size = guide_legend(title.position = "top"))
-ggsave("figures/crt_mdr_out_bb.png", p, height = 8, width = 6.5, scale = 1.1)
+ggsave("figures/crt_mdr_out_bb.png", p, height = 8, width = 5.5, scale = 1.1)
 
 #########################################################################
 # here is uncertainties:

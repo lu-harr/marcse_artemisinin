@@ -2,7 +2,7 @@
 #SBATCH --job-name=inf_all
 #SBATCH --output=logs/%x_%A.out
 #SBATCH --error=logs/%x_%A.err
-#SBATCH --time=3:00:00           # Max runtime (HH:MM:SS)
+#SBATCH --time=5:00:00           # Max runtime (HH:MM:SS)
 #SBATCH --mem=50000                  # Memory per node
 #SBATCH --ntasks=1                # Number of tasks
 #SBATCH --cpus-per-task=30         # Number of CPU cores per task
