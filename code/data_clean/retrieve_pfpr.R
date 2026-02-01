@@ -16,12 +16,12 @@ pfpr <- malariaAtlas::getRaster("Malaria__202508_Global_Pf_Parasite_Rate",
                                 year=years) %>% # which gives me a SpatRasterCollection
           suppressMessages() %>% # looks like some messages are still slipping the net ...
           as.list() %>%
-          rast() %>%
-          subset(seq(1, length(years)*2+1, 2))
+          rast()
 
-
-
-writeRaster(pfpr, "data/pfpr_rasters_afr_2025.tif")
+pfpr %>%
+  subset(seq(1, length(years)*4+1, 4)) %>%
+  writeRaster("data/pfpr_rasters_afr_2025.tif",
+              overwrite = TRUE)
 
 
 #################################################################################

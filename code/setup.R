@@ -36,7 +36,7 @@ pfpr_years <- 2000:2024
 years <- as.character(pfpr_years)
 
 # see "retrieve_pfpr.R"
-pfpr <- rast("data/pfpr_rasters_afr.tif") %>%
+pfpr <- rast("data/pfpr_rasters_afr_2025.tif") %>%
   scale()
 names(pfpr) <- paste0("pfpr_", years)
 

@@ -8,13 +8,13 @@ minvalue=-3.68934881474191032e+19
 maxvalue=3.68934881474191032e+19
 categorical=FALSE
 [description]
-layername=pfpr_2022
+layername=pfpr_2024
 [georeference]
 nrows=1735
 ncols=2016
-xmin=-21.0000000000000036
-ymin=-34.8749987284342566
-xmax=63
-ymax=37.4166679382324006
+xmin=-20.999999999999865
+ymin=-34.8750000000000924
+xmax=63.0000000000002061
+ymax=37.4166666666666359
 projection=+proj=longlat +datum=WGS84 +no_defs
 wkt=GEOGCRS["WGS 84",ENSEMBLE["World Geodetic System 1984 ensemble",MEMBER["World Geodetic System 1984 (Transit)"],MEMBER["World Geodetic System 1984 (G730)"],MEMBER["World Geodetic System 1984 (G873)"],MEMBER["World Geodetic System 1984 (G1150)"],MEMBER["World Geodetic System 1984 (G1674)"],MEMBER["World Geodetic System 1984 (G1762)"],MEMBER["World Geodetic System 1984 (G2139)"],MEMBER["World Geodetic System 1984 (G2296)"],ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]],ENSEMBLEACCURACY[2.0]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],USAGE[SCOPE["Horizontal component of 3D system."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",4326]]

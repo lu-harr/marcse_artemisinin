@@ -1,10 +1,10 @@
 <PAMDataset>
   <PAMRasterBand band="1">
-    <Description>pfpr_2022</Description>
+    <Description>pfpr_2024</Description>
     <Metadata>
-      <MDI key="STATISTICS_MAXIMUM">5.9927787780762</MDI>
+      <MDI key="STATISTICS_MAXIMUM">4.8042998313904</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">-0.72541880607605</MDI>
+      <MDI key="STATISTICS_MINIMUM">-1.2459470033646</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
