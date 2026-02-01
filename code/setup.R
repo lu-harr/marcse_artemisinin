@@ -32,7 +32,7 @@ afr_extent <- (matrix(c(-21, -34.9, 63, 37.4), nrow = 2, ncol = 2,
                       dimnames = list(c("x", "y"), c("min", "max"))))
 
 # For example: 
-pfpr_years <- 2000:2022
+pfpr_years <- 2000:2024
 years <- as.character(pfpr_years)
 
 # see "retrieve_pfpr.R"
