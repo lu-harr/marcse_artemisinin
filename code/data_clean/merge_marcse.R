@@ -23,13 +23,6 @@ moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
   mutate(Marker = strip_marker)
 # head(moldm)
 
-moldm %>%
-  group_by(Longitude, Latitude, year, PubMedID) %>%
-  summarise(Tested = max(Tested)) %>%
-  ungroup() %>%
-  dplyr::select(Tested) %>%
-  sum()
-
 # looks like studies are in there twice?
 moldm %>%
   group_by(Longitude, Latitude, year, status, Marker, PubMedID) %>%
@@ -235,6 +228,14 @@ marcse %>%
 
 marcse <- marcse %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
+  # not sure what happened here, but these titles and PMIDs aren't right ...
+  mutate(Title = case_when(Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern. Northeastern and Eastern Uganda" & 
+                             Authors == "Anthony Nuwa. Kevin Baker. Richard Kajubi. Chukwudi A Nnaji. Katherine Theiss-Nyland. Musa Odongo. Tonny Kyagulanyi. Jane Nabakooza. David Salandini. Victor Asua. Maureen Nakirunda. Christian Rassi. Damian Rutazaana. Richard Achuma. Patrick Sagaki. John Baptist Bwanika. Godfrey Magumba. Adoke Yeka. Sam Nsobya. Moses R Kamya. James Tibenderana. Jimmy Opigo"
+                             ~ "Effectiveness of sulfadoxine-pyrimethamine plus amodiaquine and dihydroartemisinin-piperaquine for seasonal malaria chemoprevention in Uganda: a three-arm, open-label, non-inferiority and superiority, cluster-randomised, controlled trial",
+                           Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern. Northeastern and Eastern Uganda" &
+                             Authors == "Angwe MK. Mwebaza N. Nsobya SL. Vudriko P. Dralabu S. Omali D. Tumwebaze MA. Ocan M."
+                             ~ "Day 3 parasitemia and Plasmodium falciparum Kelch 13 mutations among uncomplicated malaria patients treated with artemether-lumefantrine in Adjumani district, Uganda",
+                           TRUE ~ Title)) %>%
   # PubMedID == "0":
   mutate(PubMedID = case_when(Title == "SAMEC SCAT Feb 2025" ~ "Unpublished",
                               Title == "NMCP. Victor Asua" ~ "Unpublished",
@@ -251,6 +252,8 @@ marcse <- marcse %>%
                               # Title == "Comprehensive analysis of molecular markers linked to antimalarial drug resistance in Plasmodium falciparum in Northern, Northeastern and Eastern Uganda" ~ "40514714", # published
                               Title == "Plasmodium falciparum Kelch-13 artemisinin partial resistance markers in Fort Portal, Western Uganda, 2024" ~ "40265952", # published
                               # Title == "A Novel Plasmodium falciparum Kelch13 A675T Mutation and High Levels of Chloroquine and Sulfadoxine-Pyrimethamine Resistance in Burundi" ~ "40666336", # preprint
+                              PubMedID == "38755607" ~ "38196592", # preprint - published article is in MARCSE but let's retain what's in moldm
+                              PubMedID == "42164153" ~ "40514714", # preprint? the other pmid was an article on AIDS .. perhaps it wasn't a pmid
                               TRUE ~ PubMedID)) %>%
   mutate(PubMedID = case_when(!is.na(to) ~ to,
                               TRUE ~ PubMedID)) %>%
@@ -283,10 +286,20 @@ moldm <- moldm %>%
 
 oldv <- moldm
 
+# not particularly satisfied by this ...
 to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
   filter(PubMedID != "Already in moldm")
 message(paste0("Studies: ", length(unique(to_add$Title))))
 range(as.numeric(to_add$Year.Published), na.rm=TRUE)
+
+# 12,
+to_add %>% dplyr::select(Title, PubMedID, Authors) %>% 
+  unique()  %>%
+  slice(22) %>%
+  as.data.frame()
+filter(moldm, grepl("Eastern Uganda", moldm$Title)) %>% 
+  dplyr::select(Title, PubMedID) %>% 
+  unique()
 
 message(paste0("Patients: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title, Tested) %>%
@@ -303,11 +316,10 @@ message(paste0("Or more conservatively: ", to_add %>%
                  sum() %>%
                  suppressMessages()))
 
-
 moldm <- bind_rows(moldm,
                    anti_join(marcse, moldm, by = join_by(PubMedID))) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
-  mutate(mutant = !is.na(status) & status != "Not associated")
+  mutate(mutant = !is.na(status))
 
 message("From here down it's pretty much as in the other cleaning script")
 

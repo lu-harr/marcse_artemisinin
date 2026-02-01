@@ -9,13 +9,12 @@ library(patchwork)
 
 # marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
 # from WHO markers compendium:
-marker_reference <- readxl::read_xlsx("../compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
+marker_reference <- readxl::read_xlsx("compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
                                       sheet = "Artemisinins (Pf)") %>%
   filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
   rename(marker = `Alteration(s)`,
          status = Classification) %>%
   dplyr::select(marker, status)
-
 
 
 YEAR_LOWER_BOUND <- 2000
@@ -55,7 +54,38 @@ raw_moldm <- function(path){
     filter(Start.Year > 1960 & Start.Year < 2500) %>%
     # there definitely aren't any "Kelch 13" left in here are there? Nope
     filter(grepl("[k|K]13", Marker)) %>%
-    mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% # strip k13
+    filter(!(Longitude < -10 & Latitude < -10)) %>%
+    filter(Continent == "Africa") %>%
+    suppressWarnings()
+    
+  message(paste("Number of rows indicating double mutants:", 
+                nrow(filter(out, grepl(",", Marker)))))
+  
+  # remove double mutants? - checked and they're not included as single mutants (see below)
+  # there's probably a tidy way to do this but alas:
+  double_mutants <- filter(out, grepl(",", Marker)) %>%
+    separate_rows(Marker, sep = ",") %>%
+    mutate(Marker = trimws(Marker))
+    # I checked and there aren't any double mutants where both mutants are on the WHO list
+    # So we don't end up counting anyone twice in aggregate model
+
+  out <- filter(out, !grepl(",", Marker)) %>%
+    # add disaggregated double mutants back in:
+    bind_rows(double_mutants) %>%
+    # strip "k13"
+    mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% 
+    # there's also a stray "\t" in there ...
+    mutate(strip_marker = gsub("\\t", "", strip_marker)) %>%
+    # handle these mixed infections carefully:
+    # C469F/Y, C469Y/F, N537I/D, C469STOC/P
+    # 469Y/F - count towards Y as I don't want to count it twice in aggregate model
+    mutate(strip_marker = case_when(strip_marker == "C469F/Y" | strip_marker == "C469Y/F" ~ "C469Y",
+                                    strip_marker == "N537I/D" ~ "N537I", # (this one's in the compendium)
+                                    # "C469STOC/P" - this one will get filtered out anyway
+                                    TRUE ~ strip_marker)) %>%
+    # strip out mixed infections - count towards mutants
+    mutate(strip_marker = gsub("./", "", strip_marker)) %>%
+    # now link up with marker status
     left_join(marker_reference, 
               by = join_by(strip_marker == marker)) %>%
     mutate(year = round((Start.Year + End.Year) / 2, 0),
@@ -65,9 +95,7 @@ raw_moldm <- function(path){
                             TRUE ~ year),
            Longitude = as.numeric(Longitude),
            Latitude = as.numeric(Latitude),
-           mutant = !is.na(status) & status != "Not associated") %>%
-    filter(!(Longitude < -10 & Latitude < -10)) %>%
-    filter(Continent == "Africa") %>%
+           mutant = !is.na(status)) %>%
     suppressWarnings()
   
   message(paste0("Number of studies before filtering early records: ", 
@@ -106,17 +134,14 @@ raw_moldm <- function(path){
 # moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
 moldm <- raw_moldm("data/raw/db_20260105/novartis.csv")
 
-# notes:
-# S446I possible typo?
-# haplotypes are falling out here but that's a super limited number
-# mixeds where they are documented ...
-# "C469C/Y", "C469F/Y", "M476M/I", "Y493Y/H", "R539R/T", ..........
+# notes on double mutants:
+# 26667053: double mutants not counted in single mutant counts
+# 28039354: double mutants not counted in single mutant counts
+# 39136465: double mutants not counted in single mutant counts
+# 40439506: double mutants not counted in single mutant counts
+# 40790052: double mutants not counted in single mutant counts
 
-message(paste("Number of studies:", length(unique(moldm$Title))))
-
-# haplotypes? FIX review
-message(paste("Number of rows indicating haplotypes:", 
-              nrow(as.data.frame(moldm[grepl(",", moldm$Marker), c("Site.Name", "year", "Marker", "Present", "Tested")]))))
+out %>% filter(grepl(",", Marker))
 
 # plot(moldm$Start.Year, moldm$End.Year)
 
