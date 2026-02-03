@@ -6,6 +6,7 @@ library(dplyr)
 library(terra)
 library(iddoPal)
 library(patchwork)
+library(cowplot)
 
 # marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
 # from WHO markers compendium:
@@ -141,7 +142,7 @@ moldm <- raw_moldm("data/raw/db_20260105/novartis.csv")
 # 40439506: double mutants not counted in single mutant counts
 # 40790052: double mutants not counted in single mutant counts
 
-out %>% filter(grepl(",", Marker))
+# out %>% filter(grepl(",", Marker))
 
 # plot(moldm$Start.Year, moldm$End.Year)
 

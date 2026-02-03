@@ -6,7 +6,7 @@
 
 # pulling directly from WHO compendium
 # marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
-marker_reference <- readxl::read_xlsx("../compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
+marker_reference <- readxl::read_xlsx("compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
                                       sheet = "Artemisinins (Pf)") %>%
   filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
   rename(marker = `Alteration(s)`,
@@ -79,7 +79,8 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xls
          Start.Year = `Start Year`,
          End.Year = `End Year`,
          Year.Published = `Year Published`,
-         Prevalence... = `Prevalence (%)`) %>%
+         Prevalence... = `Prevalence (%)`,
+         Site.Name = `Site Name`) %>%
   mutate_at(c("Longitude", "Latitude"), as.numeric) %>%
   mutate(year = round((Start.Year + End.Year) / 2, 0),
          Year.Published = as.character(Year.Published) # clashing during bind_rows
@@ -131,12 +132,8 @@ marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xls
   left_join(marker_reference, by = join_by(Marker == marker)) %>%
   suppressMessages()
 
-# head(marcse)
-# names(marcse)
 
-# unique(marcse$PubMedID)
-# unique(marcse$Marker)
-# unique(marcse$Marker_Classification)
+marcse %>% filter(Tested < Present) %>% dplyr::select(Title, PubMedID) %>% unique()
 
 # marcse[,c("Marker", "Marker_Classification", "status")] %>% unique() %>% as.data.frame()
 # A626S, A675V not picked up in LH's set
@@ -267,12 +264,14 @@ marcse <- marcse %>%
 
 moldm <- moldm %>%
   left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
+  filter(PubMedID != "40744004") %>% 
+  # this paper was extracted twice in two different formats and I prefer the other one :/
   mutate(PubMedID = case_when(!is.na(to) ~ to,
                               TRUE ~ PubMedID)) %>%
   mutate(PubMedID = case_when(Title == "Antimalarial Drug Resistance Marker Prevalence Survey - 2016" ~ "Unpublished",
                               Title == "UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING" ~ "Unpublished",
                               Title == "Presence of k13 561H artemisinin resistance mutations in Plasmodium falciparum infections from Rwanda" ~ "Unpublished",
-                              Title == "High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "Unpublished",
+                              Title == "High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "40744004", # retaining preprint extraction
                               Title == "Screening for antifolate and artemisinin resistance in Plasmodium falciparum clinical isolates from three hospitals of Eritrea" ~ "38840941",
                               Title == "Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire" ~ "38440764",
                               Title == "Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021" ~ "38461239",
@@ -320,6 +319,27 @@ moldm <- bind_rows(moldm,
                    anti_join(marcse, moldm, by = join_by(PubMedID))) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
   mutate(mutant = !is.na(status))
+
+# have a look for 535K ...
+# moldm %>% 
+#   filter(grepl("535", Marker)) %>%
+#   dplyr::select(Country, District, Site.Name, Longitude, Latitude, Start.Year, End.Year,
+#                 Marker, Present, Tested, PubMedID, Year.Published, Title, Authors, Publication.URL, from) %>%
+#   write.csv("../k13_parasite_clearance/535_for_Stephanie.csv", row.names = FALSE)
+
+# clean these up beforehand if I can:
+moldm %>% 
+  filter(Tested < Present) %>% 
+  dplyr::select(Title, PubMedID) %>% 
+  unique()
+
+# exclude from current set for now - can't make heads/tails:
+moldm %>% 
+  filter(PubMedID == "40744006") %>%
+  dplyr::select(Present, Tested, Marker, year, `Site.Name`, PubMedID, Title, Authors) %>%
+  mutate(Prevalence = Present / Tested) %>%
+  arrange(Prevalence) %>%
+  write.csv("data/raw/query_aranda_diaz_et_al.csv", row.names = FALSE)
 
 message("From here down it's pretty much as in the other cleaning script")
 
@@ -400,7 +420,7 @@ with_wildtypes %>%
   filter(Present / Tested > 1)
 marcse %>%
   filter(Present / Tested > 1) %>%
-  dplyr::select(PubMedID, Country, `Site Name`, Present, Tested, Marker, Prevalence, Title) %>%
+  dplyr::select(PubMedID, Country, Site.Name, Present, Tested, Marker, Prevalence, Title) %>%
   as.data.frame()
 
 write.csv(with_wildtypes %>%
@@ -617,6 +637,7 @@ p1 <-
   scale_x_continuous(breaks = 2008:2025, limits = c(2008, 2025)) 
 p1
 
+message("Warning: removed Aranda-Diaz because extraction looks weird")
 p2 <- ggplot() + 
   geom_sf(data = afr, fill = "white") + 
   geom_point(data = filter(markers_disagg, Present == 0),
@@ -624,14 +645,14 @@ p2 <- ggplot() +
                            size = Tested, col = "grey50"),
              fill = "grey70",  pch = 21, alpha = 0.5, stroke = 0.2) +
   geom_point(data = markers_disagg %>% 
-               filter(Present > 0) %>%
+               filter(Present > 0 & Title != "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia") %>%
                arrange(Present / Tested), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested,
                            fill = Present / Tested),
              col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
   scale_color_manual(name = "", values = c("grey30"), labels=c("Absence"), guide = "none") +
-  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", breaks = c(0.01, 0.05, 0.2, 0.4, 0.6)) +
+  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", breaks = c(0.01, 0.05, 0.25, 0.5)) +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
   # allows labelling of rows and columns:
   facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
@@ -691,12 +712,13 @@ plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
 
 # prevalence range
-
 markers_disagg %>% 
-  filter(Present > 0) %>% 
+  filter(Present > 0 & Title != "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia") %>% 
   mutate(prev = Present/Tested) %>% 
   dplyr::select(prev) %>% 
   range()
+
+
 
 ################################################################################
 moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")
@@ -760,7 +782,7 @@ ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13_time.png", scale = 0.8, 
 
 
 
-dat <- read.csv("../k13_seafrica/data/clean/moldm_marcse_k13_nomarker.csv") %>%
+dat <- read.csv("data/clean/moldm_marcse_k13_nomarker.csv") %>%
   filter(year >= 2000) %>%
   mutate(year_bin = cut(year, breaks = seq(2000, 2025, 5))) %>%
   arrange(Present/Tested)
@@ -787,6 +809,15 @@ ggplot() +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_grey() 
 ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13.png", height = 6, width = 6)
+
+moldm %>%
+  filter(Marker == "P441L" & Present > 0) %>%
+  dplyr::select(Country, year, Tested, Present, Prevalence, PubMedID, from, Site.Name) %>%
+  mutate(Prevalence = Present / Tested) %>%
+  arrange(year, Prevalence)
+
+# looks like some of the presences and tested are around the wrong way?
+# Eloff 2025 entered in moldm twice :/
 
 
 ################################################################################

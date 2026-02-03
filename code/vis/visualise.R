@@ -297,6 +297,38 @@ p <- ggplot(df %>%
          size = guide_legend(title.position = "top"))
 ggsave("figures/crt_mdr_out_bb.png", p, height = 8, width = 5.5, scale = 1.1)
 
+# horizontal for presentations folder
+p <- ggplot(df %>%
+              filter(year %in% c("2002", "2014", "2026")) %>%
+              mutate(marker = case_when(marker == "mdr1246"~ "Pfmdr1 D1246Y",
+                                        marker == "mdr184" ~"Pfmdr1 Y184F",
+                                        marker == "mdr86" ~ "Pfmdr1 N86Y",
+                                        marker == "crt76" ~ "Pfcrt K76T"),
+                     marker = factor(marker,
+                                     levels = rev(c("Pfmdr1 D1246Y", "Pfmdr1 Y184F",
+                                                    "Pfmdr1 N86Y", "Pfcrt K76T"))))) +
+  geom_tile(aes(x = x, y = y, fill = val)) +
+  geom_sf(data = afr, fill = NA, linewidth = 0.1) +
+  facet_grid(year ~ marker) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_fill_gradientn(name = "Prevalence",
+                       colors = blrd,
+                       breaks = c(0, 0.5, 1),
+                       labels = c("0 (all wildtype)", "0.5", "1 (all mutant)"),
+                       limits = c(0,1)) +
+  scale_x_continuous(breaks = seq(0, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  theme_bw() #+
+  # theme(legend.position = "bottom",
+  #       legend.title = element_text(hjust = 0.5),
+  #       legend.spacing.x = unit(4, "lines"),
+  #       panel.spacing = unit(0, "lines")) +
+  # guides(fill = guide_colourbar(title.position = "top"),
+  #        size = guide_legend(title.position = "top"))
+ggsave("~/Desktop/presentations/marcse/crt_mdr_out_bb.png", p, 
+       height = 5, width = 7, scale = 1.2)
+
 #########################################################################
 # here is uncertainties:
 to_plot <- lapply(markers, function(x){

@@ -1,5 +1,10 @@
 # does data figs pre and post merge for astmh slides
 # partner drug models are from the policy brief !
+library(tidyverse)
+library(terra)
+library(viridisLite)
+library(iddoPal)
+setwd("Desktop/MARCSE/k13_seafrica")
 
 # here's line plot over histogram of effort
 markers_effort_over_time <- function(dat, 
@@ -79,7 +84,7 @@ markers_effort_over_time <- function(dat,
     scale_color_manual(values = rep(c(iddoblue, "#c7047c", viridis(4), "#E37210"), 2)) +
     scale_linetype_manual(values = rep(1:2, each = 7)) +
     scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                       limits = c(0, 310)) +
+                       limits = c(0, 430)) +
     theme_minimal() +
     xlab("Year") +
     ylab("Mutations detected") +
@@ -92,7 +97,7 @@ markers_effort_over_time <- function(dat,
           axis.title.y.right = element_text(color = bg_col),
           axis.ticks.y.right = element_line(color = bg_col)) +
     #legend.justification.right = "bottom") +
-    scale_x_continuous(breaks = 2005:2024) 
+    scale_x_continuous(breaks = seq(2006, 2024, 2)) 
   p1
 }
 
@@ -116,18 +121,27 @@ map_k13_agg <- function(dat, tag = ""){
                              fill = Present / Tested),
                col = "grey50", pch=21, stroke = 0.2) +
     scale_color_manual(name = "Absence", values = c("grey30"), labels=c("")) +
-    scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
-    scale_size_continuous(name = "Tested", range = c(0.5, 6), trans = "sqrt") +
+    scale_fill_viridis_c(name = "Prevalence", trans = "sqrt",
+                         breaks = c(0.1, 0.2, 0.4, 0.8),
+                         limits = c(0, 0.81)) +
+    scale_size_continuous(name = "Tested", range = c(0.5, 8), 
+                          trans = "sqrt", 
+                          breaks = c(10, 100, 1000, 2500), 
+                          limits = c(10, 3800)) +
     #facet_wrap(~ year_bin, ncol=3) +
-    labs(title = paste0("Prevalence of Kelch 13 markers - ", tag)) +
+    labs(title = "Prevalence of Kelch 13 markers",
+         subtitle = tag) +
     xlab("Longitude") +
     ylab("Latitude") +
     scale_x_continuous(breaks = seq(-20, 40, 20)) +
     scale_y_continuous(breaks = seq(-20, 40, 20)) +
-    theme_grey() 
+    theme_grey() +
+    theme(legend.position = "bottom") +
+    guides(fill = guide_colourbar(order = 2),
+           size = guide_legend(order = 1))
 }
 
-moldm <- read.csv("data/clean/moldm_k13_nomarker.csv")
+moldm <- read.csv("data/clean/moldm_k13_nomarker.csv") 
 map_k13_agg(moldm, tag = "IDDO Surveyor")
 moldm_marcse <- read.csv("data/clean/moldm_marcse_k13_nomarker.csv")
 map_k13_agg(moldm_marcse, tag = "IDDO Surveyor & MARCSE-Africa")
@@ -141,24 +155,26 @@ moldm$Marker <- moldm$strip_marker
 # retrieved markers to show from moldm_marcse
 markers_effort_over_time(moldm, to_show = c("C469F", "R515K", "P441L", "R539T",
                                             "R561H", "C469Y", "A675V", "M476I",
-                                            "R622I", "P574L"))
+                                            "R622I", "P574L"), bg_scale = 100)
 ggsave("~/Desktop/presentations/MARCSE/moldm_k13_time.png", scale = 0.8, width = 10, height = 5)
 
 markers_effort_over_time(moldm_marcse, 
                          tag = "IDDO Surveyor & MARCSE-Africa",
                          to_show = c("C469F", "R515K", "P441L", "R539T",
                                      "R561H", "C469Y", "A675V", "M476I",
-                                     "R622I", "P574L"))
+                                     "R622I", "P574L"), bg_scale = 100)
 ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13_time.png", scale = 0.8, width = 10, height = 5)
 
 
-moldm <- read.csv("data/clean/moldm_k13_nomarker.csv")
+moldm <- read.csv("data/clean/moldm_k13_nomarker.csv") %>%
+  filter(Present / Tested < 0.8) # suspect
+# a little concerned about this picture ... 80% in Zambezi?
 map_k13_agg(moldm, tag = "IDDO Surveyor")
-ggsave("~/Desktop/presentations/MARCSE/moldm_k13.png", height = 6, width = 6)
+ggsave("~/Desktop/presentations/MARCSE/moldm_k13.png", height = 6, width = 8)
 
 moldm_marcse <- read.csv("data/clean/moldm_marcse_k13_nomarker.csv")
 map_k13_agg(moldm_marcse, tag = "IDDO Surveyor & MARCSE-Africa")
-ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13.png", height = 6, width = 6)
+ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13.png", height = 6, width = 8)
 
 
 

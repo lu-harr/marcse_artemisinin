@@ -3,6 +3,7 @@ library(viridisLite)
 library(sf)
 library(cowplot)
 
+
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
@@ -377,7 +378,7 @@ p_covar
 ################################################################################
 # just doing some fiddling for confab presentation
 # 
-years_to_plot <- c("2010", "2019", "2028")
+years_to_plot <- c("2014", "2020", "2026")
 preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
 preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
 df <- gg_ras_prep(preds)$df
