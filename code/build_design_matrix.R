@@ -72,10 +72,22 @@ build_design_matrix <- function(covariates,
       }
       # cell_ids <- terra::cellFromXY(covariates[[lyr_idx]], 
       #                               as.data.frame(coords[coord_idx, c("x","y")]))
-      covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], 
-                                        as.data.frame(coords[coord_idx, c("x","y")]), 
-                                        search_radius = buffer) %>%
-        unlist()
+      
+      if(length(coord_idx) == 1){
+        covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], 
+                                          as.data.frame(coords[coord_idx, c("x","y")]), 
+                                          search_radius = buffer, 
+                                          ID = FALSE)[1,1] # don't ask :/
+      } else {
+        covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], 
+                                          as.data.frame(coords[coord_idx, c("x","y")]), 
+                                          search_radius = buffer, 
+                                          ID = FALSE) %>%
+          dplyr::select(names(covariates)[[lyr_idx]]) %>%
+          unlist()
+      }
+      
+      
     }
   }
   
@@ -95,8 +107,11 @@ build_design_matrix <- function(covariates,
     # extract, pad with intercept dummy, and return
     covs <- terra::extract(covariates, 
                            coords[,c("x", "y")],
-                           search_radius = buffer) %>%
+                           search_radius = buffer,
+                           ID = FALSE) %>%
+      dplyr::select(names(covariates)) %>%
       unlist()
+    message("haven't tested this before ...")
   }
   
   if (degs_to_rads){

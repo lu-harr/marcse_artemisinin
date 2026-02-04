@@ -58,8 +58,10 @@ setup_mut_data <- function(path, min_year = NULL, buffer = 0){
     summarise(tested = sum(tested),
               present = sum(present)) %>%
     ungroup() %>%
-    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y)), 
-           search_radius = buffer) %>%
+    mutate(land = terra::extract(pfpr$pfpr_2000, 
+                                 data.frame(x = x, y = y), 
+                                 ID = FALSE,
+                                 search_radius = buffer)) %>%
     drop_na() %>%
     dplyr::select(-c(land))
 }
