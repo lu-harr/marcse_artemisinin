@@ -36,10 +36,20 @@ names(bb_paths) <- names(nice_name_lookup)
 # relevant year:
 mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   extract_preds(data_path = data_path_lookup[[marker]],
-                pred_path = paste0(bb_paths[[marker]], "preds_medians.tif"))
+                pred_path = paste0(bb_paths[[marker]], "preds_medians.tif"),
+                buffer = 5000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
 }) %>%
   setNames(names(nice_name_lookup)) %>%
   suppressMessages()
+
+# ggplot() + 
+#   geom_sf(data = afr) + 
+#   geom_point(data = mut_dat_assoc_with_preds$k13_marcse %>%
+#                mutate(flag = is.na(pred)) %>%
+#                filter(flag), 
+#              aes(x = x, y = y, 
+#                  #col = present/tested,
+#                  col = flag))
 
 # plot(mut_dat_assoc_with_preds$k13_marcse$present / mut_dat_assoc_with_preds$k13_marcse$tested, 
 #      mut_dat_assoc_with_preds$k13_marcse$pred)

@@ -42,7 +42,7 @@ names(pfpr) <- paste0("pfpr_", years)
 
 covariates <- pfpr # now standardised
 
-setup_mut_data <- function(path, min_year = NULL){
+setup_mut_data <- function(path, min_year = NULL, buffer = 0){
   
   # read in and format data for a single response (k13, crt76, mdr1-86, ...)
   read.csv(path) %>% 
@@ -58,12 +58,13 @@ setup_mut_data <- function(path, min_year = NULL){
     summarise(tested = sum(tested),
               present = sum(present)) %>%
     ungroup() %>%
-    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y))) %>%
+    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y)), 
+           search_radius = buffer) %>%
     drop_na() %>%
     dplyr::select(-c(land))
 }
 
-setup_multiple_snps <- function(path, min_year = NULL){
+setup_multiple_snps <- function(path, min_year = NULL, buffer = 0){
   # read in and format data for multiple responses
   # (extra columns: snp, snp_id; snp included in grouping)
   read.csv(path) %>% 
@@ -80,8 +81,8 @@ setup_multiple_snps <- function(path, min_year = NULL){
     summarise(tested = sum(tested),
               present = sum(present)) %>%
     ungroup() %>%
-    # check all points are landed
-    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y)),
+    mutate(land = terra::extract(pfpr$pfpr_2000, cbind(x, y), 
+                                 search_radius = buffer),
            snp_id = as.numeric(as.factor(snp))) %>%
     drop_na() %>%
     dplyr::select(-c(land))

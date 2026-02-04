@@ -40,7 +40,8 @@ fit_binom <- function(mut_data,
                      folds = NULL,
                      warmup = 100, 
                      nsamples = 100, 
-                     nchains = 6){
+                     nchains = 6,
+                     buffer = 0){
   
   if(!is.null(fold)){
     train <- unlist(folds[-c(fold)])
@@ -57,7 +58,8 @@ fit_binom <- function(mut_data,
                              scale = FALSE,
                              temporal_var = TRUE,
                              temporal_covt_range = pfpr_years,
-                             degs_to_rads = TRUE)
+                             degs_to_rads = TRUE,
+                             buffer = buffer)
   X_obs <- out$df
   scaled_years <- out$scaled_years
   
@@ -175,7 +177,8 @@ fit_betabinom <- function(mut_data,
                       folds = NULL,
                       warmup = 100, 
                       nsamples = 100, 
-                      nchains = 6){
+                      nchains = 6,
+                      buffer = 0){
   
   if(!is.null(fold)){
     train <- unlist(folds[-c(fold)])
@@ -192,7 +195,8 @@ fit_betabinom <- function(mut_data,
                              scale = FALSE,
                              temporal_var = TRUE,
                              temporal_covt_range = pfpr_years,
-                             degs_to_rads = TRUE)
+                             degs_to_rads = TRUE,
+                             buffer = buffer)
   X_obs <- out$df
   scaled_years <- out$scaled_years
   

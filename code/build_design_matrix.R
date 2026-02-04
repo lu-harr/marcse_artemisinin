@@ -25,7 +25,8 @@ build_design_matrix <- function(covariates,
                                 temporal_var = FALSE, 
                                 temporal_covt_range = NULL,
                                 degs_to_rads = FALSE,
-                                obs_cols = NULL) {
+                                obs_cols = NULL,
+                                buffer = 0) {
   
   # optionally scale covariates
   if (scale) {
@@ -69,9 +70,11 @@ build_design_matrix <- function(covariates,
         # and we're assuming that all years have the same number of covariates
         message(paste0("Warning: zero matches to year ", year))
       }
-      cell_ids <- terra::cellFromXY(covariates[[lyr_idx]], 
-                                    as.data.frame(coords[coord_idx, c("x","y")]))
-      covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], cell_ids) %>%
+      # cell_ids <- terra::cellFromXY(covariates[[lyr_idx]], 
+      #                               as.data.frame(coords[coord_idx, c("x","y")]))
+      covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], 
+                                        as.data.frame(coords[coord_idx, c("x","y")]), 
+                                        search_radius = buffer) %>%
         unlist()
     }
   }
@@ -81,15 +84,18 @@ build_design_matrix <- function(covariates,
     
     # if coords is provided use those cells, otherwise use all cells
     if (is.null(coords)) {
-      cell_ids <- terra::cells(covariates)
+      # cell_ids <- terra::cells(covariates)
+      coords <- crds(covariates)
       
-    } else {
-      
-      cell_ids <- terra::cellFromXY(covariates, coords[,c("x", "y")])
-    }
+    } # else {
+    #   
+    #   cell_ids <- terra::cellFromXY(covariates, coords[,c("x", "y")])
+    # }
     
     # extract, pad with intercept dummy, and return
-    covs <- terra::extract(covariates, cell_ids) %>%
+    covs <- terra::extract(covariates, 
+                           coords[,c("x", "y")],
+                           search_radius = buffer) %>%
       unlist()
   }
   

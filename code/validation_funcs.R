@@ -1,9 +1,10 @@
-# fucntions for validation script
+# fucntions for validation scripts
 
 extract_preds <- function(data_path,
                           pred_path,
                           ave_tag = "_50",
                           buffer = 0){
+  # grab predictions for all points in dataset for un-held-out models
   # bring in coords associated with predictions
   mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR)
   preds <- rast(pred_path)
@@ -13,21 +14,18 @@ extract_preds <- function(data_path,
   mut_data$pred <- NA
   yrs_to_extract <- unique(mut_data$year)
   for (yr in yrs_to_extract){
-
+    message(yr)
     if (yr %in% yrs_pred){
       idx <- which(mut_data$year == yr)
       val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                             mut_data[idx, c("x", "y")],
-                            ID = FALSE, search_radius = buffer)
-      # message(paste(dim(val), collapse = ","))
+                            ID = FALSE, 
+                            search_radius = buffer)
       
-      # bug jumped out of nowhere: no longer getting data.frame of > 3 cols
-      # if(ncol(val) < 3){
-      #   # we have to have an inconsistent return when |idx| == 1
-      #   mut_data[idx, "pred"] <- val[1,1]}
-      # else{
-      # mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
-      # }
+      if (length(idx) == 1){
+        # not quite sure why, but we get a 2*2 with predicted value twice ...
+        val <- val[1, ]
+      }
       
       mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
     #plot(mut_data$present[idx] / mut_data$tested[idx], mut_data$pred[idx], main = yr)
@@ -45,9 +43,11 @@ extract_preds <- function(data_path,
 extract_preds_cv <- function(data_path,
                               pred_path,
                               folds,
-                              ave_tag = "_50",
-                              buffer = 0){
-  
+                              ave_tag = "_50", # vestigial at this point
+                              buffer = 0 # integer for dragging points back to land
+                              ){
+  # grab predictions for all points in dataset on held-out models
+
   folds <- lapply(1:length(folds), function(idx){
     data.frame(fold = idx,
                pts = folds[[idx]])
@@ -55,7 +55,7 @@ extract_preds_cv <- function(data_path,
     do.call(bind_rows, .) %>%
     arrange(pts)
   
-  message(nrow(folds))
+  message(paste(unique(folds$fold)))
   
   # bring in coords associated with predictions + associate with fold
   mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR) %>%
@@ -63,23 +63,23 @@ extract_preds_cv <- function(data_path,
   
   message(nrow(mut_data))
   
+  
   preds_avail <- list.files(pred_path)
   preds_avail <- preds_avail[grep("preds_medians", preds_avail)]
-  
+  # (in case not all folds predicted to:)
+  folds_avail <- unique(str_extract(preds_avail, "(?<=_)\\d+(?=\\.tif)"))
   message(preds_avail)
-  
-  folds_avail <- unique(str_extract(preds_avail, ".(?=\\.tif$)"))
-  
-  message(folds_avail)
+  message(folds_avail) # am I missing one?
   
   # get predictions for each row in `mut_data`
   mut_data$pred <- NA
+  extract_attempted = c()
   
   for (fidx in 1:length(folds_avail)){
     preds <- rast(paste0(pred_path, preds_avail[fidx]))
     yrs_pred <- str_extract(names(preds), "\\d{4}")
     
-    message(fidx)
+    message(paste0(fidx, "!", folds_avail[fidx])) # something happened to 2: no yrs_to_extract
     
     yrs_to_extract <- mut_data %>%
       filter(fold == folds_avail[fidx]) %>%
@@ -92,6 +92,7 @@ extract_preds_cv <- function(data_path,
     for (yr in yrs_to_extract){
       if (yr %in% yrs_pred){
         idx <- which(mut_data$year == yr & mut_data$fold == folds_avail[fidx])
+        extract_attempted  <- c(extract_attempted, idx)
         
         val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                               mut_data[idx, c("x", "y")],
@@ -100,9 +101,16 @@ extract_preds_cv <- function(data_path,
         message(paste(length(idx), ",", sum(is.na(val))))
   
         mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+      } else {
+        message(paste(yr, " not in preds"))
       }
     }
   }
+  # is the problem that I'm not extracting for some points or that extraction
+  # is off-land?
+  message(length(setdiff(1:nrow(mut_data), extract_attempted)))
+
+
   mut_data
 }
 
@@ -111,6 +119,7 @@ extract_preds_cv <- function(data_path,
 # tmp = extract_preds_cv(data_path = "data/clean/moldm_marcse_k13_nomarker.csv",
 #                  pred_path = "output/k13_marcse/bb_gne/cv_preds/",
 #                  folds = folds)
+
 
 rmse <- function(mut_data){
   # root mean square error on probability scale
