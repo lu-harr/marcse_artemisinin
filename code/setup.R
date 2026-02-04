@@ -20,6 +20,7 @@ suppressPackageStartupMessages({
 world <- ne_countries(scale="medium", returnclass = "sf")
 
 MIN_YEAR <- 2000
+BUFFER <- 5000
 
 # country shps for plotting/masking
 afr <- world %>%

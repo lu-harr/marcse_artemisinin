@@ -45,7 +45,9 @@ if(marker == "k13"){
 message(paste0("Reading in from: ", in_dat))
 message(getwd())
 message("Enforcing min year for surveyor data - 2000")
-mut_data <- setup_mut_data(in_dat, min_year = 2000, buffer = 5000)
+mut_data <- setup_mut_data(in_dat, 
+                           min_year = MIN_YEAR, 
+                           buffer = BUFFER)
 
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
 
@@ -56,7 +58,7 @@ fit_betabinom(mut_data = mut_data,
               nchains = 8,
               warmup = 5000,
               nsamples = 25000,
-              buffer = 5000)
+              buffer = BUFFER)
 
 # vis_model_checks(paste0("output/", out_dir), out_tag = marker)
 
