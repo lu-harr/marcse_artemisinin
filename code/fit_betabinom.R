@@ -54,8 +54,8 @@ fit_betabinom(mut_data = mut_data,
               pfpr_years = pfpr_years,
               out_dir = out_dir,
               nchains = 8,
-              warmup = 10,
-              nsamples = 20,
+              warmup = 5000,
+              nsamples = 25000,
               buffer = 5000)
 
 # vis_model_checks(paste0("output/", out_dir), out_tag = marker)

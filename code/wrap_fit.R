@@ -60,7 +60,10 @@ fit_binom <- function(mut_data,
                              temporal_covt_range = pfpr_years,
                              degs_to_rads = TRUE,
                              buffer = buffer)
-  X_obs <- out$df
+  X_obs <- out$df %>% 
+    # not previously here but feels sensible:
+    filter(!is.na(pfpr))
+  
   scaled_years <- out$scaled_years
   
   coord_cols <- c("x_rd", "y_rd", "year_scaled")
@@ -197,7 +200,10 @@ fit_betabinom <- function(mut_data,
                              temporal_covt_range = pfpr_years,
                              degs_to_rads = TRUE,
                              buffer = buffer)
-  X_obs <- out$df
+  X_obs <- out$df%>% 
+    # not previously here but feels sensible:
+    filter(!is.na(pfpr))
+  
   scaled_years <- out$scaled_years
   
   coord_cols <- c("x_rd", "y_rd", "year_scaled")
