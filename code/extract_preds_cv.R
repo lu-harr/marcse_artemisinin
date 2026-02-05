@@ -27,7 +27,8 @@ folds <- read_rds(paste0("output/", marker, "/", mod, "/cv_folds.rds"))
 
 dat <- extract_preds_cv(data_path = data_path_lookup[[marker]],
                  pred_path = paste0("output/", marker, "/", mod, "/cv_preds/"),
-                 folds = folds, buffer = 5000)
+                 folds = folds, out_buffer = 15000) 
+# using larger buffer as increased AGG_FACTOR for held-out models
 
 write.csv(dat, paste0("output/", marker, "/", mod, "/mut_dat_cv_preds_extracted.csv"),
           row.names = FALSE)

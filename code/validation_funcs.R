@@ -6,7 +6,7 @@ extract_preds <- function(data_path,
                           buffer = 0){
   # grab predictions for all points in dataset for un-held-out models
   # bring in coords associated with predictions
-  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR)
+  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR, buffer = buffer)
   preds <- rast(pred_path)
   yrs_pred <- str_extract(names(preds), "\\d{4}")
   
@@ -44,7 +44,8 @@ extract_preds_cv <- function(data_path,
                               pred_path,
                               folds,
                               ave_tag = "_50", # vestigial at this point
-                              buffer = 0 # integer for dragging points back to land
+                              in_buffer = 0,
+                              out_buffer = 0 # integer for dragging points back to land
                               ){
   # grab predictions for all points in dataset on held-out models
 
@@ -58,7 +59,7 @@ extract_preds_cv <- function(data_path,
   message(paste(unique(folds$fold)))
   
   # bring in coords associated with predictions + associate with fold
-  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR) %>%
+  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR, buffer = in_buffer) %>%
     mutate(fold = folds$fold)
   
   message(nrow(mut_data))
@@ -96,7 +97,7 @@ extract_preds_cv <- function(data_path,
         
         val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                               mut_data[idx, c("x", "y")],
-                              ID = FALSE, search_radius = buffer)
+                              ID = FALSE, search_radius = out_buffer)
         
         message(paste(length(idx), ",", sum(is.na(val))))
   

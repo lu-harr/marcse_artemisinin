@@ -81,5 +81,6 @@ mutants %>%
   filter(Marker == "P574L" & Present > 0) %>%
   filter(PubMedID %in% c("40744006", "40744004"))
 
-mutants
+mutants %>%
+  filter(Country == "Nigeria" & Present > 0 & Marker != "wildtype" & !is.na(status))
 

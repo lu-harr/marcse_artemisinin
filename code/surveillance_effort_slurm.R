@@ -26,7 +26,7 @@ message(getwd())
 message("Enforcing min year for surveyor data - 2000")
 message(paste("Writing to:", out_dir))
 
-mut_data <- setup_mut_data(in_dat, min_year = 2000)
+mut_data <- setup_mut_data(in_dat, min_year = MIN_YEAR, buffer = BUFFER)
 
 # message("All years")
 # wrap_survey_effort(in_dat,

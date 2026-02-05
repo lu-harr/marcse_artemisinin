@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=extr_pre
-#SBATCH --output=output_%j.log
-#SBATCH --error=error_%j.log
+#SBATCH --output=logs/%x_%A_.out
+#SBATCH --error=logs/%x_%A_.err
 #SBATCH --time=2:00:00           # Max runtime (HH:MM:SS)
 #SBATCH --mem=5G                  # Memory per node
 #SBATCH --ntasks=1                # Number of tasks
@@ -23,10 +23,10 @@ pwd
 # provide marker and model ...
 
 Rscript code/extract_preds_cv.R k13_marcse bb_gne
-Rscript code/extract_preds_cv.R mdr86 bb_gne
-Rscript code/extract_preds_cv.R mdr184 bb_gne
-Rscript code/extract_preds_cv.R mdr1246 bb_gne
-Rscript code/extract_preds_cv.R crt76 bb_gne
+# Rscript code/extract_preds_cv.R mdr86 bb_gne
+# Rscript code/extract_preds_cv.R mdr184 bb_gne
+# Rscript code/extract_preds_cv.R mdr1246 bb_gne
+# Rscript code/extract_preds_cv.R crt76 bb_gne
 
 
 

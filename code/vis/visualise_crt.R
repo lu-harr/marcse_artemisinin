@@ -3,7 +3,8 @@ library(viridisLite)
 library(sf)
 # diverging palette for median surfaces please !
 
-mut_data <- setup_mut_data("data/moldm_crt76.csv")
+mut_data <- setup_mut_data("data/moldm_crt76.csv", 
+                           min_year = MIN_YEAR, buffer = BUFFER)
 
 # mask
 afr <- world %>%

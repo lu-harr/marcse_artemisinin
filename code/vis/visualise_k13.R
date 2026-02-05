@@ -7,7 +7,8 @@ library(cowplot)
 source("code/setup.R")
 source("code/build_design_matrix.R")
 
-mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv")
+mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv", 
+                           min_year = MIN_YEAR, buffer = BUFFER)
 preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
            rast("output/k13_marcse/bb_gne/preds_sds.tif"))
 test_dens <- rast("output/k13_marcse/surveillance_effort_k13_marcse.grd")

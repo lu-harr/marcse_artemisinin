@@ -1,5 +1,5 @@
 library(malariaAtlas)
-malariaAtlas::listRaster()
+all_rasters <- malariaAtlas::listRaster()
 #  Malaria__202206_Global_Pf_Parasite_Rate 
 #  Malaria__202406_Global_Pf_Parasite_Rate 
 #  Malaria__202508_Global_Pf_Parasite_Rate
