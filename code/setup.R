@@ -67,6 +67,7 @@ setup_mut_data <- function(path, min_year = NULL, buffer = 0){
     dplyr::select(-c(land))
 }
 
+# (this was for abandoned pfmdr haplotype model:)
 setup_multiple_snps <- function(path, min_year = NULL, buffer = 0){
   # read in and format data for multiple responses
   # (extra columns: snp, snp_id; snp included in grouping)
