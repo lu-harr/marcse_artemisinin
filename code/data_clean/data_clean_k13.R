@@ -3,13 +3,13 @@
 # this script does all of our packages and brings in the WHO markers list:
 source("code/data_clean/format_moldm.R")
 
-moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv") %>%
+moldm <- format_moldm_k13("data/raw/db_20260211/novartis.csv") %>%
   # do a quick tidy up of PubMedIDs
   clean_up_pmids()
   
 # what's left?
 moldm %>%
-filter(str_length(PubMedID) != 8) %>%
+filter(str_length(PubMedID) != 8 & PubMedID != "Unpublished") %>%
 dplyr::select(PubMedID, Title) %>%
 arrange(Title) %>%
 unique() %>%

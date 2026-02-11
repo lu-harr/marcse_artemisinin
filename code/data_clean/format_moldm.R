@@ -155,6 +155,10 @@ clean_up_pmids <- function(dat){
                                 ~ "38461239",
                                 Title == "UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING" 
                                 ~ "Unpublished",
+                                Title == "Convenient screening for drug resistance mutations from historical febrile malaria samples across Kenya"
+                                ~ "10.1101/2025.09.09.675152", # medRxiv
+                                Title == "Absence of Kelch 13 mutations in Plasmodium falciparum isolates in Ilorin, Nigeria."
+                                ~ "10.4314/njpar.v46i2.6",
                                 TRUE ~ PubMedID),
            from = "moldm",
            Longitude = as.numeric(Longitude),

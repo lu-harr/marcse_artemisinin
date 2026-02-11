@@ -278,7 +278,7 @@ sty <- markers_panel_a %>%
 
 df <- markers %>%
   filter(marker %in% markers_panel_a$marker) %>%
-  mutate(marker = factor(marker, levels = markers_panel_a$marker))
+  mutate(marker = factor(marker, levels = markers_panel_a$marker)) %>%
   left_join(sty, join_by(marker==marker)) %>%
   mutate(group = interaction(col, linet, sep = " / ")) %>%
   filter(year > 2006)
