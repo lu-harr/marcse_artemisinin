@@ -1,139 +1,9 @@
-library(ggplot2)
-library(rnaturalearth)
-library(rnaturalearthdata)
-library(sf)
-library(dplyr)
-library(terra)
-library(iddoPal)
-library(patchwork)
-library(cowplot)
+# read in moldm and clean up into with_markers and aggregated formats
 
-# marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
-# from WHO markers compendium:
-marker_reference <- readxl::read_xlsx("compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
-                                      sheet = "Artemisinins (Pf)") %>%
-  filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
-  rename(marker = `Alteration(s)`,
-         status = Classification) %>%
-  dplyr::select(marker, status)
+# this script does all of our packages and brings in the WHO markers list:
+source("code/data_clean/format_moldm.R")
 
-
-YEAR_LOWER_BOUND <- 2000
-MIN_SAMPLE_SIZE <- 10
-
-theme_set(theme_bw())
-
-world <- ne_countries(scale="medium", returnclass = "sf")
-afr <- world %>%
-  filter(continent == "Africa") %>%
-  vect() %>%
-  crop(ext(-21, 63, -35, 37)) %>%
-  st_as_sf()
-
-# moldm <- read_xlsx("raw/SO_attachment_20250610/Surveyor data 250609.xlsx") %>%
-#   filter(!is.na(`Start Year`) & !is.na(`End Year`)) %>% # remove where both are NA
-#   filter(`End Year` > 1960 & `End Year` < 2500) %>%
-#   filter(`Start Year` > 1960 & `Start Year` < 2500) %>%
-#   filter(grepl("k13", Marker)) %>%
-#   mutate(strip_marker = gsub("k13 ", "", Marker)) %>% # strip k13
-#   left_join(marker_reference, 
-#             by = join_by(strip_marker == marker)) %>%
-#   mutate(year = round((`Start Year` + `End Year`) / 2, 0),
-#          # if one or the other is not complete, populate with the value we have:
-#          year = case_when(is.na(year) & !is.na(`Start Year`) ~ `Start Year`,
-#                           is.na(year) & !is.na(`End Year`) ~ `End Year`,
-#                           TRUE ~ year),
-#          mutant = !is.na(status) & status != "Not associated") %>%
-#   filter(Continent == "Africa") %>%
-#   suppressWarnings()
-
-raw_moldm <- function(path){
-  out <- read.csv(path) %>%
-    mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
-    filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
-    filter(End.Year > 1960 & End.Year < 2500) %>%
-    filter(Start.Year > 1960 & Start.Year < 2500) %>%
-    # there definitely aren't any "Kelch 13" left in here are there? Nope
-    filter(grepl("[k|K]13", Marker)) %>%
-    filter(!(Longitude < -10 & Latitude < -10)) %>%
-    filter(Continent == "Africa") %>%
-    suppressWarnings()
-    
-  message(paste("Number of rows indicating double mutants:", 
-                nrow(filter(out, grepl(",", Marker)))))
-  
-  # remove double mutants? - checked and they're not included as single mutants (see below)
-  # there's probably a tidy way to do this but alas:
-  double_mutants <- filter(out, grepl(",", Marker)) %>%
-    separate_rows(Marker, sep = ",") %>%
-    mutate(Marker = trimws(Marker))
-    # I checked and there aren't any double mutants where both mutants are on the WHO list
-    # So we don't end up counting anyone twice in aggregate model
-
-  out <- filter(out, !grepl(",", Marker)) %>%
-    # add disaggregated double mutants back in:
-    bind_rows(double_mutants) %>%
-    # strip "k13"
-    mutate(strip_marker = gsub("[k|K]13 ", "", Marker)) %>% 
-    # there's also a stray "\t" in there ...
-    mutate(strip_marker = gsub("\\t", "", strip_marker)) %>%
-    # handle these mixed infections carefully:
-    # C469F/Y, C469Y/F, N537I/D, C469STOC/P
-    # 469Y/F - count towards Y as I don't want to count it twice in aggregate model
-    mutate(strip_marker = case_when(strip_marker == "C469F/Y" | strip_marker == "C469Y/F" ~ "C469Y",
-                                    strip_marker == "N537I/D" ~ "N537I", # (this one's in the compendium)
-                                    # "C469STOC/P" - this one will get filtered out anyway
-                                    TRUE ~ strip_marker)) %>%
-    # strip out mixed infections - count towards mutants
-    mutate(strip_marker = gsub("./", "", strip_marker)) %>%
-    # now link up with marker status
-    left_join(marker_reference, 
-              by = join_by(strip_marker == marker)) %>%
-    mutate(year = round((Start.Year + End.Year) / 2, 0),
-           # if one or the other is not complete, populate with the value we have:
-           year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
-                            is.na(year) & !is.na(End.Year) ~ End.Year,
-                            TRUE ~ year),
-           Longitude = as.numeric(Longitude),
-           Latitude = as.numeric(Latitude),
-           mutant = !is.na(status)) %>%
-    suppressWarnings()
-  
-  message(paste0("Number of studies before filtering early records: ", 
-                 length(unique(out$Title))))
-  message(paste0("Publication years: ", 
-                 range(as.numeric(out$Year.Published), na.rm=TRUE) %>%
-                   suppressWarnings()))
-  message(paste("Earliest years:", min(out$year, na.rm=TRUE)))
-  
-  out <- filter(out, year >= YEAR_LOWER_BOUND)
-  
-  message(paste0("Number of studies after filtering early records: ", 
-                 length(unique(out$Title))))
-  # this is a little naive but it's the best estimate we're going to get:
-  message(paste0("Number of people screened: ", 
-                 out %>%
-                   group_by(Longitude, Latitude, year, Title, Tested) %>% 
-                   summarise(n = n()) %>%
-                   ungroup() %>%
-                   dplyr::select(Tested) %>%
-                   sum() %>%
-                   suppressMessages()))
-  
-  message(paste0("Or more conservatively: ", 
-                 out %>%
-                   group_by(Longitude, Latitude, year, PubMedID) %>% 
-                   summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
-                   ungroup() %>%
-                   dplyr::select(Tested) %>%
-                   sum() %>%
-                   suppressMessages()))
-  
-  out
-}
-
-# moldm <- raw_moldm("data/raw/db_20250616/novartis.csv")
-moldm <- raw_moldm("data/raw/db_20260105/novartis.csv")
+moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv")
 
 # notes on double mutants:
 # 26667053: double mutants not counted in single mutant counts
@@ -169,7 +39,7 @@ plot(mutants$year, mutants$Present/mutants$Tested, xlab="Year", ylab="Prevalence
 wildtypes <- moldm %>%
   filter(Marker == "k13 wildtype") %>%
   group_by(Longitude, Latitude, year, Tested, Site.Name, Country) %>%
-  summarise(Present = sum(Present), n=n(), 
+  summarise(Present = sum(unique(Present)), n=n(), 
             pubs = paste0(unique(PubMedID), collapse=",")) %>% 
   # check how many simultaneous wildtype entries we have?
   mutate(Site.Name = gsub(",", "", Site.Name)) %>%
@@ -179,10 +49,10 @@ wildtypes <- moldm %>%
   suppressMessages()
 
 # possible duplicates?
-# FIX
 wildtypes[which(wildtypes$Present/wildtypes$Tested > 1),
           c("Longitude", "Latitude",  "year", "Tested", "Site.Name",
             "Present", "pubs")]
+# it doesn't matter so much because of how we add them below:
 
 wildtypes_to_add <- anti_join(
   # locations in `wildtypes` that do not occur in `mutants`,
@@ -205,11 +75,6 @@ write.csv(with_wildtypes %>%
           "data/clean/moldm_k13_nomarker.csv",
           row.names = FALSE)
 
-# write.csv(with_wildtypes %>%
-#             dplyr::select(-c(pubs)),
-#           "../k13_seafrica/data/moldm_k13_nomarker.csv",
-#           row.names = FALSE)
-
 message(paste("Number of testees:", 
               with_wildtypes %>% 
                 group_by(year, Longitude, Latitude, Tested) %>% 
@@ -225,6 +90,10 @@ moldm <- read.csv("data/clean/moldm_with_markers.csv")
 
 plot(with_wildtypes$year, with_wildtypes$Present/with_wildtypes$Tested, 
      xlab="Year", ylab="Prevalence")
+ggplot(data = moldm %>% filter(mutant)) +
+  geom_point(aes(x = year, y = Present / Tested, size = Tested))
+moldm %>% filter(Present/Tested > 0.4 & mutant)
+
 
 to_vis <- with_wildtypes %>% 
   mutate(year_bin = cut(year, breaks = c(min(year)-1, 2009, 2012, 2015, 2018, 2021, max(year)))) %>%
@@ -260,7 +129,7 @@ ggplot() +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_grey() 
-ggsave("figures/archive/abs_grey.png", height=3, width=5, scale=2)
+# ggsave("figures/archive/abs_grey.png", height=3, width=5, scale=2)
 
 markers <- moldm %>%
   filter(mutant) %>% # no filter on Tested
@@ -351,7 +220,7 @@ df <- df %>%
 bg <- bg %>%
   filter(year >= 2005)
 
-bg_scale <- 80
+bg_scale <- 50
 bg_col <- "grey65"
 
 library(viridisLite)
@@ -412,20 +281,7 @@ p2 <- ggplot() +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme(plot.background = element_rect(fill='transparent', color=NA))
 
-# p2 +
-#    geom_rect(data = data.frame(xmin = 60, xmax = 80, ymin = 0, ymax = 40, year_bin = "(2015,2018]",
-#                                Marker = "R622I"), 
-#              aes(xmin=xmin, xmax=xmax, ymin=ymin,  ymax=ymax), 
-#              colour="grey10", fill="grey85", linewidth=0.3)
-
 library(grid)
-# rect <- rectGrob(
-#   x = 0.922,
-#   y = 0.27,
-#   width = unit(0.2, "in"),
-#   height = unit(0.2, "in"),
-#   gp = gpar(fill = "grey70", colour="grey50", alpha = 0.5)
-# )
 
 rect <- rectGrob(
   x = 0.915,
@@ -449,6 +305,8 @@ plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 
 # would be sick if I could make the word "absence" bigger but I've had enough of 
 # snarky people on ggplot stack overflow for about three years
-message("TODO: Make this five markers and all other markers")
 ggsave("figures/markers_disagg.png", height = 5, width = 5.1, scale = 2)
+
+
+
 

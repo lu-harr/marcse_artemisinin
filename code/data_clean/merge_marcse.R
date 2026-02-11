@@ -1,30 +1,14 @@
 # merge IDDO Surveyor data in data/raw/ with MARCSE dashboard data 
+library(tidyverse)
+library(readxl)
 
-# now pulling marker list directly from WHO compendium
-# marker_reference <- readxl::read_xlsx("data/marker_index.xlsx")
-marker_reference <- readxl::read_xlsx("compendium-of-molecular-markers-for-antimalarial-drug-resistance.xlsx",
-                                      sheet = "Artemisinins (Pf)") %>%
-  filter(grepl("Validated", Classification) | grepl("Candidate", Classification)) %>%
-  rename(marker = `Alteration(s)`,
-         status = Classification) %>%
-  dplyr::select(marker, status)
+# this script does all of our packages and brings in the WHO markers list:
+source("code/data_clean/format_moldm.R")
 
-# at this point, ya need to run the top of data_clean_k13.R
-# ... I could put everything in the same place or put the functions somewhere on
-# they're own but I'm going to keep things separate for now
-moldm <- raw_moldm("data/raw/db_20260105/novartis.csv") %>%
+moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv") %>%
   mutate(Marker = strip_marker)
-# head(moldm)
 
-# looks like studies are in there twice?
-moldm %>%
-  group_by(Longitude, Latitude, year, status, Marker, PubMedID) %>%
-  summarise(Present = max(Present), n = n()) %>%
-  ungroup() %>%
-  mutate(status = ifelse(Marker == "wildtype", "wildtype", status)) %>%
-  group_by(status) %>%
-  summarise(Present = sum(Present))
-# perhaps this is how I should be calculating total test size ?
+marcse <- read.csv("../MARC_SEA_dashboard/tidied_k13_dashboard_data.csv")
 
 # let's check for weirdness here:
 marcse %>%

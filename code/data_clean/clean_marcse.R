@@ -47,7 +47,7 @@ marker_reference <- readxl::read_xlsx("compendium-of-molecular-markers-for-antim
          status = Classification) %>%
   dplyr::select(marker, status)
 
-marcse <- read_xlsx("../MARC_SEA_dashboard/Dashboard_k13_update_January_2026.xlsx") %>%
+marcse <- read_xlsx("Dashboard_k13_update_January_2026.xlsx") %>%
   mutate_at(c("Present", "Tested"), as.numeric) %>%
   dplyr::select(-c("...19": "...22")) %>%
   rename(Notes = `...18`,
@@ -191,8 +191,8 @@ marcse %>%
 
 # I've re-extracted study 40744006
 reextractees <- bind_rows(
-  read.csv("../MARC_SEA_dashboard/40744006_clean.csv"),
-  read.csv("../MARC_SEA_dashboard/39802768_clean.csv")) %>%
+  read.csv("reextract/40744006_clean.csv"),
+  read.csv("reextract/39802768_clean.csv")) %>%
   mutate(Marker = ifelse(Marker == "WT", "wildtype", Marker),
          year = round((Start.Year + End.Year) / 2, 0),
          across(c(PubMedID, Year.Published), ~ as.character(.x))) %>%
