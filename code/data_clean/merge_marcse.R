@@ -6,9 +6,16 @@ library(readxl)
 source("code/data_clean/format_moldm.R")
 
 moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv") %>%
-  mutate(Marker = strip_marker)
+  mutate(Marker = strip_marker) %>%
+  clean_up_pmids() %>%
+  mutate(Year.Published = as.numeric(Year.Published)) %>%
+  suppressWarnings()
 
-marcse <- read.csv("../MARC_SEA_dashboard/tidied_k13_dashboard_data.csv")
+# this is sitting in a separate repo at lu-harr/MARC_SEA_dashboard/
+marcse <- read.csv("../MARC_SEA_dashboard/tidied_k13_dashboard_data.csv") %>%
+  # this is initialised in the format_moldm script:
+  left_join(marker_reference, 
+            by = join_by(Marker == marker))
 
 # let's check for weirdness here:
 marcse %>%
@@ -28,51 +35,14 @@ moldm %>%
   dplyr::select(PubMedID) %>%
   unique() %>%
   as.vector()
-moldm %>%
-  filter(str_length(PubMedID) != 8) %>%
-  dplyr::select(PubMedID) %>%
-  unique() %>%
-  as.vector()
 
-
-
-moldm <- moldm %>%
-  left_join(pmid_checks, by = join_by(PubMedID == from)) %>%
-  filter(PubMedID != "40744004") %>% 
-  # this paper was extracted twice in two different formats and I prefer the other one :/
-  mutate(PubMedID = case_when(!is.na(to) ~ to,
-                              TRUE ~ PubMedID)) %>%
-  mutate(PubMedID = case_when(Title == "Antimalarial Drug Resistance Marker Prevalence Survey - 2016" ~ "Unpublished",
-                              Title == "UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING" ~ "Unpublished",
-                              Title == "Presence of k13 561H artemisinin resistance mutations in Plasmodium falciparum infections from Rwanda" ~ "Unpublished",
-                              Title == "High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" ~ "40744004", # retaining preprint extraction
-                              Title == "Screening for antifolate and artemisinin resistance in Plasmodium falciparum clinical isolates from three hospitals of Eritrea" ~ "38840941",
-                              Title == "Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire" ~ "38440764",
-                              Title == "Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021" ~ "38461239",
-                              Title == "Investigation of Markers of Antimalarial Resistance During a Therapeutic Efficacy Study Conducted in Uganda, 2018–2019" ~ "Unpublished", # can't seem to find a trace of it .. maybe it was a conference presentation
-                              Title == "Molecular surveillance of artemisinin resistance-linked PFK13 gene polymorphisms in Adamawa State, Nigeria" ~ "10.61186/rabms.11.1.75", # no PMID
-                              TRUE ~ PubMedID),
-         from = "moldm",
-         Longitude = as.numeric(Longitude),
-         Latitude = as.numeric(Latitude)) %>%
-  dplyr::select(-c(to))
-
-oldv <- moldm
-
-# not particularly satisfied by this ...
+# have paid attention to PMIDs as joining variable in the various tidy-ups ...
 to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
-  filter(PubMedID != "Already in moldm")
+  filter(PubMedID != "Already in moldm") %>%
+  # add these back in:
+  bind_rows(filter(marcse, PubMedID == "Unpublished"))
 message(paste0("Studies: ", length(unique(to_add$Title))))
 range(as.numeric(to_add$Year.Published), na.rm=TRUE)
-
-# 12,
-to_add %>% dplyr::select(Title, PubMedID, Authors) %>% 
-  unique()  %>%
-  slice(22) %>%
-  as.data.frame()
-filter(moldm, grepl("Eastern Uganda", moldm$Title)) %>% 
-  dplyr::select(Title, PubMedID) %>% 
-  unique()
 
 message(paste0("Patients: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title, Tested) %>%
@@ -107,18 +77,10 @@ moldm %>%
   dplyr::select(Title, PubMedID) %>% 
   unique()
 
-# exclude from current set for now - can't make heads/tails:
-moldm %>% 
-  filter(PubMedID == "40744006") %>%
-  dplyr::select(Present, Tested, Marker, year, `Site.Name`, PubMedID, Title, Authors) %>%
-  mutate(Prevalence = Present / Tested) %>%
-  arrange(Prevalence) %>%
-  write.csv("data/raw/query_aranda_diaz_et_al.csv", row.names = FALSE)
-
-message("From here down it's pretty much as in the other cleaning script")
+message("From here down it's pretty much as in the format_moldm script")
 
 write.csv(moldm %>%
-            filter(Present / Tested <= 1 & Tested > 5), 
+            filter(Present / Tested <= 1 & Tested > MIN_SAMPLE_SIZE), 
           "data/clean/moldm_marcse_with_markers.csv")
 
 mutants <- moldm %>%
@@ -134,21 +96,17 @@ mutants <- moldm %>%
   suppressMessages()
 
 message(paste("Number of rows in mutant table:", nrow(mutants)))
-# added 1035 - 967 == 68 rows here
 
-tmp <- moldm %>% 
+message("TF-associated mutations in dataset: ")
+moldm %>% 
   filter(mutant) %>% 
   group_by(Marker) %>%
   summarise(n_present = sum(Present), n_tested = sum(Tested)) %>%
   filter(n_present > 0) %>%
-  #filter(npres >= 10) %>%
   full_join(marker_reference, join_by(Marker == marker)) %>%
   arrange(desc(n_present)) %>%
-  filter(!is.na(n_present))
-message("TF-associated mutations in dataset")
-tmp %>% as.data.frame()
-
-
+  filter(!is.na(n_present)) %>% 
+  as.data.frame()
 
 wildtypes <- moldm %>%
   filter(Marker == "wildtype") %>%
@@ -182,20 +140,18 @@ write.csv(wildtypes_to_add,
           row.names = FALSE)
 
 message(paste("Number of rows of wildtypes to add:", nrow(wildtypes_to_add)))
-# 536 - 413 == 123 added rows
+# 536 - 413 == 123 added rows from marcse
 
 with_wildtypes <- full_join(mutants, wildtypes_to_add) %>%
   filter(Tested > MIN_SAMPLE_SIZE) %>%
   suppressMessages()
 
-# suspect this is present and tested around the wrong way? Check with Stephanie?
-# (These are all from the same paper)
+# Make sure anything that pops up down here is cleaned up:
 with_wildtypes %>%
   filter(Present / Tested > 1)
 marcse %>%
   filter(Present / Tested > 1) %>%
-  dplyr::select(PubMedID, Country, Site.Name, Present, Tested, Marker, Prevalence, Title) %>%
-  as.data.frame()
+  dplyr::select(PubMedID, Country, Site.Name, Present, Tested, Marker, Title)
 
 write.csv(with_wildtypes %>%
             dplyr::select(-c(pubs)) %>%
@@ -222,6 +178,7 @@ moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")
 
 plot(with_wildtypes$year, with_wildtypes$Present/with_wildtypes$Tested, 
      xlab="Year", ylab="Prevalence")
+with_wildtypes %>% filter(Present / Tested > 0.5)
 
 denom <- moldm %>%
   group_by(Longitude, Latitude, year, PubMedID, Country) %>%
@@ -249,7 +206,7 @@ message(paste0("Proportion of records in Uganda: ", nume/denom))
 
 to_vis <- with_wildtypes %>% 
   mutate(year_bin = cut(year, 
-                        breaks = c(min(year)-1, 2009, 2012, 2015, 2018, 2021, max(year)))) %>%
+                        breaks = c(min(year)-1, seq(2009, 2021, 3), max(year)))) %>%
   arrange(Present/Tested, Tested) %>%
   drop_na(Longitude, Latitude)
 
@@ -275,7 +232,7 @@ ggplot() +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_grey() 
-ggsave("figures/archive/abs_grey.png", height=3, width=5, scale=2)
+# ggsave("figures/archive/abs_grey.png", height=3, width=5, scale=2)
 # spooky warning here ...
 
 markers <- moldm %>%
@@ -292,24 +249,39 @@ bg <- moldm %>%
   group_by(year) %>%
   summarise(Tested = sum(Tested))
 
-# I cannot state again how intensely easy this is in base graphics
-markers_keep <- markers %>%
-  filter(present > 5) %>%
-  arrange(present) %>%
+# markers to show in top panel
+markers_panel_a <- markers %>%
   ungroup() %>%
+  group_by(marker) %>%
+  summarise(maxp = max(present), sump = sum(present)) %>%
+  filter(maxp > 5) %>%
+  arrange(desc(sump)) %>%
+  ungroup() %>%
+  # need this for legend ordering ...
+  mutate(marker = factor(marker, levels = marker)) %>%
   dplyr::select(marker) %>%
   unique()
 
+# markers to show in bottom set of panels
+markers_panel_b <- markers %>% 
+  ungroup() %>%
+  group_by(marker) %>%
+  summarise(n = sum(present)) %>%
+  arrange(desc(n)) %>%
+  dplyr::slice(1:5) %>%
+  bind_rows(data.frame(marker = "Others", n=1))
+
 npal = 7
-sty <- markers_keep %>%
+sty <- markers_panel_a %>%
   mutate(col = factor(rep(1:npal, 5)[1:length(marker)]),
          linet = factor(rep(c(1:2), each = npal)[1:length(marker)]))
 
 df <- markers %>%
-  filter(marker %in% markers_keep$marker) %>%
+  filter(marker %in% markers_panel_a$marker) %>%
+  mutate(marker = factor(marker, levels = markers_panel_a$marker))
   left_join(sty, join_by(marker==marker)) %>%
-  mutate(group = interaction(col, linet, sep = " / "))
-
+  mutate(group = interaction(col, linet, sep = " / ")) %>%
+  filter(year > 2006)
 
 # chop off <2010? fix colour palette some more?
 
@@ -318,20 +290,9 @@ df <- markers %>%
 #   geom_line(aes(x = year, y = present, colour = Marker)) +
 #   labs(title="Most prevalent markers by year")
 
-# Are there particular spatial trends between markers?
-#markers_keep <- unique(markers$marker[markers$present > 25])
-markers_keep <- markers %>% 
-  ungroup() %>%
-  group_by(marker) %>%
-  summarise(n = sum(present)) %>%
-  arrange(desc(n)) %>%
-  dplyr::slice(1:5) %>%
-  bind_rows(data.frame(marker = "Others", n=1))
-
 wts <- wildtypes_to_add %>%
   dplyr::select(Longitude, Latitude, year, Tested) %>%
-  filter(year > 2008) %>%
-  merge(markers_keep, by = NULL) %>%
+  merge(markers_panel_b, by = NULL) %>%
   #rename(y = marker) %>% # what was I doing with this again?
   rename(Marker = marker) %>%
   mutate(Present = 0)
@@ -339,15 +300,15 @@ wts <- wildtypes_to_add %>%
 markers_disagg <- moldm %>%
   mutate(Marker = gsub("[K|k]13 ", "", Marker)) %>%
   filter(mutant) %>%
-  mutate(Marker = ifelse(Marker %in% markers_keep$marker,
+  mutate(Marker = ifelse(Marker %in% markers_panel_b$marker,
                          Marker, "Others")) %>%
   filter(!(Marker == "Others" & Present == 0) & # don't want zeroes for all other markers, just WTs as BG
-           Tested > 5) %>% # don't want prevalence == 1, tested < 5 points
-  #filter(Marker %in% markers_keep$marker) %>%
-  bind_rows(wts) %>% #  %>% mutate(Marker = "wt")
-  mutate(year_bin = cut(year, breaks = c(min(year)-1, 2012, 2015, 2018, 2021, max(year)))) %>%
+           Tested > MIN_SAMPLE_SIZE) %>% # don't want prevalence == 1, tested < 5 points
+  filter(year > 2000) %>%
+  bind_rows(wts) %>%
+  mutate(year_bin = cut(year, breaks = c(min(year)-1, seq(2012, 2021, 3), max(year)))) %>%
   filter(Longitude > -30) %>% # remove ocean point that's a bit far away
-  mutate(Marker = factor(Marker, levels = markers_keep$marker))
+  mutate(Marker = factor(Marker, levels = markers_panel_b$marker))
 
 iddoblue <- iddoPal::iddo_palettes$iddo[1]
 
@@ -357,15 +318,15 @@ iddoblue <- iddoPal::iddo_palettes$iddo[1]
 # I shouldn't have to spend longer than 5 mins on stackoverflow
 # It doesn't matter that much
 # This is how we end up with crap graphs !!!!!!
-df <- df %>%
-  filter(year >= 2005) %>%
-  left_join(markers_keep, by = join_by(marker==marker)) %>%
-  arrange(desc(n))
+# df <- df %>%
+#   filter(year >= 2005) %>%
+#   left_join(markers_panel_b, by = join_by(marker==marker)) %>%
+#   arrange(desc(n))
 
 bg <- bg %>%
   filter(year >= 2005)
 
-bg_scale <- 100
+bg_scale <- 50
 bg_col <- "grey65"
 
 message("Caution: setting bg_scale and y limits manually")
@@ -402,6 +363,8 @@ p1 <-
   #legend.justification.right = "bottom") +
   scale_x_continuous(breaks = 2008:2025, limits = c(2008, 2025)) 
 p1
+
+# what happened to 2008 testing?
 
 message("Warning: removed Aranda-Diaz because extraction looks weird")
 p2 <- ggplot() + 

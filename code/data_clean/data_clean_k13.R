@@ -3,7 +3,18 @@
 # this script does all of our packages and brings in the WHO markers list:
 source("code/data_clean/format_moldm.R")
 
-moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv")
+moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv") %>%
+  # do a quick tidy up of PubMedIDs
+  clean_up_pmids()
+  
+# what's left?
+moldm %>%
+filter(str_length(PubMedID) != 8) %>%
+dplyr::select(PubMedID, Title) %>%
+arrange(Title) %>%
+unique() %>%
+as.vector()
+# should be a doi or "Unpublished"
 
 # notes on double mutants:
 # 26667053: double mutants not counted in single mutant counts
@@ -12,12 +23,10 @@ moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv")
 # 40439506: double mutants not counted in single mutant counts
 # 40790052: double mutants not counted in single mutant counts
 
-# out %>% filter(grepl(",", Marker))
 
-# plot(moldm$Start.Year, moldm$End.Year)
 
 write.csv(moldm %>%
-            filter(Present / Tested <= 1 & Tested > 5), 
+            filter(Present / Tested <= 1 & Tested > MIN_SAMPLE_SIZE), 
           # the Tested filter should make a difference but the Prevalence shouldn't
           "data/clean/moldm_with_markers.csv")
 

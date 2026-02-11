@@ -116,3 +116,47 @@ format_moldm_k13 <- function(path){
   
   out
 }
+
+
+clean_up_pmids <- function(dat){
+  # function to populate/tidy PMIDs
+  dat %>%
+    filter(PubMedID != "40744004") %>% 
+    # this paper was extracted twice in two different formats and I prefer the other one :/
+    mutate(PubMedID = case_when(Title == "Antimalarial Drug Resistance Marker Prevalence Survey - 2016" 
+                                ~ "Unpublished",
+                                Title == "EMERGING BIOLOGICAL THREATS TO MALARIA CONTROL IN UGANDA: EVIDENCE OF VALIDATED MARKERS OF PARTIAL ARTEMISININ RESISTANCE AND PFHRP2/3 DELETIONS IN A HIGH TRANSMISSION SETTING" 
+                                ~ "39501325",
+                                Title == "Genomic Surveillance Reveals Clusters of Plasmodium falciparum Antimalarial Resistance Markers in Eswatini, a Low-Transmission Setting"
+                                ~ "10.1101/2025.07.30.25332463", # MedRxiv: not in pubmed yet
+                                Title == "High Prevalence of Molecular Markers Associated with Artemisinin, Sulphadoxine and Pyrimethamine Resistance in Northern Namibia" 
+                                ~ "40744004", # retaining preprint extraction
+                                Title == "Increase of Plasmodium falciparum parasites carrying lumefantrine-tolerance molecular markers and lack of South East Asian pfk13 artemisinin-resistance mutations in samples collected from 2013 to 2016 in Côte d’Ivoire" 
+                                ~ "38440764",
+                                Title == "Investigation of Markers of Antimalarial Resistance During a Therapeutic Efficacy Study Conducted in Uganda, 2018–2019" 
+                                ~ "Unpublished", # can't seem to find a trace of it .. maybe it was a conference presentation
+                                Title == "Investigation of Molecular Markers of Resistance During a Therapeutic Efficacy Study in the Democratic Republic of the Congo, 2017"  
+                                ~ "Unpublished", # can't find a trace of this either ..
+                                Title == "Kelch13 genetic variation of Plasmodium falciparum clinical isolates collected in malaria transmission areas in Senegal." 
+                                ~ "Unpublished",
+                                Title == "MALARIA DIAGNOSIS AND DRUG RESISTANCE IN A MILITARY HOSPITAL IN YAOUNDE, CAMEROON"
+                                ~ "Unpublished",
+                                Title == "Molecular surveillance of artemisinin resistance-linked PFK13 gene polymorphisms in Adamawa State, Nigeria" 
+                                ~ "10.61186/rabms.11.1.75", # no PMID
+                                Title == "Pharmacometric evaluation of amodiaquine-sulfadoxine-pyrimethamine and dihydroartemisinin-piperaquine seasonal malaria chemoprevention in northern Uganda"  
+                                ~ "41231725",
+                                Title == "Presence of k13 561H artemisinin resistance mutations in Plasmodium falciparum infections from Rwanda" 
+                                ~ "Unpublished",
+                                Title == "Rising prevalence of Plasmodium falciparum artemisinin resistance mutations in Ethiopia"
+                                ~ "40681807",
+                                Title == "Screening for antifolate and artemisinin resistance in Plasmodium falciparum clinical isolates from three hospitals of Eritrea" 
+                                ~ "38840941",
+                                Title == "Trends of Plasmodium falciparum molecular markers associated with resistance to artemisinins and reduced susceptibility to lumefantrine in Mainland Tanzania from 2016 to 2021" 
+                                ~ "38461239",
+                                Title == "UNDERSTANDING RESIDUAL PLASMODIUM FALCIPARUM TRANSMISSION IN ZANZIBAR THROUGH MULTIPLEXED AMPLICON DEEP SEQUENCING" 
+                                ~ "Unpublished",
+                                TRUE ~ PubMedID),
+           from = "moldm",
+           Longitude = as.numeric(Longitude),
+           Latitude = as.numeric(Latitude))
+}
