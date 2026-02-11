@@ -539,11 +539,11 @@ ggplot() +
   theme_grey() 
 ggsave("~/Desktop/presentations/MARCSE/moldm_marcse_k13.png", height = 6, width = 6)
 
-moldm %>%
-  filter(Marker == "P441L" & Present > 0) %>%
-  dplyr::select(Country, year, Tested, Present, Prevalence, PubMedID, from, Site.Name) %>%
-  mutate(Prevalence = Present / Tested) %>%
-  arrange(year, Prevalence)
+# moldm %>%
+#   filter(Marker == "P441L" & Present > 0) %>%
+#   dplyr::select(Country, year, Tested, Present, Prevalence, PubMedID, from, Site.Name) %>%
+#   mutate(Prevalence = Present / Tested) %>%
+#   arrange(year, Prevalence)
 
 # looks like some of the presences and tested are around the wrong way?
 # Eloff 2025 entered in moldm twice :/

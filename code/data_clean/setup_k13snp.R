@@ -47,7 +47,6 @@ ggplot(data = mutants %>%
   geom_point(aes(x = Longitude, y = Latitude, col = PubMedID, 
                  size = Tested), alpha = 0.2) +
   facet_wrap(~year_bin)
-ggsave("~/Desktop/test.png", height = 10, width = 15)
 
 
 ggplot(data = mutants %>%
@@ -57,7 +56,6 @@ ggplot(data = mutants %>%
   geom_point(aes(x = Longitude, y = Latitude, col = Marker, 
                  size = Tested), alpha = 0.2) +
   facet_wrap(~Marker, ncol = 2)
-ggsave("~/Desktop/test.png", height = 10, width = 10)
 
 
 mutants %>%

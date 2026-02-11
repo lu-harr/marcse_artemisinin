@@ -18,8 +18,7 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
-moldm <- #read.csv("data/raw/db_20250616/novartis.csv") 
-  read.csv("data/raw/db_20260105/novartis.csv") %>%
+moldm <- read.csv("data/raw/db_20260211/novartis.csv") %>%
   mutate(across(c(Start.Year, End.Year, Present, Tested, Longitude, Latitude), 
                 as.numeric)) %>% 
   filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
@@ -190,12 +189,13 @@ find_matches <- function(realised, cands, blank = "X"){
   cands
 }
 
+
 config <- sapply(realised$realised, function(x){
   out <- find_matches(x, latent$latent)
   ifelse(latent$latent %in% out, 1, 0)
 }) %>%
-  as.data.frame() %>%
-  set_rownames(latent$latent)
+  as.data.frame()
+rownames(config) <- latent$latent
 
 pfmdr <- pfmdr %>%
   inner_join(realised, by = join_by(`86`, `184`, `1246`))
@@ -447,4 +447,6 @@ ggplot() +
         panel.spacing.x = unit(0, "mm"),
         panel.spacing.y = unit(2, "mm"))
 ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 4)
+
+
 

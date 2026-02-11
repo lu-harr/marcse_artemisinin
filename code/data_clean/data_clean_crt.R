@@ -12,8 +12,7 @@ MIN_SAMPLE_SIZE <- 10
 # pfcrt 76: need 76T, K76, 76K/T, 
 # ... not sure what to do about haplotypes? what about 74 and 75
 
-crt <- # read.csv("data/raw/db_20250616/novartis.csv")
-  read.csv("data/raw/db_20260105/novartis.csv") %>%
+crt <- read.csv("data/raw/db_20260211/novartis.csv") %>%
   mutate(Start.Year = as.numeric(Start.Year),
          End.Year = as.numeric(End.Year),
          Present = as.numeric(Present),
@@ -36,6 +35,9 @@ crt <- # read.csv("data/raw/db_20250616/novartis.csv")
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
+
+
+
 message("filtering some weird coords")
 
 message("Number of crt studies")
@@ -56,7 +58,11 @@ crt %>%
   dplyr::select(Tested) %>%
   sum()
 
-
+ggplot(data = crt %>%
+         filter(Present <= Tested & Tested > MIN_SAMPLE_SIZE & year > 1995)) +
+  geom_point(aes(x = year, y = Present/Tested, size = Tested, col = Marker), 
+             alpha = 0.2)
+  
 
 plot(crt$Start.Year, crt$Present/crt$Tested, col=as.factor(crt$Marker))
 nrow(crt)
@@ -71,6 +77,8 @@ hist(crt$End.Year - crt$Start.Year)
 # not at all happy with this but ah well
 crt = crt %>%
   filter(Present <= Tested) %>% # I was getting -ves
+  # there was a bug introduced where recent studies were entered as K76T:
+  mutate(Marker = ifelse(Marker == "pfcrt K76T", "pfcrt 76T", Marker)) %>%
   # this now only affects one study ... not too worried - LH no longer sure what this refers to ..
   dplyr::summarise(n = dplyr::n(), Present = first(Present),
                    .by = c(uniq_id_publication, Continent, Country, District, Site.Name, Latitude, Longitude,
@@ -112,15 +120,23 @@ crt = crt %>%
   summarise(n = n(), Present = first(Present)) %>%
   ungroup()
 
+# check this:
+filter(crt, is.na(Present))
+
 # only one non-conformist ! This is because a mixed has been counted towards all three fields?
 # LH added a filter on Present <= Tested to the raw data above so this problem is resolved early
 which(crt$Present/crt$Tested > 1)
 # crt$Present[which(crt$Present/crt$Tested > 1)] <- crt$Tested[which(crt$Present/crt$Tested > 1)]
 
-plot(crt$year, crt$Present / crt$Tested)
 
-# check stud size minimum requirement
-write.csv(crt, "data/clean/moldm_crt76.csv", row.names = FALSE)
+
+# check study size minimum requirement
+write.csv(crt,
+          "data/clean/moldm_crt76.csv", row.names = FALSE)
+
+ggplot(data = crt %>%
+         filter(Tested > MIN_SAMPLE_SIZE & year > 1995)) +
+  geom_point(aes(x = year, y = Present/Tested, size = Tested), alpha = 0.2)
 
 
 
