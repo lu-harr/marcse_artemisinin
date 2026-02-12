@@ -31,7 +31,7 @@ afr <- world %>%
   st_as_sf()
 
 
-format_moldm_k13 <- function(path){
+format_moldm_k13 <- function(path, report_path = NULL){
   # reads in fresh version of moldm, cleans up, and gives us some summary stats
   out <- read.csv(path) %>%
     mutate(across(c(Start.Year, End.Year, Present, Tested), as.numeric)) %>% 
@@ -44,8 +44,8 @@ format_moldm_k13 <- function(path){
     filter(Continent == "Africa") %>%
     suppressWarnings()
   
-  message(paste("Number of rows indicating double mutants:", 
-                nrow(filter(out, grepl(",", Marker)))))
+  reports <- paste("Number of rows indicating double mutants:", 
+                nrow(filter(out, grepl(",", Marker))))
   
   # remove double mutants? - checked and they're not included as single mutants (see below)
   # there's probably a tidy way to do this but alas:
@@ -84,19 +84,24 @@ format_moldm_k13 <- function(path){
            mutant = !is.na(status)) %>%
     suppressWarnings()
   
-  message(paste0("Number of studies before filtering early records: ", 
+  reports <- c(reports, 
+               paste0("Number of studies before filtering early records: ", 
                  length(unique(out$Title))))
-  message(paste0("Publication years: ", 
+  reports <- c(reports,
+               paste0("Publication years: ", 
                  range(as.numeric(out$Year.Published), na.rm=TRUE) %>%
-                   suppressWarnings()))
-  message(paste("Earliest years:", min(out$year, na.rm=TRUE)))
+                   suppressWarnings(), collapse = ","))
+  reports <- c(reports,
+               paste("Earliest years:", min(out$year, na.rm=TRUE)))
   
   out <- filter(out, year >= YEAR_LOWER_BOUND)
   
-  message(paste0("Number of studies after filtering early records: ", 
+  reports <- c(reports,
+               paste0("Number of studies after filtering early records: ", 
                  length(unique(out$Title))))
   # this is a little naive but it's the best estimate we're going to get:
-  message(paste0("Number of people screened: ", 
+  reports <- c(reports,
+               paste0("Number of people screened: ", 
                  out %>%
                    group_by(Longitude, Latitude, year, Title, Tested) %>% 
                    summarise(n = n()) %>%
@@ -105,7 +110,8 @@ format_moldm_k13 <- function(path){
                    sum() %>%
                    suppressMessages()))
   
-  message(paste0("Or more conservatively: ", 
+  reports <- c(reports,
+               paste0("Or more conservatively: ", 
                  out %>%
                    group_by(Longitude, Latitude, year, PubMedID) %>% 
                    summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
@@ -113,6 +119,12 @@ format_moldm_k13 <- function(path){
                    dplyr::select(Tested) %>%
                    sum() %>%
                    suppressMessages()))
+  
+  if(is.null(report_path)){
+    sapply(reports, message)
+  } else {
+    cat(reports, file = report_path, append = TRUE, sep = "\n")
+  }
   
   out
 }

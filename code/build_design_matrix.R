@@ -111,7 +111,7 @@ build_design_matrix <- function(covariates,
                            ID = FALSE) %>%
       dplyr::select(names(covariates)) %>%
       unlist()
-    message("haven't tested this before ...")
+    message("using buffer: haven't tested this before ...")
   }
   
   if (degs_to_rads){

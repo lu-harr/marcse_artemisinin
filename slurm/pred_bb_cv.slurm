@@ -57,7 +57,7 @@ make_preds() {
     done
 }
 
-make_preds "$marker" "bb_gne" 2000 2027 "$fold"
+make_preds "$marker" "bb_gne" 2000 2028 "$fold"
 
 
 echo "Job done! ${SLURM_ARRAY_TASK_ID}"

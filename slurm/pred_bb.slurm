@@ -21,11 +21,11 @@ pwd
 cd ../
 
 DATASETS=(
-    # mdr86
-    # mdr184
-    # mdr1246
-    # crt76
-    # k13_marcse
+    mdr86
+    mdr184
+    mdr1246
+    crt76
+    k13_marcse
     k13snp_C469Y  
     k13snp_R561H  
     k13snp_A675V  
@@ -36,7 +36,7 @@ DATASETS=(
 # Select dataset for this array task
 DATASET=${DATASETS[$SLURM_ARRAY_TASK_ID]}
 
-echo "Watch out: filtering unsuccessful runs below"
+# echo "Watch out: filtering unsuccessful runs below"
 
 make_preds() {
     local MARKER=$1
@@ -50,16 +50,16 @@ make_preds() {
     for year in $(seq $MIN_YEAR $MAX_YEAR); do
 
         # sneaky check to hurry things up - remove when I'm ready to rerun
-        if [ ! -f "output/${MARKER}/${MODEL}/${year}_preds.grd" ]; then
-            echo "Running for year: $year"
+        # if [ ! -f "output/${MARKER}/${MODEL}/${year}_preds.grd" ]; then
+        #     echo "Running for year: $year"
     
-            # Run the R script with the parameters
-            Rscript code/pred_slurm.R $MARKER $MODEL $year
-        fi
+        # Run the R script with the parameters
+        Rscript code/pred_slurm.R $MARKER $MODEL $year
+        # fi
         
     done
 }
 
-make_preds "$DATASET" "bb_gne" 2000 2027
+make_preds "$DATASET" "bb_gne" 2000 2028
 
 echo "Job done!"

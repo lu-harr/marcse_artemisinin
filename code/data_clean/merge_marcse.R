@@ -4,8 +4,10 @@ library(readxl)
 
 # this script does all of our packages and brings in the WHO markers list:
 source("code/data_clean/format_moldm.R")
+to_report <- "output/stats_to_report.txt"
 
-moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv") %>%
+moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv", 
+                          report_path = to_report) %>%
   mutate(Marker = strip_marker) %>%
   clean_up_pmids() %>%
   mutate(Year.Published = as.numeric(Year.Published)) %>%
@@ -41,17 +43,22 @@ to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
   filter(PubMedID != "Already in moldm") %>%
   # add these back in:
   bind_rows(filter(marcse, PubMedID == "Unpublished"))
-message(paste0("Studies: ", length(unique(to_add$Title))))
-range(as.numeric(to_add$Year.Published), na.rm=TRUE)
+reports <- paste0("Studies: ", length(unique(to_add$Title)))
+reports <- c(reports,
+             paste0("Publication years: ",
+             range(as.numeric(to_add$Year.Published), na.rm=TRUE),
+             collapse = ","))
 
-message(paste0("Patients: ", to_add %>%
+reports <- c(reports,
+             paste0("Patients: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title, Tested) %>%
                  summarise(n = n()) %>%
                  ungroup() %>%
                  dplyr::select(Tested) %>%
                  sum() %>%
                  suppressMessages()))
-message(paste0("Or more conservatively: ", to_add %>%
+reports <- c(reports,
+             paste0("Or more conservatively: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title) %>%
                  summarise(n = length(unique(Tested)), Tested = max(Tested)) %>%
                  ungroup() %>%
@@ -95,10 +102,13 @@ mutants <- moldm %>%
   ungroup() %>%
   suppressMessages()
 
-message(paste("Number of rows in mutant table:", nrow(mutants)))
+reports <- c(reports,
+             paste("Number of rows in mutant table:", nrow(mutants)))
 
-message("TF-associated mutations in dataset: ")
-moldm %>% 
+reports <- c(reports,
+             "TF-associated mutations in dataset: ")
+reports <- c(reports,
+             moldm %>% 
   filter(mutant) %>% 
   group_by(Marker) %>%
   summarise(n_present = sum(Present), n_tested = sum(Tested)) %>%
@@ -106,7 +116,8 @@ moldm %>%
   full_join(marker_reference, join_by(Marker == marker)) %>%
   arrange(desc(n_present)) %>%
   filter(!is.na(n_present)) %>% 
-  as.data.frame()
+  as.data.frame() %>%
+    do.call(what = paste, .))
 
 wildtypes <- moldm %>%
   filter(Marker == "wildtype") %>%
@@ -139,7 +150,8 @@ write.csv(wildtypes_to_add,
           "data/clean/moldm_marcse_wildtypes_to_add.csv",
           row.names = FALSE)
 
-message(paste("Number of rows of wildtypes to add:", nrow(wildtypes_to_add)))
+reports <- c(reports,
+             paste("Number of rows of wildtypes to add:", nrow(wildtypes_to_add)))
 # 536 - 413 == 123 added rows from marcse
 
 with_wildtypes <- full_join(mutants, wildtypes_to_add) %>%
@@ -159,7 +171,8 @@ write.csv(with_wildtypes %>%
           "data/clean/moldm_marcse_k13_nomarker.csv",
           row.names = FALSE)
 
-message(paste("Number of testees:", 
+reports <- c(reports,
+             paste("Number of testees:", 
               with_wildtypes %>% 
                 filter(Present / Tested <= 1) %>%
                 group_by(year, Longitude, Latitude, Tested) %>% 
@@ -195,7 +208,8 @@ nume <- moldm %>%
   dplyr::select(Tested) %>%
   sum()
 
-message(paste0("Proportion of records in Uganda: ", nume/denom))
+reports <- c(reports,
+             paste0("Proportion of records in Uganda: ", nume/denom))
 
 # tmp <- moldm %>%
 #   mutate(Year.Published = as.numeric(Year.Published)) %>%
@@ -366,7 +380,6 @@ p1
 
 # what happened to 2008 testing?
 
-message("Warning: removed Aranda-Diaz because extraction looks weird")
 p2 <- ggplot() + 
   geom_sf(data = afr, fill = "white") + 
   geom_point(data = filter(markers_disagg, Present == 0),
@@ -374,7 +387,7 @@ p2 <- ggplot() +
                            size = Tested, col = "grey50"),
              fill = "grey70",  pch = 21, alpha = 0.5, stroke = 0.2) +
   geom_point(data = markers_disagg %>% 
-               filter(Present > 0 & Title != "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia") %>%
+               filter(Present > 0) %>%
                arrange(Present / Tested), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested,
@@ -441,13 +454,15 @@ plot_grid(p1, p2, ncol = 1, rel_heights = c(0.6, 2))
 ggsave("figures/markers_disagg_marcse.png", height = 6, width = 5, scale = 2)
 
 # prevalence range
-markers_disagg %>% 
-  filter(Present > 0 & Title != "Plasmodium falciparum genomic surveillance reveals a diversity of kelch13 mutations in Zambia") %>% 
+reports <- c(reports,
+             paste0("Prevalence range: ",
+             markers_disagg %>% 
+  filter(Present > 0) %>% 
   mutate(prev = Present/Tested) %>% 
   dplyr::select(prev) %>% 
-  range()
+  range()))
 
-
+cat(reports, file = to_report, append = TRUE, sep = "\n")
 
 ################################################################################
 moldm <- read.csv("data/clean/moldm_marcse_with_markers.csv")
@@ -493,7 +508,7 @@ ggplot() +
   scale_color_manual(values = rep(c(viridis(4), "#E37210", iddoblue, "#c7047c"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 325)) +
+                     limits = c(0, 400)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +

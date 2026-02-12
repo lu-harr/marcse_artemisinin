@@ -2,14 +2,14 @@
 #'
 #' @param stack Rast of covariates, with names containing years
 #' @param year numeric
-#' @param draws greta_mcmc_list of simulations from model posterior
+#' @param draws greta_mcmc_list of samples from model posterior
 #' @param parameters list of greta arrays, defined in inference step
 #' @param random_field greta array, defined in inference step
 #' @param scaled_year numeric: `year` with scaling applied
-#' @param agg_factor numeric: aggregate `stack` before predicting to it? If no, set to 1.
-#' @param nsim numeric: number of simulations to draw from predictions
+#' @param agg_factor numeric: aggregate `stack` before predicting to it? If no, set to 1. (Aggregation argument for terra::aggregate())
+#' @param nsim numeric: number of simulations to draw from posterior
 #' @param stable_transmission_mask Rast or `NULL`: If Rast provided, predictions 
-#' are masked to areas of stable malaria transmission.
+#' are masked to areas of stable malaria transmission. (Only req if this should be different to mask of `stack`)
 #' @param coord_cols vector of strings: names of coordinate columns in design matrix
 #' @param design_cols vector of strings: names of covariate columns in design matrix
 #'
@@ -70,6 +70,8 @@ predict_to_ras <- function(stack,
                              temporal_var = FALSE,
                              scale = FALSE,
                              degs_to_rads = TRUE)
+  # LH you don't need a buffer here as you're using ras instead of coords associated with points
+  # :spiral_eyes:
   
   # finish off design matrix
   X_pixel <- tmp$df %>%
@@ -109,9 +111,6 @@ predict_to_ras <- function(stack,
     coverages <- NULL
   }
   
-  # message(coverages)
-  
-  # message("now here")
   probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
   post_pixel_quants = apply(post_pixel_sims$mut_freq_pixel[,,1], 2, 
                              quantile, 
@@ -128,7 +127,7 @@ predict_to_ras <- function(stack,
   if(!is.null(stable_transmission_mask)){
   # if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
     # let it be known that I did some googling about this :(
-    # in raster I would have plopped `raster(NA)` in the function definition
+    # in raster pkg I would have plopped `raster(NA)` in the function definition
     out <- mask(out, stable_transmission_mask)
   }
   message("predicted to raster")
