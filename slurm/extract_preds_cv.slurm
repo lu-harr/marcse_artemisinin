@@ -23,10 +23,10 @@ pwd
 # provide marker and model ...
 
 Rscript code/extract_preds_cv.R k13_marcse bb_gne
-# Rscript code/extract_preds_cv.R mdr86 bb_gne
-# Rscript code/extract_preds_cv.R mdr184 bb_gne
-# Rscript code/extract_preds_cv.R mdr1246 bb_gne
-# Rscript code/extract_preds_cv.R crt76 bb_gne
+Rscript code/extract_preds_cv.R mdr86 bb_gne
+Rscript code/extract_preds_cv.R mdr184 bb_gne
+Rscript code/extract_preds_cv.R mdr1246 bb_gne
+Rscript code/extract_preds_cv.R crt76 bb_gne
 
 
 

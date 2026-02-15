@@ -153,11 +153,13 @@ max(values(preds$`2026_sd`), na.rm = TRUE)
 ###############################################################################
 # require common colour palette between years !
 
+# ended up going for nth_uganda and shifting "victoria" box south a little
 zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
-victoria <- list(xmin = 27, xmax = 35, ymin = -6, ymax = 2)
+nth_uga <- list(xmin = 29, xmax = 37, ymin = 2, ymax = 10)
+victoria <- list(xmin = 27, xmax = 35, ymin = -7, ymax = 1)
 eswatini <- list(xmin = 34, xmax = 41, ymin = 12, ymax = 19)
 
-zoom_df <- rbind(zambezi, victoria, eswatini) %>%
+zoom_df <- rbind(nth_uga, victoria, eswatini) %>%
   as.data.frame() %>%
   unnest() %>%
   suppressWarnings()
@@ -192,7 +194,7 @@ gg_ras_prep <- function(ras, extent = NULL, shp = NULL){
 
 
 df <- gg_ras_prep(preds)$df
-zambezi_bits <- gg_ras_prep(preds, zambezi, afr)
+nth_uga_bits <- gg_ras_prep(preds, nth_uga, afr)
 victoria_bits <- gg_ras_prep(preds, victoria, afr)
 eswatini_bits <- gg_ras_prep(preds, eswatini, afr)
 
@@ -262,30 +264,33 @@ fill_lims <- df %>%
 zooms <- plot_grid(zoom_pan(eswatini_bits, years_to_plot[1], 
                             panel_col = case_pal[3],
                             scale_lims = fill_lims),
+                   zoom_pan(nth_uga_bits, years_to_plot[1], 
+                            panel_col = case_pal[1],
+                            scale_lims = fill_lims),
                    zoom_pan(victoria_bits, years_to_plot[1], 
                             panel_col = case_pal[2],
                             scale_lims = fill_lims),
-                   zoom_pan(zambezi_bits, years_to_plot[1], 
-                            panel_col = case_pal[1],
-                            scale_lims = fill_lims),
+                   
                    zoom_pan(eswatini_bits, years_to_plot[2], 
                             panel_col = case_pal[3],
+                            scale_lims = fill_lims),
+                   zoom_pan(nth_uga_bits, years_to_plot[2], 
+                            panel_col = case_pal[1],
                             scale_lims = fill_lims),
                    zoom_pan(victoria_bits, years_to_plot[2], 
                             panel_col = case_pal[2],
                             scale_lims = fill_lims),
-                   zoom_pan(zambezi_bits, years_to_plot[2], 
-                            panel_col = case_pal[1],
-                            scale_lims = fill_lims),
+                   
                    zoom_pan(eswatini_bits, years_to_plot[3], 
                             panel_col = case_pal[3],
+                            scale_lims = fill_lims),
+                   zoom_pan(nth_uga_bits, years_to_plot[3], 
+                            panel_col = case_pal[1],
                             scale_lims = fill_lims),
                    zoom_pan(victoria_bits, years_to_plot[3], 
                             panel_col = case_pal[2],
                             scale_lims = fill_lims),
-                   zoom_pan(zambezi_bits, years_to_plot[3], 
-                            panel_col = case_pal[1],
-                            scale_lims = fill_lims),
+                   
                    ncol = 1) +
   theme(plot.margin = unit(c(0.25,0,0.2,0), "cm"))
 ggsave("~/Desktop/test.png", zooms, height=10, width = 2)
@@ -359,7 +364,9 @@ ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
 
 ################################################################################
 # coef of var - needs to go into supp
-covar <- preds[[grep("_50", names(preds))]] / preds[[grep("_sd", names(preds))]]
+preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
+           rast("output/k13_marcse/bb_gne/preds_sds.tif"))
+coefvar <-  preds[[grep("_sd", names(preds))]] / preds[[grep("_50", names(preds))]]
 df <- gg_ras_prep(covar)$df
 
 p_covar <- ggplot() +
@@ -367,13 +374,14 @@ p_covar <- ggplot() +
   geom_tile(data = df %>%
               filter(year %in% years_to_plot),
             mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_viridis_c(na.value = NA, "Coeff", trans = "sqrt") +
+  scale_fill_viridis_c(na.value = NA, "Coefficient\nof variation", trans = "sqrt") +
   geom_sf(data = afr, fill = NA, col = "grey50") +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
   theme_bw()
 p_covar
+ggsave("figures/coef_of_var.png", width = 12, height = 5)
 # where are the brighter yellows at?
 
 ################################################################################
@@ -495,7 +503,8 @@ sds <- ggplot() +
               mutate(tag = "Standard deviation"), 
             mapping = aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
-  facet_grid(year ~ tag, switch = "y") +
+  #facet_grid(year ~ tag, switch = "y") +
+  facet_wrap(~ year) +
   scale_fill_distiller(palette = "Oranges", 
                        na.value = NA, 
                        "Uncertainty\n(unscaled)", 
@@ -510,7 +519,37 @@ sds <- ggplot() +
         legend.justification = "top") 
 sds
 
-ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 6, width = 3, scale = 1.7)
+ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 4.5, width = 10)
+
+years_to_plot <- c("2014", "2020", "2026")
+preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
+df <- gg_ras_prep(preds)$df
+
+# contours might be handy?
+
+medians <- ggplot() +
+  geom_sf(data = afr, fill = "white") +
+  geom_tile(data = df %>%
+              filter(year %in% years_to_plot & tag == "50"),
+            mapping = aes(x = x, y = y, fill = val)) +
+  geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
+  facet_wrap(~year, nrow = 1) +
+  scale_fill_viridis_b(na.value = NA, 
+                       "Prevalence", 
+                       trans = "sqrt",
+                       breaks = c(0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4)) + 
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "top")
+
+medians
+
+# colourbar needs work
+ggsave("figures/k13_out_bb_median_contour.png", height = 4.5, width = 10)
 
 # legs <- plot_grid(get_legend(medians),
 #                   get_legend(sds),

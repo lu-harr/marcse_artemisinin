@@ -201,7 +201,7 @@ plot(sqrt(preds$`2026_50` * incid$incid_2024))
 lower <- rast("output/k13_marcse/bb_gne/preds_lower.tif")
 upper <- rast("output/k13_marcse/bb_gne/preds_upper.tif")
 
-median(values(preds$`2026_50`), na.rm = TRUE)
+median(values(preds$`2026_50`*incid$incid_2024), na.rm = TRUE)
 median(values(lower$`2026_2.5`), na.rm = TRUE)
 median(values(upper$`2026_97.5`), na.rm = TRUE)
 
@@ -296,6 +296,42 @@ p <- ggplot(df %>%
   guides(fill = guide_colourbar(title.position = "top"),
          size = guide_legend(title.position = "top"))
 ggsave("figures/crt_mdr_out_bb.png", p, height = 8, width = 5.5, scale = 1.1)
+
+turbo_manip <- turbo(10)
+turbo_manip <- c(turbo_manip[1:2],
+  colorRampPalette(turbo_manip[3:8])(30),
+  turbo_manip[9:10])
+
+
+
+p <- ggplot(df %>%
+              mutate(marker = case_when(marker == "mdr1246"~ "Pfmdr1 D1246Y",
+                                        marker == "mdr184" ~"Pfmdr1 Y184F",
+                                        marker == "mdr86" ~ "Pfmdr1 N86Y",
+                                        marker == "crt76" ~ "Pfcrt K76T"),
+                     marker = factor(marker,
+                                     levels = rev(c("Pfmdr1 D1246Y", "Pfmdr1 Y184F",
+                                                    "Pfmdr1 N86Y", "Pfcrt K76T"))))) +
+  geom_tile(aes(x = x, y = y, fill = val)) +
+  geom_sf(data = afr, fill = NA, linewidth = 0.1) +
+  facet_grid(year ~ marker) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_fill_gradientn(name = "Prevalence",
+                       breaks = c(0, 0.5, 1),
+                       labels = c("0\n(all wildtype)", "0.5", "1\n(all mutant)"),
+                       limits = c(0,1),
+                       colours = turbo_manip) +
+  scale_x_continuous(breaks = seq(0, 40, 20), "Longitude") +
+  scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(hjust = 0.5),
+        legend.spacing.x = unit(4, "lines"),
+        panel.spacing = unit(0, "lines")) +
+  guides(fill = guide_colourbar(title.position = "top"),
+         size = guide_legend(title.position = "top"))
+ggsave("figures/crt_mdr_out_bb_turbo.png", p, height = 8, width = 5.5, scale = 1.1)
 
 # horizontal for presentations folder
 p <- ggplot(df %>%
@@ -694,7 +730,7 @@ snps <- str_extract(snps, "(?<=_).*")
 # will need to open and trim to custom extents
 years_to_plot <- as.character(seq(2014, 2026, 3))
 
-exts <- list(A675V = c(20, 40, -15, 5),
+exts <- list(A675V = c(22, 38, -3, 13), #c(20, 40, -15, 5),
              C469Y = c(22, 38, -3, 13),
              P441L = c(15, 38, -22, 5),
              R561H = c(22, 38, -13, 3),
@@ -819,23 +855,23 @@ cex_transform <- function(from){
 #                 "output/k13/gneiting_sparse/preds_all.grd",
 #                 "k13 gneiting", xlim = c(0, 0.4), ylim = c(0, 0.4))
 
-obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-               "output/k13_marcse/gneiting_ahmc/preds_all.tif",
-               "", xlim = c(0, 0.6), ylim = c(0, 0.6),
-               ave_tag = "_50")
-ggsave("figures/residuals_k13m_gne.png", height = 3, width = 4, scale = 2)
+# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
+#                "output/k13_marcse/gneiting_ahmc/preds_all.tif",
+#                "", xlim = c(0, 0.6), ylim = c(0, 0.6),
+#                ave_tag = "_50")
+# ggsave("figures/residuals_k13m_gne.png", height = 3, width = 4, scale = 2)
+# 
+# obs_prev_panel("data/clean/pfmdr_single_86.csv",
+#                 "output/mdr86/gneiting_ahmc/preds_all.tif",
+#                 "mdr86 gneiting",
+#                ave_tag = "_50") #, facet_bins = c(2008, 2012, 2016, 2020))
+# ggsave("figures/residuals_86_gne.png", height = 9, width = 5, scale = 2)
 
-obs_prev_panel("data/clean/pfmdr_single_86.csv",
-                "output/mdr86/gneiting_ahmc/preds_all.tif",
-                "mdr86 gneiting",
-               ave_tag = "_50") #, facet_bins = c(2008, 2012, 2016, 2020))
-ggsave("figures/residuals_86_gne.png", height = 9, width = 5, scale = 2)
-
-obs_prev_panel("data/clean/pfmdr_single_86.csv",
-               "output/mdr86/bb_gne/preds_all.tif",
-               "mdr86 gneiting",
-               ave_tag = "_50")
-ggsave("figures/residuals_86_bb.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_86.csv",
+#                "output/mdr86/bb_gne/preds_all.tif",
+#                "mdr86 gneiting",
+#                ave_tag = "_50")
+# ggsave("figures/residuals_86_bb.png", height = 9, width = 5, scale = 2)
 
 # obs_prev_panel("data/clean/pfmdr_single_86.csv",
 #                "output/mdr86/circmat/preds_all.grd", "mdr86 circmat",
@@ -843,18 +879,18 @@ ggsave("figures/residuals_86_bb.png", height = 9, width = 5, scale = 2)
 #                #facet_bins = c(2008, 2012, 2016, 2020) )
 # ggsave("~/Desktop/residuals_86.png", height = 9, width = 5, scale = 2)
 
-obs_prev_panel("data/clean/pfmdr_single_1246.csv",
-                "output/mdr1246/gneiting_ahmc/preds_all.tif",
-               #facet_bins = c(2008, 2012, 2016, 2020),
-                "mdr1246 gneiting",
-               ave_tag = "_50")
-ggsave("figures/residuals_1246_gne.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+#                 "output/mdr1246/gneiting_ahmc/preds_all.tif",
+#                #facet_bins = c(2008, 2012, 2016, 2020),
+#                 "mdr1246 gneiting",
+#                ave_tag = "_50")
+# ggsave("figures/residuals_1246_gne.png", height = 9, width = 5, scale = 2)
 
-obs_prev_panel("data/clean/pfmdr_single_1246.csv",
-               "output/mdr1246/bb_gne/preds_all.tif",
-               #facet_bins = c(2008, 2012, 2016, 2020),
-               "mdr1246 gneiting", buffer = 100000)
-ggsave("figures/residuals_1246_bb.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_1246.csv",
+#                "output/mdr1246/bb_gne/preds_all.tif",
+#                #facet_bins = c(2008, 2012, 2016, 2020),
+#                "mdr1246 gneiting", buffer = 100000)
+# ggsave("figures/residuals_1246_bb.png", height = 9, width = 5, scale = 2)
 
 # obs_prev_panel("data/clean/pfmdr_single_1246.csv",
 #                "output/mdr1246/circmat/preds_all.grd",
@@ -863,11 +899,11 @@ ggsave("figures/residuals_1246_bb.png", height = 9, width = 5, scale = 2)
 #                ave_tag = "_post_median")
 # ggsave("~/Desktop/residuals_1246.png", height = 9, width = 5, scale = 2)
 
-obs_prev_panel("data/clean/pfmdr_single_184.csv",
-                "output/mdr184/gneiting_ahmc/preds_all.tif",
-                "mdr184 gneiting",
-               ave_tag = "_50")
-ggsave("figures/residuals_184_gne.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_184.csv",
+#                 "output/mdr184/gneiting_ahmc/preds_all.tif",
+#                 "mdr184 gneiting",
+#                ave_tag = "_50")
+# ggsave("figures/residuals_184_gne.png", height = 9, width = 5, scale = 2)
 
 # oops got rid of this
 # obs_prev_panel("data/clean/pfmdr_single_184.csv",
@@ -875,10 +911,10 @@ ggsave("figures/residuals_184_gne.png", height = 9, width = 5, scale = 2)
 #                 "mdr184 circmat",
 #                ave_tag = "_post_median")
 
-obs_prev_panel("data/clean/pfmdr_single_184.csv",
-               "output/mdr184/bb_gne/preds_all.tif",
-               "mdr184 gneiting", buffer = 100000)
-ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
+# obs_prev_panel("data/clean/pfmdr_single_184.csv",
+#                "output/mdr184/bb_gne/preds_all.tif",
+#                "mdr184 gneiting", buffer = 100000)
+# ggsave("figures/residuals_184_bb.png", height = 9, width = 5, scale = 2)
 
 # how do I capture clustered data where the model picks somewhere in the middle
 # but there's lots of variance at the same location?
@@ -925,6 +961,15 @@ ggdraw(p) +
     hjust = 0.5, vjust = 1
   )
 ggsave("figures/crints_bb.png", scale = 1, height = 10, width = 9)
+
+
+png("~/Desktop/Test.png", width = 2000, height = 2000)
+par(mfrow = c(2,2))
+acf(0, ylab = "xxx")
+acf(0)
+acf(0)
+acf(0)
+dev.off()
 
 ##############################################################################
 # a plot of all preds in all years

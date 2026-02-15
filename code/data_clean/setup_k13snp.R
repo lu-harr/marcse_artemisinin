@@ -29,6 +29,28 @@ extract_snp_dataset <- function(snp){
 
 suppressMessages(sapply(snps, function(snp){extract_snp_dataset(snp)}))
 
+# check over what was just extracted
+sapply(snps, function(snp){
+  dat <- read.csv(paste0("data/clean/moldm_marcse_k13snp_", snp, ".csv"))
+  ggplot(dat %>%
+           mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2012, 2016, 2020, 2024)))) +
+    geom_sf(data = afr) +
+    geom_point(data = dat %>%
+                 mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2012, 2016, 2020, 2024))) %>%
+                 filter(Present == 0),
+               aes(x = Longitude, y = Latitude,
+                   size = Tested), alpha = 0.2, col = "grey") +
+    geom_point(data = dat %>%
+                 mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2012, 2016, 2020, 2024))) %>%
+                 filter(Present > 0) %>% 
+                 arrange(Present/Tested),
+               aes(x = Longitude, y = Latitude,
+                   col = Present/Tested, size = Tested), alpha = 0.3) +
+    facet_wrap(~year_bin) +
+    scale_color_viridis_c()
+  ggsave(paste0("figures/snp_", snp, ".png"))
+})
+
 
 # having a look at Southern cluster
 ggplot(data = mutants %>%
@@ -36,7 +58,7 @@ ggplot(data = mutants %>%
          mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2012, 2016, 2020, 2025)))) +
   geom_sf(data = afr) +
   geom_point(aes(x = Longitude, y = Latitude, #col = PubMedID, 
-                 size = Present/Tested), alpha = 0.2) +
+                 size = Present/Tested, col = Marker), alpha = 0.2) +
   facet_wrap(~year_bin)
 
 ggplot(data = mutants %>%
@@ -47,6 +69,9 @@ ggplot(data = mutants %>%
   geom_point(aes(x = Longitude, y = Latitude, col = PubMedID, 
                  size = Tested), alpha = 0.2) +
   facet_wrap(~year_bin)
+
+
+
 
 
 ggplot(data = mutants %>%

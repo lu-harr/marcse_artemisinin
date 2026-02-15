@@ -37,10 +37,28 @@ names(bb_paths) <- names(nice_name_lookup)
 mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   extract_preds(data_path = data_path_lookup[[marker]],
                 pred_path = paste0(bb_paths[[marker]], "preds_medians.tif"),
-                buffer = 5000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
+                buffer = BUFFER) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
 }) %>%
   setNames(names(nice_name_lookup)) %>%
   suppressMessages()
+
+
+tmp <- extract_preds(data_path = data_path_lookup[["crt76"]],
+              pred_path = paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"),
+              buffer = 50000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
+sum(is.na(tmp$pred))
+preds <- rast(paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"))
+preds <- rast(paste0(bb_paths[["crt76"]], "preds_medians.tif"))
+plot(preds$`2000_50`)
+points(tmp$x, tmp$y, col = is.na(tmp$pred))
+
+terra::extract(preds$`2014_50`, mut_data[1, c("x", "y")], ID = FALSE, search_radius = 1500)
+
+# now we're ready to work with cv preds
+mut_dat_assoc_with_preds <- lapply(list("k13_marcse", "crt76"), function(marker){
+  read.csv(paste0("output/", marker, "/bb_gne/mut_dat_cv_preds_extracted.csv"))
+}) %>%
+  setNames(c("k13_marcse", "crt76"))
 
 # ggplot() + 
 #   geom_sf(data = afr) + 
@@ -112,7 +130,8 @@ ggsave("figures/obs_prev_b.png",
        height = 7.5, scale = 1.5, width = 6)
 
 tmp$mdr1246
-tmp2 <- mut_dat_assoc_with_ <- $mdr1246 %>%
+
+tmp2 <- mut_dat_assoc_with_preds$mdr1246 %>%
   mutate(diff = present/tested - pred) %>%
   # filter(diff > 0.5)
   filter(y > -5 & y < 5 & x > 28 & y < 37)

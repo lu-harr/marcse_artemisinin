@@ -19,11 +19,11 @@ cd ../
 pwd
 
 # provide marker and seed ...
-Rscript code/fit_betabinom.R mdr86 124 &
-Rscript code/fit_betabinom.R mdr184 124 &
-Rscript code/fit_betabinom.R mdr1246 124 &
-Rscript code/fit_betabinom.R crt76 124 &
-Rscript code/fit_betabinom.R k13_marcse 124 &
+# Rscript code/fit_betabinom.R mdr86 124 &
+# Rscript code/fit_betabinom.R mdr184 124 &
+# Rscript code/fit_betabinom.R mdr1246 124 &
+# Rscript code/fit_betabinom.R crt76 124 &
+# Rscript code/fit_betabinom.R k13_marcse 124 &
 Rscript code/fit_betabinom.R k13snp_R561H 124 &
 Rscript code/fit_betabinom.R k13snp_R622I 124 &
 Rscript code/fit_betabinom.R k13snp_A675V 124 &

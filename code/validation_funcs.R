@@ -98,10 +98,16 @@ extract_preds_cv <- function(data_path,
         val <- terra::extract(preds[[paste0(yr, ave_tag)]], 
                               mut_data[idx, c("x", "y")],
                               ID = FALSE, search_radius = out_buffer)
+
+        # terra::extract does this really helpful thing when there's only one
+        # point to extract that means I have to handle it specially:
+        if (length(idx) == 1){
+          mut_data[idx, "pred"] <- val[1, paste0(yr, ave_tag)]
+        } else {
+          mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+        }
         
-        message(paste(length(idx), ",", sum(is.na(val))))
-  
-        mut_data[idx, "pred"] <- val[, paste0(yr, ave_tag)]
+        
       } else {
         message(paste(yr, " not in preds"))
       }

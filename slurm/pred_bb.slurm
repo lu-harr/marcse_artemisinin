@@ -20,12 +20,13 @@ pwd
 
 cd ../
 
+# Note: if you change what's happening here, be sure to edit array numbers
 DATASETS=(
-    mdr86
-    mdr184
-    mdr1246
-    crt76
-    k13_marcse
+    # mdr86
+    # mdr184
+    # mdr1246
+    # crt76
+    # k13_marcse
     k13snp_C469Y  
     k13snp_R561H  
     k13snp_A675V  
