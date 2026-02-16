@@ -6,7 +6,7 @@ source("code/setup.R")
 source("code/build_design_matrix.R") # for year scaling
 
 # bringing in some backend functions from greta.gp:
-source("~/greta.gp.st.on.earth/R/tf_kernels.R")
+# source("~/greta.gp.st.on.earth/R/tf_kernels.R")
 source("code/betabinomial_p_rho.R")
 
 library(looseVis)
@@ -43,22 +43,23 @@ mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   suppressMessages()
 
 
-tmp <- extract_preds(data_path = data_path_lookup[["crt76"]],
-              pred_path = paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"),
-              buffer = 50000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
-sum(is.na(tmp$pred))
-preds <- rast(paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"))
-preds <- rast(paste0(bb_paths[["crt76"]], "preds_medians.tif"))
-plot(preds$`2000_50`)
-points(tmp$x, tmp$y, col = is.na(tmp$pred))
+# tmp <- extract_preds(data_path = data_path_lookup[["crt76"]],
+#               pred_path = paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"),
+#               buffer = 50000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
+# sum(is.na(tmp$pred))
+# preds <- rast(paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"))
+# preds <- rast(paste0(bb_paths[["crt76"]], "preds_medians.tif"))
+# plot(preds$`2000_50`)
+# points(tmp$x, tmp$y, col = is.na(tmp$pred))
+# 
+# terra::extract(preds$`2014_50`, mut_data[1, c("x", "y")], ID = FALSE, search_radius = 1500)
 
-terra::extract(preds$`2014_50`, mut_data[1, c("x", "y")], ID = FALSE, search_radius = 1500)
-
-# now we're ready to work with cv preds
-mut_dat_assoc_with_preds <- lapply(list("k13_marcse", "crt76"), function(marker){
+# now we're ready to work with cv preds - here are the preds that I've slurmed for 
+# all points
+mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   read.csv(paste0("output/", marker, "/bb_gne/mut_dat_cv_preds_extracted.csv"))
 }) %>%
-  setNames(c("k13_marcse", "crt76"))
+  setNames(names(nice_name_lookup))
 
 # ggplot() + 
 #   geom_sf(data = afr) + 
@@ -131,38 +132,38 @@ ggsave("figures/obs_prev_b.png",
 
 tmp$mdr1246
 
-tmp2 <- mut_dat_assoc_with_preds$mdr1246 %>%
-  mutate(diff = present/tested - pred) %>%
-  # filter(diff > 0.5)
-  filter(y > -5 & y < 5 & x > 28 & y < 37)
+# tmp2 <- mut_dat_assoc_with_preds$mdr1246 %>%
+#   mutate(diff = present/tested - pred) %>%
+#   # filter(diff > 0.5)
+#   filter(y > -5 & y < 5 & x > 28 & y < 37)
+# 
+# # it looks as though we have lots of points on top of each other .......
+# ggplot() +
+#   geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
+#   geom_jitter(aes(x = x, y = y, size = tested, col = diff),
+#               height = 0.1,
+#               width = 0.1,
+#               alpha = 0.5,
+#              tmp2 %>%
+#                mutate(year_bin = cut(year, c(1999, 2010, 2019, 2020, 2025))) %>%
+#                arrange(diff) %>%
+#                mutate(abs_diff = abs(diff))) +
+#   facet_wrap(~year_bin) +
+#   scale_color_viridis_c(option = "H")
 
-# it looks as though we have lots of points on top of each other .......
-ggplot() +
-  geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
-  geom_jitter(aes(x = x, y = y, size = tested, col = diff),
-              height = 0.1,
-              width = 0.1,
-              alpha = 0.5,
-             tmp2 %>%
-               mutate(year_bin = cut(year, c(1999, 2010, 2019, 2020, 2025))) %>%
-               arrange(diff) %>%
-               mutate(abs_diff = abs(diff))) +
-  facet_wrap(~year_bin) +
-  scale_color_viridis_c(option = "H")
 
-
-ggplot() +
-  geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
-  geom_jitter(aes(x = x, y = y, size = tested, col = abs_diff),
-              height = 0.1,
-              width = 0.1,
-              alpha = 0.5,
-              tmp2 %>%
-                mutate(year_bin = cut(year, c(1999, 2010, 2015, 2020, 2025))) %>%
-                arrange(diff) %>%
-                mutate(abs_diff = abs(diff))) +
-  facet_wrap(~year_bin) +
-  scale_color_viridis_c()
+# ggplot() +
+#   geom_sf(data = afr %>% filter(name %in% c("Uganda", "Kenya"))) +
+#   geom_jitter(aes(x = x, y = y, size = tested, col = abs_diff),
+#               height = 0.1,
+#               width = 0.1,
+#               alpha = 0.5,
+#               tmp2 %>%
+#                 mutate(year_bin = cut(year, c(1999, 2010, 2015, 2020, 2025))) %>%
+#                 arrange(diff) %>%
+#                 mutate(abs_diff = abs(diff))) +
+#   facet_wrap(~year_bin) +
+#   scale_color_viridis_c()
 
 
 library(xtable)
@@ -193,7 +194,7 @@ sim_coverages <- lapply(names(sim_coverages), function(x){
     coverage_probabilities_from_observation_model(
       mut_dat_assoc_with_preds[["k13_marcse"]] %>%
         filter(present > 0),
-      bb_paths[[marker]],
+      bb_paths[["k13_marcse"]],
       probs = seq(0, 1, 0.01),
       nsim = 500) %>%
                 mutate(recs = "Presences only",

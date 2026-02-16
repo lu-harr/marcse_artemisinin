@@ -5,6 +5,7 @@ library(readxl)
 # this script does all of our packages and brings in the WHO markers list:
 source("code/data_clean/format_moldm.R")
 to_report <- "output/stats_to_report.txt"
+reports <- "#### K13 data read-in ####"
 
 moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv", 
                           report_path = to_report) %>%
@@ -43,7 +44,8 @@ to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
   filter(PubMedID != "Already in moldm") %>%
   # add these back in:
   bind_rows(filter(marcse, PubMedID == "Unpublished"))
-reports <- paste0("Studies: ", length(unique(to_add$Title)))
+reports <- c(reports,
+             paste0("Studies: ", length(unique(to_add$Title))))
 reports <- c(reports,
              paste0("Publication years: ",
              range(as.numeric(to_add$Year.Published), na.rm=TRUE),

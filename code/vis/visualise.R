@@ -4,6 +4,9 @@ source("code/setup.R")
 source("code/vis/vis_funcs.R")
 library(sf)
 
+to_report <- "stats_to_report.txt"
+reports <- "#### Vis script ####"
+
 library(gridExtra)
 library(grid)
 library(cowplot)
@@ -78,19 +81,19 @@ ggsave("figures/surveillance_effort_all_marcse.png", p,
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
                      title = "(a) Pfkelch13", show_pts = TRUE,
-                     cut_year = 2027)
+                     cut_year = 2028)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
                      title = "(b) Pfcrt K76T", show_pts = TRUE,
-                     cut_year = 2027)
+                     cut_year = 2028)
 p3 <- pred_time_plot("output/mdr86/bb_gne/",
                      title = "(c) Pfmdr1 N86Y", show_pts = TRUE,
-                     cut_year = 2027)
+                     cut_year = 2028)
 p4 <- pred_time_plot("output/mdr184/bb_gne/",
                      title = "(d) Pfmdr1 Y184F", show_pts = TRUE,
-                     cut_year = 2027)
+                     cut_year = 2028)
 p5 <- pred_time_plot("output/mdr1246/bb_gne/",
                      title = "(e) Pfmdr1 D1246Y", show_pts = TRUE,
-                     cut_year = 2027)
+                     cut_year = 2028)
 
 p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -99,19 +102,19 @@ ggsave("figures/all_markers_time_bb_astmh.png", scale = 1.5, height = 7, width =
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
                      title = "(a) Pfkelch13",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
                      title = "(b) Pfcrt K76T",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p3 <- pred_time_plot("output/mdr86/bb_gne/",
                      title = "(c) Pfmdr1 N86Y",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p4 <- pred_time_plot("output/mdr184/bb_gne/",
                      title = "(d) Pfmdr1 Y184F",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p5 <- pred_time_plot("output/mdr1246/bb_gne/",
                      title = "(e) Pfmdr1 D1246Y",
-                     cut_year = 2027)
+                     cut_year = 2028)
 
 p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -142,19 +145,19 @@ p1 + p2 + p3 + p4 + p5 +
 
 p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
                      title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
                      title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
                      title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
                      title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases",
-                     cut_year = 2027)
+                     cut_year = 2028)
 p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
                      title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases",
-                     cut_year = 2027)
+                     cut_year = 2028)
 
 p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -165,27 +168,27 @@ p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
                                title = "(a) Pfkelch13", incid = incid,
                                ylab = "Proportion of annual cases",
                                proportional = TRUE,
-                               cut_year = 2027)
+                               cut_year = 2028)
 p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
                                title = "(b) Pfcrt K76T", incid = incid,
                                ylab = "Proportion of annual cases",
                                proportional = TRUE, ylim = c(0,1),
-                               cut_year = 2027)
+                               cut_year = 2028)
 p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
                                title = "(c) Pfmdr1 N86Y", incid = incid,
                                ylab = "Proportion of annual cases",
                                proportional = TRUE, ylim = c(0,1),
-                               cut_year = 2027)
+                               cut_year = 2028)
 p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
                                title = "(d) Pfmdr1 Y184F", incid = incid,
                                ylab = "Proportion of annual cases",
                                proportional = TRUE, ylim = c(0,1),
-                               cut_year = 2027)
+                               cut_year = 2028)
 p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
                                title = "(e) Pfmdr1 D1246Y", incid = incid,
                                ylab = "Proportion of annual cases",
                                proportional = TRUE, ylim = c(0,1),
-                               cut_year = 2027)
+                               cut_year = 2028)
 
 p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
@@ -201,9 +204,13 @@ plot(sqrt(preds$`2026_50` * incid$incid_2024))
 lower <- rast("output/k13_marcse/bb_gne/preds_lower.tif")
 upper <- rast("output/k13_marcse/bb_gne/preds_upper.tif")
 
-median(values(preds$`2026_50`*incid$incid_2024), na.rm = TRUE)
-median(values(lower$`2026_2.5`), na.rm = TRUE)
-median(values(upper$`2026_97.5`), na.rm = TRUE)
+reports <- c(reports,
+             paste("K13-affected cases -",
+                   pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
+                                                 incid = incid,
+                                                 proportional = TRUE,
+                                                 cut_year = 2028,
+                                                 plot = FALSE)))
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
 # after all that, not sure this adds much?
@@ -267,6 +274,10 @@ df <- cbind(coords, vals) %>%
                values_to = "val") %>%
   mutate(year = substr(lyr, 1, 4),
          marker = str_extract(lyr, "(?<=_).*"))
+
+reports <- c(reports,
+             paste("crt median prevalence 2026:",
+                   median(values(to_plot$`2026_crt76`), na.rm=TRUE)))
 
 p <- ggplot(df %>%
          mutate(marker = case_when(marker == "mdr1246"~ "Pfmdr1 D1246Y",
@@ -1024,3 +1035,4 @@ ggsave("~/Desktop/presentations/MARCSE/k13_all_years_bb.png", scale = 1.7, heigh
 
 
 
+cat(reports, file = to_report, append = TRUE, sep = "\n")

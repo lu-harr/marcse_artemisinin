@@ -3,9 +3,11 @@ library(viridisLite)
 library(sf)
 library(cowplot)
 
-
 source("code/setup.R")
 source("code/build_design_matrix.R")
+
+to_report <- "output/stats_to_report.txt"
+reports <- "#### visualise K13 outputs ####"
 
 mut_data <- setup_mut_data("data/clean/moldm_marcse_k13_nomarker.csv", 
                            min_year = MIN_YEAR, buffer = BUFFER)
@@ -37,10 +39,15 @@ message("for headline result")
 plot(tmp, main = "Area with estimated prevalence > 10%")
 plot(st_geometry(afr), add=TRUE)
 
-sum(!is.na(values(tmp))) / sum(!is.na(values(preds$`2026_50`))) 
+reports <- c(reports,
+             paste("Area with estimated prevalence > 10%:",
+                sum(!is.na(values(tmp))) / sum(!is.na(values(preds$`2026_50`)))))
 
 plot(preds$`2026_sd`)
-max(values(preds$`2026_sd`), na.rm = TRUE)
+reports <- c(reports, paste("Max model uncertainty K13:",
+                            max(values(preds$`2026_sd`), na.rm = TRUE)))
+
+cat(reports, file = to_report, append = TRUE, sep = "\n")
 
 ###############################################################################
 # surveillance effort

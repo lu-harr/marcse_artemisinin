@@ -15,16 +15,16 @@ suppressMessages(source("code/build_design_matrix.R"))
 suppressMessages(source("code/betabinomial_p_rho.R"))
 suppressMessages(source("code/wrap_fit.R"))
 
-
-# commandArgs feels a bit unflashy but I can't keep having separate scripts
 args <- commandArgs(trailingOnly = TRUE)
-snp <- args[1]  # of "k13", "mdr86", "mdr184", "mdr1246", "crt76"
+snp <- args[1]  # of "k13_marcse", "mdr86", "mdr184", "mdr1246", "crt76"
 seed <- as.numeric(args[2])
 print(paste0("Marker: ", snp))
 print(paste0("Seed: ", seed))
 
-# snp = "k13"
+# snp = "k13_marcse"
 # seed = 123
+
+set.seed(seed)
 
 out_dir <- paste0(snp, "/bb_gne/")
 
@@ -47,6 +47,7 @@ mut_data <- setup_mut_data(in_dat,
 write_rds(mut_data, paste0("output/", out_dir, "mut_data.rds"))
 
 NFOLD <- 10
+# from pkg `caret`
 folds <- createFolds(mut_data$present / mut_data$tested, k = NFOLD)
 write_rds(folds, paste0("output/", out_dir, "cv_folds.rds"))
 

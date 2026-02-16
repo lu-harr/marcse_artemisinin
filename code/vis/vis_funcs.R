@@ -283,7 +283,8 @@ pred_time_factoring_incidence <- function(path,
                                      ylim = NULL,
                                      proportional = FALSE,
                                      cut_year = NULL,
-                                     ylab = "Annual cases"){
+                                     ylab = "Annual cases",
+                                     plot = FALSE){
   # this could also be a fraction of annual estimated cases .........
   incid <- aggregate(incid, agg_fact, fun = "sum", na.rm = TRUE)
   annual_estimated_cases <- sapply(incid, function(x){sum(values(x), na.rm = TRUE)})
@@ -320,6 +321,13 @@ pred_time_factoring_incidence <- function(path,
   if(!is.null(cut_year)){df <- df %>% filter(year <= cut_year)}
   
   if(is.null(ylim)){ylim <- c(min(df$lower), max(df$upper))}
+  
+  if(plot == FALSE){
+   return(paste0("2026 summary stats: ", 
+                   df %>% filter(year == 2026) %>% dplyr::select(med), "; (",
+                   df %>% filter(year == 2026) %>% dplyr::select(lower), ", ",
+                   df %>% filter(year == 2026) %>% dplyr::select(upper), ")"))
+  }
   
   message(paste0("2026 summary stats: ", 
                  df %>% filter(year == 2026) %>% dplyr::select(med), "; (",
