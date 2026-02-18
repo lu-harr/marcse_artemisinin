@@ -15,6 +15,7 @@ moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv",
   suppressWarnings()
 
 # this is sitting in a separate repo at lu-harr/MARC_SEA_dashboard/
+# put in a pull request to Stephanie-van-Wyk
 marcse <- read.csv("../MARC_SEA_dashboard/tidied_k13_dashboard_data.csv") %>%
   # this is initialised in the format_moldm script:
   left_join(marker_reference, 
@@ -69,7 +70,8 @@ reports <- c(reports,
                  suppressMessages()))
 
 moldm <- bind_rows(moldm,
-                   anti_join(marcse, moldm, by = join_by(PubMedID))) %>%
+                   anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
+                   bind_rows(filter(marcse, PubMedID == "Unpublished"))) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
   mutate(mutant = !is.na(status))
 

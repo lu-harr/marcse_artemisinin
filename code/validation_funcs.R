@@ -128,6 +128,9 @@ extract_preds_cv <- function(data_path,
 #                  folds = folds)
 
 
+#################################################################################
+# helpers for validation metrics
+
 rmse <- function(mut_data){
   # root mean square error on probability scale
   sqrt(sum((mut_data$pred - mut_data$present/mut_data$tested)**2, na.rm = TRUE) / 
@@ -142,6 +145,28 @@ unadjusted_rsq <- function(dat){
   tss <- sum((actual - mean(actual)) ^ 2)
   1 - rss/tss
 }
+
+cv_val <- function(mut_data, folds){
+  # stats for k-fold CV
+  out <- data.frame(matrix(NA, ncol = 2, nrow = length(folds)))
+  names(out) <- c("rmse", "rsq")
+  
+  for (k in 1:length(folds)){
+    
+    dat <- mut_data[folds[[k]],] # filter test records in fold
+    out[k, ] <- c(rmse(dat), unadjusted_rsq(dat))
+    
+  }
+  
+  list(foldwise = out,
+       rmse_mean = mean(out$rmse),
+       rmse_sd = sd(out$rmse),
+       rsq_mean = mean(out$rsq),
+       rsq_sd = sd(out$rsq))
+}
+
+#################################################################################
+
 
 # or using the built-in:
 # unadjusted_rsq <- function (x, y) cor(x, y) ^ 2

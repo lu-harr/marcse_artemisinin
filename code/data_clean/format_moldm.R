@@ -134,7 +134,8 @@ clean_up_pmids <- function(dat){
   # function to populate/tidy PMIDs
   dat %>%
     filter(PubMedID != "40744004") %>% 
-    # this paper was extracted twice in two different formats and I prefer the other one :/
+    # this paper was extracted twice in two different formats
+    # neither are totally correct but that's another story ...
     mutate(PubMedID = case_when(Title == "Antimalarial Drug Resistance Marker Prevalence Survey - 2016" 
                                 ~ "Unpublished",
                                 Title == "EMERGING BIOLOGICAL THREATS TO MALARIA CONTROL IN UGANDA: EVIDENCE OF VALIDATED MARKERS OF PARTIAL ARTEMISININ RESISTANCE AND PFHRP2/3 DELETIONS IN A HIGH TRANSMISSION SETTING" 

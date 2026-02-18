@@ -43,68 +43,67 @@ mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
   suppressMessages()
 
 
-# tmp <- extract_preds(data_path = data_path_lookup[["crt76"]],
-#               pred_path = paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"),
-#               buffer = 50000) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
-# sum(is.na(tmp$pred))
-# preds <- rast(paste0(bb_paths[["crt76"]], "cv_preds/preds_medians_10.tif"))
-# preds <- rast(paste0(bb_paths[["crt76"]], "preds_medians.tif"))
-# plot(preds$`2000_50`)
-# points(tmp$x, tmp$y, col = is.na(tmp$pred))
-# 
-# terra::extract(preds$`2014_50`, mut_data[1, c("x", "y")], ID = FALSE, search_radius = 1500)
-
 # now we're ready to work with cv preds - here are the preds that I've slurmed for 
 # all points
-mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
+mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
   read.csv(paste0("output/", marker, "/bb_gne/mut_dat_cv_preds_extracted.csv"))
 }) %>%
   setNames(names(nice_name_lookup))
 
-# ggplot() + 
-#   geom_sf(data = afr) + 
-#   geom_point(data = mut_dat_assoc_with_preds$k13_marcse %>%
-#                mutate(flag = is.na(pred)) %>%
-#                filter(flag), 
-#              aes(x = x, y = y, 
-#                  #col = present/tested,
-#                  col = flag))
+cv_folds <- lapply(names(nice_name_lookup), function(marker){
+  read_rds(paste0("output/", marker, "/bb_gne/cv_folds.rds"))
+}) %>%
+  setNames(names(nice_name_lookup))
 
-# plot(mut_dat_assoc_with_preds$k13_marcse$present / mut_dat_assoc_with_preds$k13_marcse$tested, 
-#      mut_dat_assoc_with_preds$k13_marcse$pred)
-
-# still working on this:
-# mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
-#   read.csv(paste0(bb_paths[[marker]], "mut_dat_cv_preds_extracted.csv"))
-# }) %>%
-#   setNames(names(nice_name_lookup))
 
 rmses <- lapply(mut_dat_assoc_with_preds, function(x){rmse(x)})
 rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
+cv_stats <- lapply(names(nice_name_lookup), 
+                   function(x){cv_val(mut_dat_assoc_with_preds_cv[[x]], 
+                                      cv_folds[[x]])}) %>%
+  setNames(names(nice_name_lookup))
+
+cv_summary <- lapply(cv_stats, function(x){
+  x[-c(1)] %>% # remove foldwise stats
+    as.data.frame()
+}) %>%
+  do.call(what = rbind) %>%
+  mutate(marker = rownames(.))
 # using the built-in cor function gives similar but not equal results:
 # rsq <- lapply(mut_dat_assoc_with_preds, function(x){
 #   tmp <- filter(x, !is.na(pred))
 #   unadjusted_rsq(tmp$pred, tmp$present/tmp$tested)
 # })
 
+library(xtable)
+dat <- data.frame(mod = unlist(nice_name_lookup[names(rmses)]),
+                  rmse = unlist(rmses),
+                  rsq = unlist(rsq)) %>%
+  mutate(marker = rownames(.)) %>%
+  left_join(cv_summary) %>%
+  dplyr::select(-c(marker))
+
+colnames(dat) <- c("", "RMSE", "$r^2$", "Mean", "SD", "Mean", "SD")
+tab <- xtable(dat)
+align(tab) <- c(rep("c", 2), "|", rep("c", 2), "|", rep("c", 4))
+addtorow <- list()
+addtorow$pos <- list(-1, -1)
+addtorow$command <- c("\\hline & \\multicolumn{2}{c|}{Full dataset} &  \\multicolumn{4}{c}{10-fold holdout} \\\\\n \\cline{2-3}",
+                      "& & & \\multicolumn{2}{c}{RMSE} & \\multicolumn{2}{c}{$r^2$} \\\\\n")
+print(tab, 
+      sanitize.text.function=function(x){x}, 
+      include.rownames = FALSE,
+      #include.colnames = FALSE,
+      hline.after = c(0, 5),
+      add.to.row = addtorow)
+
+
+################################################################################
+# plots of residuals
+
 abcde = c("a", "b", "c", "d", "e")
 tmp = lapply(mut_dat_assoc_with_preds, obs_prev_panel, as_row = TRUE)
-# p <- plot_grid(tmp$k13_marcse,
-#                tmp$crt76,
-#                tmp$mdr86,
-#                tmp$mdr184,
-#                tmp$mdr1246, 
-#                ncol = 1) +
-#   theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
-#                # this ain't working for me today:
-#                # labels = paste0("(", abcde, ") ", nice_name_lookup),
-#                # label_x = -0.07, label_y = 1.07)
-# ggsave("figures/obs_prev_all.png", 
-#        p + geom_text(aes(x = 0, 
-#                          y = rev(seq(0.21, 1.01, length.out = 5)), 
-#                          label = paste0("(", abcde, ") ", nice_name_lookup)),
-#                      hjust = 0), 
-#        height = 11, scale = 1.5, width = 6)
+
 
 # splitting the above in two:
 p <- plot_grid(tmp$k13_marcse,
@@ -166,12 +165,6 @@ tmp$mdr1246
 #   scale_color_viridis_c()
 
 
-library(xtable)
-dat <- data.frame(mod = unlist(nice_name_lookup[names(rmses)]),
-                  rmse = unlist(rmses),
-                  rsq = unlist(rsq))
-colnames(dat) <- c("", "RMSE", "$r^2$")
-print(xtable(dat), sanitize.text.function=function(x){x}, include.rownames = FALSE)
 
 # given predicted prevalence, take posterior samples at location of all observations
 # and compare quantiles of samples to observed number of cases with marker
@@ -256,13 +249,14 @@ p3 <- ggplot(bind_rows(posterior_predictive_ecdfs %>%
 
 leg = get_legend(p3)
 plot_grid(
-  plot_grid(p1 + theme(legend.position = "none"),
+  plot_grid(# p1 + theme(legend.position = "none"),
             p2 + theme(legend.position = "none"), 
             p3 + theme(legend.position = "none"), ncol = 1, align = "v",
-            labels = c("(a)", "(b)", "(c)"), label_fontface = "plain", label_x = 0.11, label_y = 0.98),
+            labels = c("(a)", "(b)"), label_fontface = "plain", label_x = 0.11, label_y = 0.98),
   leg, nrow = 1, rel_widths = c(1, 0.3)
 )
-ggsave("figures/coverages.png", width = 7, height = 7)
+# ggsave("figures/coverages_with_unsim.png", width = 7, height = 7)
+ggsave("figures/coverages.png", width = 9, height = 7)
 
 
 # mut_data <- mut_data %>%
