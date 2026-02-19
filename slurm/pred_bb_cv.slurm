@@ -19,11 +19,16 @@ pwd
 cd ../
 
 markers=(
-  mdr86
-  mdr184
-  mdr1246
-  crt76
-  k13_marcse
+#   mdr86
+#   mdr184
+#   mdr1246
+#   crt76
+#   k13_marcse
+  k13snp_R561H
+  k13snp_R622I
+  k13snp_C469Y
+  k13snp_P441L
+  k13snp_A675V
 )
 
 nfolds=10

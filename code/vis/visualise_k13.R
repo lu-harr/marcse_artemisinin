@@ -408,9 +408,12 @@ medians <- ggplot() +
   facet_wrap(~year, nrow = 1) +
   xlab("Longitude") +
   ylab("Latitude") +
+  scale_x_continuous(breaks = seq(-20, 40, 20)) +
+  scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_bw()
 medians
-ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", height = 5, width = 10, scale = 0.9)
+ggsave("~/Desktop/presentations/MARCSE/k13_mediansbb.png", 
+       height = 4, width = 10, scale = 0.9)
 
 preds <- rast("output/k13_marcse/bb_gne/preds_sds.tif")
 preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
