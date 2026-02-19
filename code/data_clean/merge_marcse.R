@@ -1,6 +1,7 @@
 # merge IDDO Surveyor data in data/raw/ with MARCSE dashboard data 
 library(tidyverse)
 library(readxl)
+library(viridisLite)
 
 # this script does all of our packages and brings in the WHO markers list:
 source("code/data_clean/format_moldm.R")
@@ -70,8 +71,9 @@ reports <- c(reports,
                  suppressMessages()))
 
 moldm <- bind_rows(moldm,
-                   anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
-                   bind_rows(filter(marcse, PubMedID == "Unpublished"))) %>%
+                   anti_join(marcse, moldm, by = join_by(PubMedID)) # %>%
+                   # bind_rows(filter(marcse, PubMedID == "Unpublished"))
+                   ) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
   mutate(mutant = !is.na(status))
 
@@ -316,15 +318,16 @@ wts <- wildtypes_to_add %>%
   mutate(Present = 0)
 
 markers_disagg <- moldm %>%
-  mutate(Marker = gsub("[K|k]13 ", "", Marker)) %>%
   filter(mutant) %>%
   mutate(Marker = ifelse(Marker %in% markers_panel_b$marker,
                          Marker, "Others")) %>%
   filter(!(Marker == "Others" & Present == 0) & # don't want zeroes for all other markers, just WTs as BG
            Tested > MIN_SAMPLE_SIZE) %>% # don't want prevalence == 1, tested < 5 points
-  filter(year > 2000) %>%
+  filter(year > YEAR_LOWER_BOUND) %>%
+  group_by(Marker, Longitude, Latitude, year, PubMedID) %>%
+  summarise(Present = sum(Present), Tested = max(unique(Tested))) %>%
   bind_rows(wts) %>%
-  mutate(year_bin = cut(year, breaks = c(min(year)-1, seq(2012, 2021, 3), max(year)))) %>%
+  mutate(year_bin = cut(year, breaks = c(YEAR_LOWER_BOUND, seq(2012, 2021, 3), 2024))) %>%
   filter(Longitude > -30) %>% # remove ocean point that's a bit far away
   mutate(Marker = factor(Marker, levels = markers_panel_b$marker))
 
@@ -353,7 +356,7 @@ p1 <-
   geom_bar(data = bg, 
            aes(x = year, y = Tested / bg_scale), 
            stat = "identity", fill = "grey75") +
-  geom_line(data = df, size = 0.7,
+  geom_line(data = df, linewidth = 0.7,
             aes(x = year, y = present, group = marker, color = marker, 
                 linetype = marker)) +
   geom_point(data = df, 
@@ -389,17 +392,18 @@ p2 <- ggplot() +
   geom_point(data = filter(markers_disagg, Present == 0),
              mapping = aes(x = Longitude, y = Latitude,
                            size = Tested, col = "grey50"),
-             fill = "grey70",  pch = 21, alpha = 0.5, stroke = 0.2) +
+             fill = "grey70",  pch = 21, alpha = 0.7, stroke = 0.2) +
   geom_point(data = markers_disagg %>% 
                filter(Present > 0) %>%
                arrange(Present / Tested), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested,
                            fill = Present / Tested),
-             col = "grey50", pch=21, stroke = 0.2, alpha = 0.5) +
+             col = "grey50", pch=21, stroke = 0.2, alpha = 0.7) +
   scale_color_manual(name = "", values = c("grey30"), labels=c("Absence"), guide = "none") +
   scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", breaks = c(0.01, 0.05, 0.25, 0.5)) +
-  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
+  scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt",
+                        breaks = c(10, 100, 1000, 3000)) +
   # allows labelling of rows and columns:
   facet_grid(rows=vars(year_bin), cols=vars(Marker)) +
   #facet_wrap(~ year_bin + Marker, drop=FALSE) +
@@ -419,6 +423,7 @@ p2 <- ggplot() +
          size = guide_legend(title.position = "top"))
 
 p2
+
 # p2 +
 #    geom_rect(data = data.frame(xmin = 60, xmax = 80, ymin = 0, ymax = 40, year_bin = "(2015,2018]",
 #                                Marker = "R622I"), 

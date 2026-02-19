@@ -33,7 +33,12 @@ data_path_lookup <- list("k13_marcse" = "data/clean/moldm_marcse_k13_nomarker.cs
                          "crt76" = "data/clean/moldm_crt76.csv",
                          "mdr86" = "data/clean/pfmdr_single_mdr86.csv",
                          "mdr184" = "data/clean/pfmdr_single_mdr184.csv",
-                         "mdr1246" = "data/clean/pfmdr_single_mdr1246.csv")
+                         "mdr1246" = "data/clean/pfmdr_single_mdr1246.csv",
+                         "k13snp_R561H" = "data/clean/moldm_marcse_k13snp_R561H.csv",
+                         "k13snp_R622I" = "data/clean/moldm_marcse_k13snp_R622I.csv",
+                         "k13snp_C469Y" = "data/clean/moldm_marcse_k13snp_C469Y.csv",
+                         "k13snp_P441L" = "data/clean/moldm_marcse_k13snp_P441L.csv",
+                         "k13snp_A675V" = "data/clean/moldm_marcse_k13snp_A675V.csv")
 
 
 # country shps for plotting/masking

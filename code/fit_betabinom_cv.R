@@ -16,9 +16,9 @@ suppressMessages(source("code/betabinomial_p_rho.R"))
 suppressMessages(source("code/wrap_fit.R"))
 
 args <- commandArgs(trailingOnly = TRUE)
-snp <- args[1]  # of "k13_marcse", "mdr86", "mdr184", "mdr1246", "crt76"
+marker <- args[1]  # of "k13_marcse", "mdr86", "mdr184", "mdr1246", "crt76"
 seed <- as.numeric(args[2])
-print(paste0("Marker: ", snp))
+print(paste0("Marker: ", marker))
 print(paste0("Seed: ", seed))
 
 # snp = "k13_marcse"
@@ -26,15 +26,9 @@ print(paste0("Seed: ", seed))
 
 set.seed(seed)
 
-out_dir <- paste0(snp, "/bb_gne/")
+out_dir <- paste0(marker, "/bb_gne/")
 
-in_dat <- ifelse(snp == "k13",
-                 "data/clean/moldm_k13_nomarker.csv",
-                 ifelse(snp == "crt76",
-                        "data/clean/moldm_crt76.csv",
-                        ifelse(snp == "k13_marcse",
-                               "data/clean/moldm_marcse_k13_nomarker.csv",
-                               paste0(paste0("data/clean/pfmdr_single_", snp, ".csv")))))
+in_dat <- data_path_lookup[[marker]]
 
 
 print(paste0("Reading in from: ", in_dat))
