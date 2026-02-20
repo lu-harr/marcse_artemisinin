@@ -146,6 +146,12 @@ unadjusted_rsq <- function(dat){
   1 - rss/tss
 }
 
+# or using the built-in:
+unadjusted_rsq <- function (dat){
+  dat <- filter(dat, !is.na(pred))
+  cor(dat$pred, dat$present/dat$tested) ^ 2
+}
+
 cv_val <- function(mut_data, folds){
   # stats for k-fold CV
   out <- data.frame(matrix(NA, ncol = 2, nrow = length(folds)))
@@ -165,11 +171,19 @@ cv_val <- function(mut_data, folds){
        rsq_sd = sd(out$rsq))
 }
 
+baseline_preds <- function(mut_data){
+  # for comparison
+  mut_data %>%
+    dplyr::select(-c(pred)) %>%
+    left_join(group_by(mut_data, year) %>%
+                summarise(pred = median(present / tested)),
+              by = join_by(year))
+}
+
 #################################################################################
 
 
-# or using the built-in:
-# unadjusted_rsq <- function (x, y) cor(x, y) ^ 2
+
 
 nn_measure <- function(mut_data, draws_path){
   # from YSF: include nearest neighbour measure/ some other proximity measure

@@ -373,8 +373,9 @@ ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
 # coef of var - needs to go into supp
 preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
            rast("output/k13_marcse/bb_gne/preds_sds.tif"))
+preds <- preds[[str_extract(names(preds), "\\d{4}") %in% years_to_plot]]
 coefvar <-  preds[[grep("_sd", names(preds))]] / preds[[grep("_50", names(preds))]]
-df <- gg_ras_prep(covar)$df
+df <- gg_ras_prep(coefvar)$df
 
 p_covar <- ggplot() +
   geom_sf(data = afr, fill = "white") +
@@ -384,11 +385,18 @@ p_covar <- ggplot() +
   scale_fill_viridis_c(na.value = NA, "Coefficient\nof variation", trans = "sqrt") +
   geom_sf(data = afr, fill = NA, col = "grey50") +
   facet_wrap(~year, nrow = 1) +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  theme_bw()
-p_covar
-ggsave("figures/coef_of_var.png", width = 12, height = 5)
+  # xlab("Longitude") +
+  # ylab("Latitude") +
+  # theme_bw()
+  scale_x_continuous("Longitude", breaks = seq(-20, 40, 20)) +
+  scale_y_continuous("Latitude", breaks = seq(-20, 40, 20)) +
+  theme_bw() +
+  theme(strip.text = element_text(size = 11),
+        legend.justification = "top",
+        legend.position = "bottom") +
+  guides(fill = guide_colourbar(barwidth = unit(5, "cm")))
+
+ggsave("figures/coef_of_var.png", p_covar, width = 12, height = 6)
 # where are the brighter yellows at?
 
 ################################################################################
@@ -520,16 +528,15 @@ sds <- ggplot() +
                        "Uncertainty\n(unscaled)", 
                        direction = 1,
                        trans = "sqrt") +
-  # labs(title = "Standard deviation") +
+  scale_x_continuous("Longitude", breaks = seq(-20, 40, 20)) +
+  scale_y_continuous("Latitude", breaks = seq(-20, 40, 20)) +
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(), 
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top") 
-sds
+  theme(strip.text = element_text(size = 11),
+        legend.justification = "top",
+        legend.position = "bottom") +
+  guides(fill = guide_colourbar(barwidth = unit(5, "cm")))
 
-ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", height = 4.5, width = 10)
+ggsave("figures/k13_out_bb_no_zooms_sdscaled.png", sds, height = 6, width = 12)
 
 years_to_plot <- c("2014", "2020", "2026")
 preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
@@ -541,25 +548,29 @@ df <- gg_ras_prep(preds)$df
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
-              filter(year %in% years_to_plot & tag == "50"),
+              filter(year %in% years_to_plot & tag == "50") %>%
+              mutate(val = case_when(val == min(val) ~ 0,
+                                     val == max(val) ~ round(max(val), digits = 2),
+                                     TRUE ~ val)),
             mapping = aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, col = "grey", linewidth = 0.2) +
   facet_wrap(~year, nrow = 1) +
   scale_fill_viridis_b(na.value = NA, 
-                       "Prevalence", 
-                       trans = "sqrt",
+                       "Prevalence",
                        breaks = c(0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4)) + 
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        legend.justification = "top")
-
-medians
+  scale_x_continuous("Longitude", breaks = seq(-20, 40, 20)) +
+  scale_y_continuous("Latitude", breaks = seq(-20, 40, 20)) +
+  theme_bw() +
+  theme(strip.text = element_text(size = 11),
+        legend.justification = "top",
+        legend.position = "bottom",
+        legend.title=element_text(vjust=0.85)) +
+  guides(fill = guide_coloursteps(barwidth = unit(12, "cm"),
+                                  show.limits = TRUE))
 
 # colourbar needs work
-ggsave("figures/k13_out_bb_median_contour.png", height = 4.5, width = 10)
+ggsave("figures/k13_out_bb_median_contour.png", medians, height = 6, width = 12)
 
 # legs <- plot_grid(get_legend(medians),
 #                   get_legend(sds),

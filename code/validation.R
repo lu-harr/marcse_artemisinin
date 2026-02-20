@@ -16,46 +16,70 @@ library(cowplot)
 source("code/validation_funcs.R")
 
 # here is some run up:
-nice_name_lookup <- list("k13_marcse" = "Kelch 13",
+nice_name_lookup_main <- list("k13_marcse" = "Kelch 13",
                          "crt76" = "Pfcrt-K76T",
                          "mdr86" = "Pfmdr1-N86Y",
                          "mdr184" = "Pfmdr1-Y184F",
                          "mdr1246" = "Pfmdr1-D1246Y")
 
+nice_name_lookup_all <- list("k13_marcse" = "Kelch 13 aggregate",
+                         "crt76" = "Pfcrt-K76T",
+                         "mdr86" = "Pfmdr1-N86Y",
+                         "mdr184" = "Pfmdr1-Y184F",
+                         "mdr1246" = "Pfmdr1-D1246Y",
+                         "k13snp_A675V" = "Kelch 13 A675V",
+                         "k13snp_C469Y" = "Kelch 13 C469Y",
+                         "k13snp_P441L" = "Kelch 13 P441L",
+                         "k13snp_R561H" = "Kelch 13 R561H",
+                         "k13snp_R622I" = "Kelch 13 R622I")
+
 data_path_lookup <- list("k13_marcse" = "data/clean/moldm_marcse_k13_nomarker.csv",
                          "crt76" = "data/clean/moldm_crt76.csv",
                          "mdr86" = "data/clean/pfmdr_single_mdr86.csv",
                          "mdr184" = "data/clean/pfmdr_single_mdr184.csv",
-                         "mdr1246" = "data/clean/pfmdr_single_mdr1246.csv")
+                         "mdr1246" = "data/clean/pfmdr_single_mdr1246.csv",
+                         "k13snp_A675V" = "data/clean/moldm_marcse_k13snp_A675V.csv",
+                         "k13snp_C469Y" = "data/clean/moldm_marcse_k13snp_C469Y.csv",
+                         "k13snp_P441L" = "data/clean/moldm_marcse_k13snp_P441L.csv",
+                         "k13snp_R561H" = "data/clean/moldm_marcse_k13snp_R561H.csv",
+                         "k13snp_R622I" = "data/clean/moldm_marcse_k13snp_R622I.csv")
 
-bb_paths <- lapply(names(nice_name_lookup),
+bb_paths <- lapply(names(nice_name_lookup_all),
                    function(marker){paste0("output/", marker, "/bb_gne/")})
-names(bb_paths) <- names(nice_name_lookup)
+names(bb_paths) <- names(nice_name_lookup_all)
 
 # read in mut_data and associate each record with predicted prevalence for 
 # relevant year:
-mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup), function(marker){
+mut_dat_assoc_with_preds <- lapply(names(nice_name_lookup_all), function(marker){
   extract_preds(data_path = data_path_lookup[[marker]],
                 pred_path = paste0(bb_paths[[marker]], "preds_medians.tif"),
                 buffer = BUFFER) # 5000 is sufficient to drag all points onto mask .. although what pfpr did I assign them during fitting?
 }) %>%
-  setNames(names(nice_name_lookup)) %>%
+  setNames(names(nice_name_lookup_all)) %>%
   suppressMessages()
 
 
 # now we're ready to work with cv preds - here are the preds that I've slurmed for 
 # all points
-mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup), function(marker){
+mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup_all), function(marker){
   read.csv(paste0("output/", marker, "/bb_gne/mut_dat_cv_preds_extracted.csv"))
 }) %>%
-  setNames(names(nice_name_lookup))
+  setNames(names(nice_name_lookup_all))
 
-cv_folds <- lapply(names(nice_name_lookup), function(marker){
+cv_folds <- lapply(names(nice_name_lookup_all), function(marker){
   read_rds(paste0("output/", marker, "/bb_gne/cv_folds.rds"))
 }) %>%
   setNames(names(nice_name_lookup))
 
 
+# baseline predictions: just assign annual marker median
+mut_dat_preds_baseline <- lapply(names(nice_name_lookup_all), function(marker){
+  baseline_preds(mut_dat_assoc_with_preds[[marker]])
+}) %>%
+  setNames(names(nice_name_lookup_all))
+# might be prudent to trim regions I'm looking at for SNP models ...need to think further about that
+
+# summarise
 rmses <- lapply(mut_dat_assoc_with_preds, function(x){rmse(x)})
 rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
 cv_stats <- lapply(names(nice_name_lookup), 
@@ -63,38 +87,40 @@ cv_stats <- lapply(names(nice_name_lookup),
                                       cv_folds[[x]])}) %>%
   setNames(names(nice_name_lookup))
 
+rmse_baseline <- lapply(mut_dat_preds_baseline, function(x){rmse(x)})
+rsq_baseline <- lapply(mut_dat_preds_baseline, function(x){unadjusted_rsq(x)})
+
+
 cv_summary <- lapply(cv_stats, function(x){
   x[-c(1)] %>% # remove foldwise stats
     as.data.frame()
 }) %>%
   do.call(what = rbind) %>%
   mutate(marker = rownames(.))
-# using the built-in cor function gives similar but not equal results:
-# rsq <- lapply(mut_dat_assoc_with_preds, function(x){
-#   tmp <- filter(x, !is.na(pred))
-#   unadjusted_rsq(tmp$pred, tmp$present/tmp$tested)
-# })
 
 library(xtable)
-dat <- data.frame(mod = unlist(nice_name_lookup[names(rmses)]),
+dat <- data.frame(mod = unlist(nice_name_lookup_all[names(rmses)]),
+                  base_rmse = unlist(rmse_baseline),
+                  base_rsq = unlist(rsq_baseline),
                   rmse = unlist(rmses),
                   rsq = unlist(rsq)) %>%
   mutate(marker = rownames(.)) %>%
   left_join(cv_summary) %>%
   dplyr::select(-c(marker))
 
-colnames(dat) <- c("", "RMSE", "$r^2$", "Mean", "SD", "Mean", "SD")
-tab <- xtable(dat)
-align(tab) <- c(rep("c", 2), "|", rep("c", 2), "|", rep("c", 4))
+colnames(dat) <- c("", "RMSE", "$r^2$", "RMSE", "$r^2$", "Mean", "SD", "Mean", "SD")
+tab <- xtable(dat, digits = 3)
+align(tab) <- c(rep("c", 2), "|", rep("c", 2), "|", rep("c", 2), "|", rep("c", 4))
 addtorow <- list()
-addtorow$pos <- list(-1, -1)
-addtorow$command <- c("\\hline & \\multicolumn{2}{c|}{Full dataset} &  \\multicolumn{4}{c}{10-fold holdout} \\\\\n \\cline{2-3}",
-                      "& & & \\multicolumn{2}{c}{RMSE} & \\multicolumn{2}{c}{$r^2$} \\\\\n")
+addtorow$pos <- list(-1, -1, -1)
+addtorow$command <- c("\\hline & \\multicolumn{2}{c|}{Baseline} & \\multicolumn{6}{c}{Spatiotemporal GP} \\\\\n",
+                      "\\hline & & & \\multicolumn{2}{c|}{Full dataset} & \\multicolumn{4}{c}{10-fold holdout} \\\\\n", # \\cline{6-9}
+                      "& & & & & \\multicolumn{2}{c}{RMSE} & \\multicolumn{2}{c}{$r^2$} \\\\\n")
 print(tab, 
       sanitize.text.function=function(x){x}, 
       include.rownames = FALSE,
       #include.colnames = FALSE,
-      hline.after = c(0, 5),
+      hline.after = c(0, 10),
       add.to.row = addtorow)
 
 

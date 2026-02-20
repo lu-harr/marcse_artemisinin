@@ -71,8 +71,8 @@ reports <- c(reports,
                  suppressMessages()))
 
 moldm <- bind_rows(moldm,
-                   anti_join(marcse, moldm, by = join_by(PubMedID)) # %>%
-                   # bind_rows(filter(marcse, PubMedID == "Unpublished"))
+                   anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
+                   bind_rows(filter(marcse, PubMedID == "Unpublished"))
                    ) %>%
   filter(PubMedID != "Already in moldm") %>% # a sneaky preprint snuck through
   mutate(mutant = !is.na(status))
@@ -369,7 +369,7 @@ p1 <-
   scale_color_manual(values = rep(c(iddoblue, "#c7047c", viridis(4), "#E37210"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 400)) +
+                     limits = c(0, 500)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +

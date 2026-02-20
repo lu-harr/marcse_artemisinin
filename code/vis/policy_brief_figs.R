@@ -5,7 +5,7 @@ library(tidyverse)
 library(cowplot)
 
 with_wildtypes <- read.csv("data/clean/moldm_marcse_k13_nomarker.csv") %>%
-  filter(year > 2019)
+  filter(Longitude > -20)
 
 p <- ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -32,11 +32,11 @@ leg1 <- get_legend(p)
 p <- ggplot() + 
   geom_sf(data = afr, fill = "white") + 
   geom_point(data = filter(with_wildtypes, Present > 0) %>%
-               arrange(), 
+               arrange(Present/Tested), 
              mapping = aes(x = Longitude, y = Latitude, 
                            fill = Present / Tested),
              col = "grey50", pch=21, stroke = 0.2) +
-  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
+  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", limits = c(0, 0.67)) +
   guides(colour = guide_legend(override.aes = list(size = 4),
                                label.theme = element_text(size = 11))) +
   theme_classic()
@@ -51,15 +51,16 @@ p1 <- ggplot() +
              fill = "grey60",  pch = 21, alpha = 0.5, stroke = 0.2) +
   #new_scale_color() +
   geom_point(data = filter(with_wildtypes, Present > 0) %>%
-               arrange(), 
+               arrange(Present/Tested), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested,
                            fill = Present / Tested),
              col = "grey50", pch=21, stroke = 0.2) +
   scale_color_manual(name = "", values = c("grey30"), labels=c("Wildtypes\nonly")) +
-  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt") +
+  scale_fill_viridis_c(name = "Prevalence", trans = "sqrt", limits = c(0, 0.67)) +
   scale_size_continuous(name = "Sample size", range = c(0.2, 6), trans = "sqrt") +
-  labs(title = "(a) Prevalence of Kelch 13 markers since 2020") +
+  labs(title = "(a)") +
+  #labs(title = "(a) Prevalence of Kelch 13 markers (2014-2024)") +
   scale_x_continuous(breaks = seq(-20, 40, 20)) +
   scale_y_continuous(breaks = seq(-20, 40, 20)) +
   theme_classic() +
@@ -75,6 +76,11 @@ inset_comb <- ggdraw() +
   draw_plot(p1) +
   draw_plot(plot_grid(leg2, leg1, align = "v", axis = "b"),
             x = 0.21, y = 0.15, width = 0.25, height = 0.2)
+
+inset_comb <- ggdraw() +
+  draw_plot(p1) +
+  draw_plot(plot_grid(leg2, leg1, align = "v", axis = "b"),
+            x = 0.01, y = 0.18, width = 0.42, height = 0.2)
 
 inset_comb
 
@@ -92,8 +98,8 @@ source("code/setup.R")
 source("code/vis/vis_funcs.R")
 
 preds <- rast("output/k13_marcse/bb_gne/preds_medians.tif")
-preds24 <- preds[["2024_50"]]
-df <- gg_ras_prep(preds24)$df
+preds26 <- preds[["2026_50"]]
+df <- gg_ras_prep(preds26)$df
 
 p2 <- ggplot() +
   geom_sf(data = afr, fill = "white") + 
@@ -101,9 +107,10 @@ p2 <- ggplot() +
              mapping = aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, col = "grey80") +
   scale_fill_viridis_c("Prevalence", trans = "sqrt", 
-                       limits = c(0, max(with_wildtypes$Present / with_wildtypes$Tested))) +
+                       limits = c(0, 0.67)) +
   theme_classic() +
-  labs(title = "(b) Estimated Kelch 13 prevalence (2024)") +
+  labs(title = "(b)") +
+  #labs(title = "(b) Estimated Kelch 13 prevalence (2026)") +
   theme(axis.title = element_blank(), 
         axis.text = element_blank(), 
         axis.ticks = element_blank(),
@@ -112,11 +119,11 @@ p2 <- ggplot() +
         legend.position = "inside",
         legend.position.inside = c(0.1, 0.25))
 
-#p2
+p2
 
 
 # now some thresholds - could use a more relaxed threshold ?
-yrs_to_extract <- as.character(seq(2016, 2024, 2))
+yrs_to_extract <- as.character(seq(2016, 2026, 2))
 preds_thresh <- preds[[str_extract(names(preds), "\\d{4}") %in% yrs_to_extract]]
 values(preds_thresh) <- ifelse(values(preds_thresh) > 0.05, 1, 0)
 preds_thresh <- app(preds_thresh, sum)
@@ -134,8 +141,9 @@ p3 <- ggplot() +
   geom_tile(data = df, aes(x = x, y = y), fill = "grey90") +
   geom_tile(data = dfthresh, aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, col = "grey80") +
-  scale_fill_manual(values = rev(viridis(5)), "Kelch 13\nprevalence\n>5%") +
-  labs(title = "(c) Spread of Kelch 13 mutations over time") +
+  scale_fill_manual(values = rev(viridis(6)), "Kelch 13\nprevalence\n>5%") +
+  labs(title = "(c)") +
+  # labs(title = "(c) Estimated spread of Kelch 13 mutations over time") +
   theme_classic() +
   theme(axis.title = element_blank(), 
         axis.text = element_blank(), 
@@ -156,9 +164,8 @@ p <- plot_grid(title, p, ncol = 1, rel_heights = c(0.015, 1))
 ggsave("figures/policy_k13.png", p, height = 13, width = 6, scale = 1.2)
 
 
-
-
-
+p <- plot_grid(inset_comb, p2, p3, nrow = 1)
+ggsave("figures/policy_k13_horiz.png", p, width = 13, height = 5, scale = 1)
 
 # now something for partner drugs
 

@@ -28,18 +28,18 @@ message(paste("Writing to:", out_dir))
 
 mut_data <- setup_mut_data(in_dat, min_year = MIN_YEAR, buffer = BUFFER)
 
-# message("All years")
-# wrap_survey_effort(in_dat,
-#                    out_path = paste0(out_dir, "surveillance_effort_", snp, ".grd"),
-#                    sigma = 1.5, 
-#                    apply_mask = FALSE)
-
-message("Annual")
+message("All years")
 wrap_survey_effort(in_dat,
-                   out_path = paste0(out_dir, "surveillance_effort_", snp, "_annual.grd"),
-                   years = sort(unique(mut_data$year)),
-                   bin_years = FALSE,
+                   out_path = paste0(out_dir, "surveillance_effort_", snp, ".grd"),
                    sigma = 1.5, 
-                   apply_mask = FALSE,
-                   msg_me = TRUE)
-message("No timeout?")
+                   apply_mask = FALSE)
+
+# message("Annual")
+# wrap_survey_effort(in_dat,
+#                    out_path = paste0(out_dir, "surveillance_effort_", snp, "_annual.grd"),
+#                    years = sort(unique(mut_data$year)),
+#                    bin_years = FALSE,
+#                    sigma = 1.5, 
+#                    apply_mask = FALSE,
+#                    msg_me = TRUE)
+# message("No timeout?")
