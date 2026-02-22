@@ -7,6 +7,9 @@ library(iddoPal)
 # YEAR_LOWER_BOUND <- 2000
 MIN_SAMPLE_SIZE <- 10
 
+to_report <- "output/stats_to_report.txt"
+reports <- "#### crt76 read-in ####"
+
 # here is my DIY set of verified/associated markers
 
 # pfcrt 76: need 76T, K76, 76K/T, 
@@ -35,28 +38,25 @@ crt <- read.csv("data/raw/db_20260211/novartis.csv") %>%
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
+reports <- c(reports, 
+             paste("Number of crt studies:",
+              length(unique(crt$Title))))
 
+reports <- c(reports, 
+             paste("Publication years:", 
+             range(as.numeric(crt$Year.Published), na.rm=TRUE)) %>% suppressWarnings())
 
+reports <- c(reports, 
+             paste("Surveillance years:", min(crt$Start.Year), max(crt$End.Year)))
 
-message("filtering some weird coords")
-
-message("Number of crt studies")
-length(unique(crt$Title))
-
-message("Publication years")
-sort(unique(crt$Year.Published))
-
-message("Surveillance years")
-min(crt$Start.Year)
-max(crt$End.Year)
-
-message("Number of patients")
-crt %>%
-  group_by(Longitude, Latitude, year) %>%
-  summarise(n = n(), Tested = max(Tested)) %>%
-  ungroup() %>%
-  dplyr::select(Tested) %>%
-  sum()
+reports <- c(reports, 
+             paste("Number of patients:",
+                   crt %>%
+                      group_by(Longitude, Latitude, year) %>%
+                      summarise(n = n(), Tested = max(Tested)) %>%
+                      ungroup() %>%
+                      dplyr::select(Tested) %>%
+                      sum()))
 
 ggplot(data = crt %>%
          filter(Present <= Tested & Tested > MIN_SAMPLE_SIZE & year > 1995)) +
@@ -201,3 +201,5 @@ crt %>%
 #   theme_grey() 
 # ggsave("figs/crt_distn.png", height=3, width=5, scale=2)
 
+
+cat(reports, file = to_report, append = TRUE, sep = "\n")

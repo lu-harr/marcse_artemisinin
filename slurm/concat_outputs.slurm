@@ -23,10 +23,10 @@ pwd
 # provide marker and model ...
 
 Rscript code/concat_outputs_slurm.R k13_marcse bb_gne
-Rscript code/concat_outputs_slurm.R mdr86 bb_gne
-Rscript code/concat_outputs_slurm.R mdr184 bb_gne
-Rscript code/concat_outputs_slurm.R mdr1246 bb_gne
-Rscript code/concat_outputs_slurm.R crt76 bb_gne
+# Rscript code/concat_outputs_slurm.R mdr86 bb_gne
+# Rscript code/concat_outputs_slurm.R mdr184 bb_gne
+# Rscript code/concat_outputs_slurm.R mdr1246 bb_gne
+# Rscript code/concat_outputs_slurm.R crt76 bb_gne
 Rscript code/concat_outputs_slurm.R k13snp_A675V bb_gne
 Rscript code/concat_outputs_slurm.R k13snp_C469Y bb_gne
 Rscript code/concat_outputs_slurm.R k13snp_P441L bb_gne

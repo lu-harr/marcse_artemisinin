@@ -8,7 +8,7 @@ source("code/data_clean/format_moldm.R")
 to_report <- "output/stats_to_report.txt"
 reports <- "#### K13 data read-in ####"
 
-moldm <- format_moldm_k13("data/raw/db_20260105/novartis.csv", 
+moldm <- format_moldm_k13("data/raw/db_20260211/novartis.csv", 
                           report_path = to_report) %>%
   mutate(Marker = strip_marker) %>%
   clean_up_pmids() %>%
@@ -47,14 +47,14 @@ to_add <- anti_join(marcse, moldm, by = join_by(PubMedID)) %>%
   # add these back in:
   bind_rows(filter(marcse, PubMedID == "Unpublished"))
 reports <- c(reports,
-             paste0("Studies: ", length(unique(to_add$Title))))
+             paste0("MARCSE Studies to add: ", length(unique(to_add$Title))))
 reports <- c(reports,
-             paste0("Publication years: ",
+             paste0("with Publication years: ",
              range(as.numeric(to_add$Year.Published), na.rm=TRUE),
              collapse = ","))
 
 reports <- c(reports,
-             paste0("Patients: ", to_add %>%
+             paste0("with Patients: ", to_add %>%
                  group_by(Longitude, Latitude, year, Title, Tested) %>%
                  summarise(n = n()) %>%
                  ungroup() %>%
@@ -92,6 +92,50 @@ moldm %>%
 
 message("From here down it's pretty much as in the format_moldm script")
 
+reports <- c(reports,
+             paste0("joint Number total: ", 
+                    moldm %>%
+                      group_by(Longitude, Latitude, year, PubMedID) %>% 
+                      summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                      ungroup() %>%
+                      dplyr::select(Present) %>%
+                      sum() %>%
+                      suppressMessages()))
+
+reports <- c(reports,
+             paste0("joint Number of wildtypes: ", 
+                    moldm %>%
+                      filter(Marker == "wildtype") %>%
+                      group_by(Longitude, Latitude, year, PubMedID) %>% 
+                      summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                      ungroup() %>%
+                      dplyr::select(Present) %>%
+                      sum() %>%
+                      suppressMessages()))
+
+reports <- c(reports,
+             paste0("joint Number of validated mutants: ", 
+                    moldm %>%
+                      filter(status == "Validated marker (Epi., Lab. & Clin.)") %>%
+                      group_by(Longitude, Latitude, year, PubMedID) %>% 
+                      summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                      ungroup() %>%
+                      dplyr::select(Present) %>%
+                      sum() %>%
+                      suppressMessages()))
+
+reports <- c(reports,
+             paste0("joint Number of candidate mutants: ", 
+                    moldm %>%
+                      filter(status == "Candidate marker (Epi. & Clin.)") %>%
+                      group_by(Longitude, Latitude, year, PubMedID) %>% 
+                      summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                      ungroup() %>%
+                      dplyr::select(Present) %>%
+                      sum() %>%
+                      suppressMessages()))
+
+
 write.csv(moldm %>%
             filter(Present / Tested <= 1 & Tested > MIN_SAMPLE_SIZE), 
           "data/clean/moldm_marcse_with_markers.csv")
@@ -109,7 +153,14 @@ mutants <- moldm %>%
   suppressMessages()
 
 reports <- c(reports,
-             paste("Number of rows in mutant table:", nrow(mutants)))
+             paste("Number of mutants on the list in the dataset:", 
+                   moldm %>% 
+                     filter(mutant) %>% 
+                     dplyr::select(Marker) %>% 
+                     ungroup() %>%
+                     unique() %>% 
+                     unlist() %>% 
+                     length()))
 
 reports <- c(reports,
              "TF-associated mutations in dataset: ")
@@ -177,15 +228,6 @@ write.csv(with_wildtypes %>%
           "data/clean/moldm_marcse_k13_nomarker.csv",
           row.names = FALSE)
 
-reports <- c(reports,
-             paste("Number of testees:", 
-              with_wildtypes %>% 
-                filter(Present / Tested <= 1) %>%
-                group_by(year, Longitude, Latitude, Tested) %>% 
-                summarise(n=n()) %>% 
-                ungroup() %>%
-                dplyr::select(Tested) %>% 
-                sum()))
 # 119666.02 ??? caused by imputing testeds from present/prevalence ??
 # (Although could have sworn )
 # used to be 82041
@@ -317,6 +359,7 @@ wts <- wildtypes_to_add %>%
   rename(Marker = marker) %>%
   mutate(Present = 0)
 
+year_breaks <- c(YEAR_LOWER_BOUND, seq(2012, 2021, 3), 2024)
 markers_disagg <- moldm %>%
   filter(mutant) %>%
   mutate(Marker = ifelse(Marker %in% markers_panel_b$marker,
@@ -327,7 +370,11 @@ markers_disagg <- moldm %>%
   group_by(Marker, Longitude, Latitude, year, PubMedID) %>%
   summarise(Present = sum(Present), Tested = max(unique(Tested))) %>%
   bind_rows(wts) %>%
-  mutate(year_bin = cut(year, breaks = c(YEAR_LOWER_BOUND, seq(2012, 2021, 3), 2024))) %>%
+  mutate(year_bin = cut(year, 
+                        breaks = year_breaks,
+                        labels = paste(head(year_breaks, -1) + 1,
+                                       tail(year_breaks, -1),
+                                       sep = " - "))) %>%
   filter(Longitude > -30) %>% # remove ocean point that's a bit far away
   mutate(Marker = factor(Marker, levels = markers_panel_b$marker))
 
@@ -467,9 +514,12 @@ reports <- c(reports,
              paste0("Prevalence range: ",
              markers_disagg %>% 
   filter(Present > 0) %>% 
+  ungroup() %>%
   mutate(prev = Present/Tested) %>% 
   dplyr::select(prev) %>% 
-  range()))
+  unlist() %>%
+  range() %>%
+  suppressMessages()))
 
 cat(reports, file = to_report, append = TRUE, sep = "\n")
 

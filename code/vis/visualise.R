@@ -36,21 +36,21 @@ afr <- world %>%
 ###############################################################################
 # surveillance effort - very slow running atm ...
 
-p <- survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
-                      "output/crt76/surveillance_effort_crt76.grd",
-                      "output/mdr86/surveillance_effort_mdr86.grd"),
-                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
-
-ggsave("figures/surveillance_effort_all.png", p,
-        height = 5, width=10, scale = 0.8)
+# p <- survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
+#                       "output/crt76/surveillance_effort_crt76.grd",
+#                       "output/mdr86/surveillance_effort_mdr86.grd"),
+#                     lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
+# 
+# ggsave("figures/surveillance_effort_all.png", p,
+#         height = 5, width=10, scale = 0.8)
 
 p <- survey_effort_panel(c("output/k13_marcse/surveillance_effort_k13.grd",
                       "output/crt76/surveillance_effort_crt76.grd",
                       "output/mdr86/surveillance_effort_mdr86.grd"),
-                    lyr_names = c("Pfkelch13", "Pfcrt K76T", "Pfmdr1 N86Y"))
+                    lyr_names = c("Kelch 13", "Pfcrt K76T", "Pfmdr1 N86Y"))
 
-ggsave("figures/surveillance_effort_all_marcse.png", p,
-       height = 5, width=10, scale = 1.1)
+ggsave("figures/surveillance_effort_all_marcse.png", p, height = 6, width = 12)
+
 
 # survey_effort_panel(c("output/k13/surveillance_effort_k13.grd",
 #                       "output/k13_marcse/surveillance_effort_k13_marcse.grd"),
@@ -100,68 +100,71 @@ p1 + p2 + p3 + p4 + p5 +
 ggsave("figures/all_markers_time_bb_astmh.png", scale = 1.5, height = 7, width = 6)
 
 
-p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13",
-                     cut_year = 2028)
-p2 <- pred_time_plot("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T",
-                     cut_year = 2028)
-p3 <- pred_time_plot("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y",
-                     cut_year = 2028)
-p4 <- pred_time_plot("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F",
-                     cut_year = 2028)
-p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y",
-                     cut_year = 2028)
-
-p1 + p2 + p3 + p4 + p5 +
-  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
+# p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+#                      title = "(a) Pfkelch13",
+#                      cut_year = 2028)
+# p2 <- pred_time_plot("output/crt76/bb_gne/",
+#                      title = "(b) Pfcrt K76T",
+#                      cut_year = 2028)
+# p3 <- pred_time_plot("output/mdr86/bb_gne/",
+#                      title = "(c) Pfmdr1 N86Y",
+#                      cut_year = 2028)
+# p4 <- pred_time_plot("output/mdr184/bb_gne/",
+#                      title = "(d) Pfmdr1 Y184F",
+#                      cut_year = 2028)
+# p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+#                      title = "(e) Pfmdr1 D1246Y",
+#                      cut_year = 2028)
+# 
+# p1 + p2 + p3 + p4 + p5 +
+#   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+# ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
 
 # make a version of this weighted by malaria case incidence
 incid <- rast("data/incid_rasters_afr.tif")
 names(incid) <- paste0("incid_", str_extract(names(incid), ".{4}$"))
 
-p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases")
-p2 <- pred_time_plot("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases")
-p3 <- pred_time_plot("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases")
-p4 <- pred_time_plot("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases")
-p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases")
-
-p1 + p2 + p3 + p4 + p5 +
-  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+# p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+#                      title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases")
+# p2 <- pred_time_plot("output/crt76/bb_gne/",
+#                      title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases")
+# p3 <- pred_time_plot("output/mdr86/bb_gne/",
+#                      title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases")
+# p4 <- pred_time_plot("output/mdr184/bb_gne/",
+#                      title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases")
+# p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+#                      title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases")
+# 
+# p1 + p2 + p3 + p4 + p5 +
+#   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 # ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
 # ultimately this isn't super useful: e.g., for Kelch, it's saying that increasingly,
 # the mutation intercepts with high transmission areas, but there are lots of pixels
 # where incidence is very low ... really need to show quantiles of prevalence * annual incidence
 # surface which will require a fairly different function
 
-p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases",
-                     cut_year = 2028)
-p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
-                     title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases",
-                     cut_year = 2028)
-p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
-                     title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases",
-                     cut_year = 2028)
-p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
-                     title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases",
-                     cut_year = 2028)
-p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
-                     title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases",
-                     cut_year = 2028)
 
-p1 + p2 + p3 + p4 + p5 +
-  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
+
+# p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
+#                      title = "(a) Pfkelch13", incid = incid, ylab = "Annual cases",
+#                      cut_year = 2028)
+# p2 <- pred_time_factoring_incidence("output/crt76/bb_gne/",
+#                      title = "(b) Pfcrt K76T", incid = incid, ylab = "Annual cases",
+#                      cut_year = 2028)
+# p3 <- pred_time_factoring_incidence("output/mdr86/bb_gne/",
+#                      title = "(c) Pfmdr1 N86Y", incid = incid, ylab = "Annual cases",
+#                      cut_year = 2028)
+# p4 <- pred_time_factoring_incidence("output/mdr184/bb_gne/",
+#                      title = "(d) Pfmdr1 Y184F", incid = incid, ylab = "Annual cases",
+#                      cut_year = 2028)
+# p5 <- pred_time_factoring_incidence("output/mdr1246/bb_gne/",
+#                      title = "(e) Pfmdr1 D1246Y", incid = incid, ylab = "Annual cases",
+#                      cut_year = 2028)
+# 
+# p1 + p2 + p3 + p4 + p5 +
+#   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+# ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
+
 
 
 p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
@@ -771,7 +774,7 @@ snp_subplot <- function(df,
                         axis.title.x = element_blank(),
                         xbreaks = waiver(),
                         ybreaks = waiver(),
-                        fill_lims = c(0,0.47)){
+                        fill_lims = c(0,0.657)){
   ggplot(data = df %>% filter(snp == marker)) +
     geom_tile(aes(x = x, y = y, fill = val)) +
     geom_sf(data = afr %>%
@@ -829,7 +832,7 @@ pl <- ggdraw(p + theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 15))) +
   )
 ggsave("figures/k13_snps.png", pl, height = 7.55, width = 6, scale = 1.3)
 
-ggsave("figures/k13_snps.png", p, height = 7.75, width = 6, scale = 1.3)
+# ggsave("figures/k13_snps.png", p, height = 7.75, width = 6, scale = 1.3)
 
 ggplot(df %>% filter(year == "2026")) +
   geom_tile(aes(fill = val, x = x, y = y)) +

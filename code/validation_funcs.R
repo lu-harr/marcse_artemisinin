@@ -57,12 +57,14 @@ extract_preds_cv <- function(data_path,
     arrange(pts)
   
   message(paste(unique(folds$fold)))
+  message(nrow(folds))
   
   # bring in coords associated with predictions + associate with fold
-  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR, buffer = in_buffer) %>%
-    mutate(fold = folds$fold)
+  mut_data <- setup_mut_data(data_path, min_year = MIN_YEAR, buffer = in_buffer) # %>%
+    # mutate(fold = folds$fold)
   
   message(nrow(mut_data))
+  mut_data$fold = folds$fold
   
   
   preds_avail <- list.files(pred_path)

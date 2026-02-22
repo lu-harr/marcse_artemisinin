@@ -92,7 +92,7 @@ format_moldm_k13 <- function(path, report_path = NULL){
                  range(as.numeric(out$Year.Published), na.rm=TRUE) %>%
                    suppressWarnings(), collapse = ","))
   reports <- c(reports,
-               paste("Earliest years:", min(out$year, na.rm=TRUE)))
+               paste("Collection years:", range(out$year, na.rm=TRUE)))
   
   out <- filter(out, year >= YEAR_LOWER_BOUND)
   
@@ -119,6 +119,39 @@ format_moldm_k13 <- function(path, report_path = NULL){
                    dplyr::select(Tested) %>%
                    sum() %>%
                    suppressMessages()))
+  
+  reports <- c(reports,
+               paste0("Number of wildtypes: ", 
+                      out %>%
+                        filter(Marker == "wildtype") %>%
+                        group_by(Longitude, Latitude, year, PubMedID) %>% 
+                        summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                        ungroup() %>%
+                        dplyr::select(Present) %>%
+                        sum() %>%
+                        suppressMessages()))
+  
+  reports <- c(reports,
+               paste0("Number of validated mutants: ", 
+                      out %>%
+                        filter(status == "Validated marker (Epi., Lab. & Clin.)") %>%
+                        group_by(Longitude, Latitude, year, PubMedID) %>% 
+                        summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                        ungroup() %>%
+                        dplyr::select(Present) %>%
+                        sum() %>%
+                        suppressMessages()))
+  
+  reports <- c(reports,
+               paste0("Number of candidate mutants: ", 
+                      out %>%
+                        filter(status == "Candidate marker (Epi. & Clin.)") %>%
+                        group_by(Longitude, Latitude, year, PubMedID) %>% 
+                        summarise(n = length(unique(Tested)), Tested = max(Tested), Present = sum(Present)) %>%
+                        ungroup() %>%
+                        dplyr::select(Present) %>%
+                        sum() %>%
+                        suppressMessages()))
   
   if(is.null(report_path)){
     sapply(reports, message)

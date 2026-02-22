@@ -11,6 +11,9 @@ library(terra)
 YEAR_LOWER_BOUND <- 2000
 MIN_SAMPLE_SIZE <- 10
 
+to_report <- "output/stats_to_report.txt"
+reports <- "#### mdr1 read-in ####"
+
 world <- ne_countries(scale="medium", returnclass = "sf")
 afr <- world %>%
   filter(continent == "Africa") %>%
@@ -35,7 +38,6 @@ moldm <- read.csv("data/raw/db_20260211/novartis.csv") %>%
   filter(Continent == "Africa") %>%
   suppressWarnings()
 
-message("filtering some weird coords")
 
 pfmdr <- moldm %>%
   filter(grepl("pfmdr1", Marker)) %>%
@@ -100,36 +102,74 @@ pfmdr <- left_join(pfmdr, str_to_hap, by = join_by(Marker == stri)) %>%
   filter(!is.na(`86`) | !is.na(`184`) | !is.na(`1246`)) %>%
   mutate(n_loci = 3 - rowSums(is.na(dplyr::select(., c(`86`, `184`, `1246`)))))
 
-nrow(pfmdr)
+reports <- c(reports,
+             paste0("Rows: ",nrow(pfmdr)))
 
 # these are rows where all three loci sequenced:
-pfmdr %>%
-  filter(!is.na(`86`) & !is.na(`184`) & !is.na(`1246`)) %>%
-  nrow()
+reports <- c(reports,
+             paste0("Rows where all three loci sequenced: ",
+              pfmdr %>%
+                filter(!is.na(`86`) & !is.na(`184`) & !is.na(`1246`)) %>%
+                nrow()))
 
 tmp <- pfmdr %>%
   filter(!is.na(`86`) & !is.na(`184`) & !is.na(`1246`)) %>%
   group_by(Longitude, Latitude, year, PubMedID, Tested) %>%
   summarise(n = n())
-sum(tmp$Tested)
+reports <- c(reports,
+             paste0("Tests where all three loci sequenced: ",
+                    sum(tmp$Tested)))
 
-tmp <- pfmdr %>%
-  filter(!(!is.na(`86`) & !is.na(`184`) & !is.na(`1246`))) %>%
-  group_by(Longitude, Latitude, year, PubMedID, Tested) %>%
-  summarise(n = n())
-sum(tmp$Tested)
+# this is probably a bit deceptive - compare above to total tests in dataset
+# tmp <- pfmdr %>%
+#   filter(!(!is.na(`86`) & !is.na(`184`) & !is.na(`1246`))) %>%
+#   group_by(Longitude, Latitude, year, PubMedID, Tested) %>%
+#   summarise(n = n())
+# reports <- c(reports,
+#              paste0("Tests where not all three loci sequenced: ",
+#                     sum(tmp$Tested)))
 
 message("Here's the numbers for Results")
 tmp <- pfmdr %>%
   filter(!is.na(`86`) | !is.na(`184`) | !is.na(`1246`)) %>%
   group_by(Longitude, Latitude, year, Title, Year.Published) %>%
   summarise(n = n(), Tested = max(Tested))
-sum(tmp$Tested)
+reports <- c(reports, paste0("Number of cases: ",
+                             sum(tmp$Tested)))
 
-length(unique(tmp$Title))
-length(setdiff(unique(tmp$Title), unique(crt$Title)))
-range(tmp$year)
-range(as.numeric(tmp$Year.Published), na.rm=TRUE)
+reports <- c(reports, paste0("Number of studies: ",
+                             length(unique(tmp$Title))))
+
+crt <- read.csv("data/raw/db_20260211/novartis.csv") %>%
+  mutate(Start.Year = as.numeric(Start.Year),
+         End.Year = as.numeric(End.Year),
+         Present = as.numeric(Present),
+         Tested = as.numeric(Tested),
+         Longitude = as.numeric(Longitude),
+         Latitude = as.numeric(Latitude)) %>%
+  filter(!is.na(Start.Year) & !is.na(End.Year)) %>% # remove where both are NA
+  filter(End.Year > 1960 & End.Year < 2500) %>%
+  filter(Start.Year > 1960 & Start.Year < 2500) %>%
+  #filter(grepl("crt", Marker)) %>%
+  #filter(grepl("76", Marker)) %>%
+  filter(Marker %in% c("pfcrt K76T", "pfcrt K76K/T", "pfcrt 76T", 
+                       "pfcrt K76", "pfcrt 76K/T")) %>%
+  mutate(year = round((Start.Year + End.Year) / 2, 0),
+         # if one or the other is not complete, populate with the value we have:
+         year = case_when(is.na(year) & !is.na(Start.Year) ~ Start.Year,
+                          is.na(year) & !is.na(End.Year) ~ End.Year,
+                          TRUE ~ year)) %>%
+  filter(!(Longitude < -10 & Longitude > -11 & Latitude > -11 & Latitude < -10)) %>%
+  filter(Continent == "Africa") %>%
+  suppressWarnings()
+
+reports <- c(reports, paste0("mdr1 studies that aren't crt76 studies: ",
+                             length(setdiff(unique(tmp$Title), unique(crt$Title)))))
+reports <- c(reports, paste0("Collection years: ",
+                             range(tmp$year)))
+reports <- c(reports, paste0("Publication years: ",
+                             range(as.numeric(tmp$Year.Published), na.rm=TRUE) %>% 
+                               suppressWarnings()))
 
 # run assumptions past Sabina
 # group into studies and review haplotypes/evidence of surveillance at all three loci
@@ -380,12 +420,18 @@ single_loc <- read.csv("data/clean/pfmdr_single_locus.csv")
 
 message("Summary stats for results")
 
+year_breaks <- c(1999, 2008, 2012, 2016, 2020, 2024)
+
 partners <- bind_rows(crt,
                       single_loc %>%
                         mutate(loc = paste("Pfmdr1", loc))) %>%
   mutate(loc = factor(loc, levels = c("Pfcrt K76T", "Pfmdr1 N86Y", "Pfmdr1 Y184F", "Pfmdr1 D1246Y"))) %>%
-  filter(year > YEAR_LOWER_BOUND) %>%
-  mutate(year_bin = cut(year, breaks = c(min(year) - 1, 2008, 2012, 2016, 2020, max(year))))
+  filter(year >= YEAR_LOWER_BOUND) %>%
+  mutate(year_bin = cut(year, 
+                        breaks = year_breaks,
+                        labels = paste(head(year_breaks, -1) + 1,
+                                        tail(year_breaks, -1),
+                                        sep = " - ")))
 
 ggplot() + 
   geom_sf(data = afr, fill = "white") + 
@@ -449,4 +495,6 @@ ggplot() +
 ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 4)
 
 
+
+cat(reports, file = to_report, append = TRUE, sep = "\n")
 
