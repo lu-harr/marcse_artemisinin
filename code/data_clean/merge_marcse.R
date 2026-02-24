@@ -416,7 +416,7 @@ p1 <-
   scale_color_manual(values = rep(c(iddoblue, "#c7047c", viridis(4), "#E37210"), 2)) +
   scale_linetype_manual(values = rep(1:2, each = 7)) +
   scale_y_continuous(sec.axis = sec_axis(~.*bg_scale, name="Number of tests"),
-                     limits = c(0, 500)) +
+                     limits = c(0, 515)) +
   theme_minimal() +
   xlab("Year") +
   ylab("Mutations detected") +

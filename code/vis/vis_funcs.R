@@ -93,6 +93,9 @@ pred_time_plot <- function(path,
                            cut_year = NULL){
   
   preds <- rast(paste0(path, "preds_medians.tif")) %>%
+    # might be hitting a sensitivity here choosing mean ....
+    # but choosing median would remove all of my peaks and not aggregating would
+    # make this take 100 times longer to run :/
     aggregate(fact = agg_fact, fun = "mean", na.rm = TRUE)
   
   if (!is.null(incid)){
@@ -251,6 +254,63 @@ pred_time_plot_policy <- function(path,
 # pred_time_plot_policy("output/mdr1246/bb_gne/")
 # pred_time_plot_policy("output/mdr184/bb_gne/")
 # pred_time_plot_policy("output/mdr86/bb_gne/")
+
+pred_time_plot_crint <- function(path, 
+                                  title = "",
+                                  pal = iddoPal::iddo_palettes$soft_blues,
+                                  zooms = NULL,
+                                  zoom_pal = NULL, 
+                                  alpha = 0.5,
+                                  show_pts = FALSE,
+                                  agg_fact = 10,
+                                  ylim = NULL,
+                                  proportional = FALSE,
+                                  cut_year = NULL,
+                                  ylab = "",
+                                  plot = TRUE){
+  # this could also be a fraction of annual estimated cases .........
+  preds_medians <- rast(paste0(path, "preds_medians.tif"))
+  yrs <- as.numeric(str_extract(names(preds_medians), "^.{4}"))
+  
+  preds_medians <- preds_medians %>%
+    aggregate(fact = agg_fact, fun = "median", na.rm = TRUE) %>%
+    sapply(function(x){median(values(x), na.rm=TRUE)})
+  preds_lower <- rast(paste0(path, "preds_lower.tif")) %>%
+    aggregate(fact = agg_fact, fun = "median", na.rm = TRUE) %>%
+    sapply(function(x){median(values(x), na.rm=TRUE)})
+  preds_upper <- rast(paste0(path, "preds_upper.tif")) %>%
+    aggregate(fact = agg_fact, fun = "median", na.rm = TRUE) %>%
+    sapply(function(x){median(values(x), na.rm=TRUE)})
+  
+  df <- data.frame(year = yrs,
+                   med = preds_medians,
+                   lower = preds_lower,
+                   upper = preds_upper)
+  
+  if(!is.null(cut_year)){df <- df %>% filter(year <= cut_year)}
+  
+  if(is.null(ylim)){ylim <- c(min(df$lower), max(df$upper))}
+  
+  p <- ggplot(df) +
+    geom_ribbon(aes(x = year, ymin = lower, ymax = upper, fill = "2.5% - 97.5%"), alpha = alpha) +
+    geom_ribbon(aes(x = year, ymin = med, ymax = med, fill = "50%")) +
+    geom_line(aes(x = year, y = med), linewidth = 1, col = pal[1]) +
+    scale_fill_manual("", values = c("2.5% - 97.5%" = pal[4], "50%" = pal[1])) +
+    theme_bw() +
+    xlab("Year") +
+    labs(title = title) +
+    ylab(ylab) +
+    ylim(ylim[1], ylim[2]) +
+    scale_x_continuous(breaks = seq(2000, 2028, 2), expand = c(0,0)) +
+    geom_vline(xintercept = 2024.5, colour = iddo_palettes$BlGyRd[9], linetype = 2) +
+    theme(legend.spacing.y = unit(-10, "cm"),
+          legend.background = element_rect(fill = NA))
+  
+  p
+}
+
+
+
 
 factor_incidence <- function(preds, incid){
   # multiply preds by annual new cases estimate, 

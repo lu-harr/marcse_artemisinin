@@ -236,7 +236,7 @@ obs_prev_panel <- function(mut_dat,
                            ave_tag = "_50", # mean? median? what are the surfaces called in the stack?
                            buffer = 1, # option to reland points?
                            bb = NULL, # bounding box for inset
-                           as_row = FALSE){
+                           legend_position = "bottom"){
   # observed vs predicted values: give me a three-panelled plot
   
   mut_dat$cex <- scale_cex(mut_dat$tested, sqrt, max_cex = 5)
@@ -296,8 +296,7 @@ obs_prev_panel <- function(mut_dat,
     # this needs re-scaling (back to what it was..)
     theme_bw() +
     xlab("Longitude") +
-    ylab("Latitude") +
-    theme(legend.position = "bottom")
+    ylab("Latitude")
   
   if (!is.null(bb)){
     # inset panel: RWA/UGA
@@ -333,15 +332,23 @@ obs_prev_panel <- function(mut_dat,
     p3 <- p3 + facet_wrap(vars(.data$year_bin), ncol = 1) 
   }
   
-  if (!as_row){
-    plot_grid(p1, p2, ncol = 1) %>%
-      plot_grid(p3, rel_widths = c(0.4, 0.7))
-  } else {
+  if (legend_position == "bottom"){
     plot_grid(p1, p2, p3 + theme(legend.position = "none"), nrow = 1) %>%
-      plot_grid(get_plot_component(p3, "guide-box", return_all = TRUE)[[3]], 
+      plot_grid(get_plot_component(p3 + theme(legend.position = "bottom"), 
+                                   "guide-box", return_all = TRUE)[[3]], 
                 ncol = 1, rel_heights = c(1, 0.3))
+  } else {
+    # left
+    p3 <- p3 + theme(legend.title = element_text(angle = 90, size = 8))
+    plot_grid(p1, p2, p3 + theme(legend.position = "none"), get_legend(p3), 
+              nrow = 1,
+              rel_widths = c(rep(1, 3), 0.2)) +
+      theme(plot.margin = margin(0.2, 0, 0, 0, unit = "cm"))%>%
+      suppressWarnings()
   }
 }
+
+obs_prev_panel(mut_dat_assoc_with_preds$k13_marcse, legend_position = "left")
 
 
 
@@ -465,6 +472,7 @@ posterior_predictive_check <- function(mut_data,
   
   mut_data <- mut_data[!is.na(mut_data$pred),]
   
+  # unsure why I'm doing this here when I've done it above already ..
   props <- sapply(1:nrow(mut_data), function(i){
     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
       calculate(nsim = nsim)

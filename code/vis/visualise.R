@@ -4,7 +4,7 @@ source("code/setup.R")
 source("code/vis/vis_funcs.R")
 library(sf)
 
-to_report <- "stats_to_report.txt"
+to_report <- "output/stats_to_report.txt"
 reports <- "#### Vis script ####"
 
 library(gridExtra)
@@ -80,7 +80,7 @@ ggsave("figures/surveillance_effort_all_marcse.png", p, height = 6, width = 12)
 
 
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-                     title = "(a) Pfkelch13", show_pts = TRUE,
+                     title = "(a) Kelch 13", show_pts = TRUE,
                      cut_year = 2028)
 p2 <- pred_time_plot("output/crt76/bb_gne/",
                      title = "(b) Pfcrt K76T", show_pts = TRUE,
@@ -97,8 +97,27 @@ p5 <- pred_time_plot("output/mdr1246/bb_gne/",
 
 p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-ggsave("figures/all_markers_time_bb_astmh.png", scale = 1.5, height = 7, width = 6)
+ggsave("figures/all_markers_time_bb.png", scale = 1.5, height = 7, width = 6)
 
+
+p1 <- pred_time_plot_crint("output/k13_marcse/bb_gne/",
+                     title = "(a) Kelch 13", show_pts = TRUE,
+                     cut_year = 2028)
+p2 <- pred_time_plot_crint("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T", show_pts = TRUE,
+                     cut_year = 2028)
+p3 <- pred_time_plot_crint("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y", show_pts = TRUE,
+                     cut_year = 2028)
+p4 <- pred_time_plot_crint("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F", show_pts = TRUE,
+                     cut_year = 2028)
+p5 <- pred_time_plot_crint("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y", show_pts = TRUE,
+                     cut_year = 2028)
+p1 + p2 + p3 + p4 + p5 +
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_bb_crint.png", scale = 1.5, height = 7, width = 6)
 
 # p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
 #                      title = "(a) Pfkelch13",
@@ -735,6 +754,15 @@ ggsave("figures/crt_mdr_out_bb_sdscaled.png", p, height = 9, width = 6.5)
 #
 # p
 
+# P441L in SAfr
+preds <- rast("output/k13snp_P441L/bb_gne/preds_medians.tif")
+tmp <- mask(preds$`2026_50`, afr %>% filter(iso_a3 %in% c("ZMB", "ZWE", "NAM", "AGO", "BWA"))) %>%
+  trim()
+plot(tmp)
+
+reports <- c(reports,
+             "max P441L prevalence SAfr 2026: ", max(values(tmp), na.rm = TRUE))
+
 # plot individual markers
 
 dirs <- list.dirs("output")
@@ -780,7 +808,8 @@ snp_subplot <- function(df,
     geom_sf(data = afr %>%
               st_crop(ext(exts[[marker]])), fill = NA, col = "grey80") +
     facet_grid(snp ~ year) +
-    scale_fill_viridis_c("Prevalence", limits = fill_lims, trans = "sqrt") +
+    scale_fill_viridis_c("Prevalence", limits = fill_lims, trans = "sqrt",
+                        na.value = "white") +
     scale_x_continuous(breaks = xbreaks, "Longitude") +
     scale_y_continuous(breaks = ybreaks) +
     theme_bw() +

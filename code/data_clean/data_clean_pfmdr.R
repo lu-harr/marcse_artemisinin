@@ -251,13 +251,14 @@ sing_trips <- pfmdr %>%
 ggplot() + 
   geom_sf(data = st_as_sf(afr), fill = "white") + 
   geom_point(data = sing_trips %>%
+               filter(year >= YEAR_LOWER_BOUND) %>%
                mutate(n_loci = ifelse(n_loci == 1, "Single locus", "Triple loci")) %>%
                arrange(desc(Tested)), 
              mapping = aes(x = Longitude, y = Latitude, 
                            size = Tested, fill = year),
              col = "grey50", pch=21, stroke = 0.1, alpha = 0.6) +
   scale_fill_viridis_c(name = "Year") +
-  scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt") +
+  scale_size_continuous(name = "Tested", range = c(0.2, 4), trans = "sqrt", breaks = c(10, 100, 1000, 4000)) +
   facet_wrap(~ n_loci) +
   #labs(title = "Sequencing at single and triple locus") +
   xlab("Longitude") +

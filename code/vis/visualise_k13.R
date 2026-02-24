@@ -31,9 +31,10 @@ afr <- world %>%
   # aggregate(fact = 2) #%>%
   # subset(1:73)
 
+preds <- c(rast("output/k13snp_P441L/bb_gne/preds_medians.tif"))
 
 tmp <- preds$`2026_50`
-tmp[tmp < 0.1] <- NA
+tmp[tmp < 0.03] <- NA
 
 message("for headline result")
 plot(tmp, main = "Area with estimated prevalence > 10%")

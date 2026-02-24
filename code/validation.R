@@ -44,6 +44,9 @@ data_path_lookup <- list("k13_marcse" = "data/clean/moldm_marcse_k13_nomarker.cs
                          "k13snp_R561H" = "data/clean/moldm_marcse_k13snp_R561H.csv",
                          "k13snp_R622I" = "data/clean/moldm_marcse_k13snp_R622I.csv")
 
+val_table_row_order <- data.frame(marker = names(nice_name_lookup_all),
+                                  ord = c(1, 7:10, 2:6))
+
 bb_paths <- lapply(names(nice_name_lookup_all),
                    function(marker){paste0("output/", marker, "/bb_gne/")})
 names(bb_paths) <- names(nice_name_lookup_all)
@@ -69,7 +72,7 @@ mut_dat_assoc_with_preds_cv <- lapply(names(nice_name_lookup_all), function(mark
 cv_folds <- lapply(names(nice_name_lookup_all), function(marker){
   read_rds(paste0("output/", marker, "/bb_gne/cv_folds.rds"))
 }) %>%
-  setNames(names(nice_name_lookup))
+  setNames(names(nice_name_lookup_all))
 
 
 # baseline predictions: just assign annual marker median
@@ -82,10 +85,10 @@ mut_dat_preds_baseline <- lapply(names(nice_name_lookup_all), function(marker){
 # summarise
 rmses <- lapply(mut_dat_assoc_with_preds, function(x){rmse(x)})
 rsq <- lapply(mut_dat_assoc_with_preds, function(x){unadjusted_rsq(x)})
-cv_stats <- lapply(names(nice_name_lookup), 
+cv_stats <- lapply(names(nice_name_lookup_all), 
                    function(x){cv_val(mut_dat_assoc_with_preds_cv[[x]], 
                                       cv_folds[[x]])}) %>%
-  setNames(names(nice_name_lookup))
+  setNames(names(nice_name_lookup_all))
 
 rmse_baseline <- lapply(mut_dat_preds_baseline, function(x){rmse(x)})
 rsq_baseline <- lapply(mut_dat_preds_baseline, function(x){unadjusted_rsq(x)})
@@ -106,56 +109,75 @@ dat <- data.frame(mod = unlist(nice_name_lookup_all[names(rmses)]),
                   rsq = unlist(rsq)) %>%
   mutate(marker = rownames(.)) %>%
   left_join(cv_summary) %>%
-  dplyr::select(-c(marker))
+  left_join(val_table_row_order) %>%
+  arrange(ord) %>%
+  dplyr::select(-c(marker, ord))
 
 colnames(dat) <- c("", "RMSE", "$r^2$", "RMSE", "$r^2$", "Mean", "SD", "Mean", "SD")
 tab <- xtable(dat, digits = 3)
 align(tab) <- c(rep("c", 2), "|", rep("c", 2), "|", rep("c", 2), "|", rep("c", 4))
 addtorow <- list()
 addtorow$pos <- list(-1, -1, -1)
-addtorow$command <- c("\\hline & \\multicolumn{2}{c|}{Baseline} & \\multicolumn{6}{c}{Spatiotemporal GP} \\\\\n",
-                      "\\hline & & & \\multicolumn{2}{c|}{Full dataset} & \\multicolumn{4}{c}{10-fold holdout} \\\\\n", # \\cline{6-9}
+addtorow$command <- c("\\hline & \\multicolumn{2}{c|}{Baseline} & \\multicolumn{6}{c}{Spatiotemporal GP} \\\\\n \\cline{4-9}",
+                      " & & & \\multicolumn{2}{c|}{Full dataset} & \\multicolumn{4}{c}{10-fold holdout} \\\\\n", # \\cline{6-9}
                       "& & & & & \\multicolumn{2}{c}{RMSE} & \\multicolumn{2}{c}{$r^2$} \\\\\n")
 print(tab, 
       sanitize.text.function=function(x){x}, 
       include.rownames = FALSE,
       #include.colnames = FALSE,
       hline.after = c(0, 10),
-      add.to.row = addtorow)
+      add.to.row = addtorow,
+      NA.string = "*")
 
 
 ################################################################################
 # plots of residuals
 
 abcde = c("a", "b", "c", "d", "e")
-tmp = lapply(mut_dat_assoc_with_preds, obs_prev_panel, as_row = TRUE)
+tmp = lapply(mut_dat_assoc_with_preds[grepl("k13", names(mut_dat_assoc_with_preds))], 
+             obs_prev_panel, legend_position = "bottom")
 
-
-# splitting the above in two:
+# splitting the above in three:
 p <- plot_grid(tmp$k13_marcse,
-               tmp$crt76, 
+               tmp$k13snp_A675V,
+               tmp$k13snp_C469Y,
                ncol = 1) +
   theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
-ggsave("figures/obs_prev_a.png", 
-       p + geom_text(aes(x = 0, 
-                         y = rev(seq(0.51, 1.01, length.out = 2)), 
-                         label = paste0("(", abcde[1:2], ") ", nice_name_lookup[1:2])),
-                     hjust = 0), 
-       height = 5.2, scale = 1.5, width = 6)
-
-p <- plot_grid(tmp$mdr86,
-               tmp$mdr184,
-               tmp$mdr1246, 
-               ncol = 1) +
-  theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
-ggsave("figures/obs_prev_b.png", 
+ggsave("figures/obs_prev_kelch_1.png", 
        p + geom_text(aes(x = 0, 
                          y = rev(seq(0.34, 1.01, length.out = 3)), 
-                         label = paste0("(", abcde[3:5], ") ", nice_name_lookup[3:5])),
+                         label = paste0("(", abcde[1:3], ") ", nice_name_lookup_all[c(1, 6, 7)])),
                      hjust = 0), 
        height = 7.5, scale = 1.5, width = 6)
 
-tmp$mdr1246
+p <- plot_grid(tmp$k13snp_P441L,
+               tmp$k13snp_R561H,
+               tmp$k13snp_R622I,
+               ncol = 1) +
+  theme(plot.margin = margin(0.7, 0, 0, 0, unit = "cm"))
+ggsave("figures/obs_prev_kelch_2.png", 
+       p + geom_text(aes(x = 0, 
+                         y = rev(seq(0.34, 1.01, length.out = 3)), 
+                         label = paste0("(", abcde[1:3], ") ", nice_name_lookup_all[8:10])),
+                     hjust = 0), 
+       height = 7.5, scale = 1.5, width = 6)
+
+tmp = lapply(mut_dat_assoc_with_preds[!grepl("k13", names(mut_dat_assoc_with_preds))], 
+             obs_prev_panel, legend_position = "left")
+
+p <- plot_grid(tmp$crt76, 
+               tmp$mdr86,
+               tmp$mdr184,
+               tmp$mdr1246, 
+               ncol = 1) +
+  theme(plot.margin = margin(0.2, 0, 0, 0, unit = "cm"))
+ggsave("figures/obs_prev_partners.png", 
+       p + geom_text(aes(x = 0, 
+                         y = rev(seq(0.245, 1, length.out = 4)), 
+                         label = paste0("(", abcde[1:4], ") ", nice_name_lookup_all[2:5])),
+                     hjust = 0), 
+       height = 7.5, scale = 1.5, width = 6)
+
 
 # tmp2 <- mut_dat_assoc_with_preds$mdr1246 %>%
 #   mutate(diff = present/tested - pred) %>%
@@ -194,7 +216,7 @@ tmp$mdr1246
 
 # given predicted prevalence, take posterior samples at location of all observations
 # and compare quantiles of samples to observed number of cases with marker
-sim_coverages <- lapply(names(nice_name_lookup), function(marker){
+sim_coverages <- lapply(names(nice_name_lookup_all), function(marker){
   message(marker)
   coverage_probabilities_from_observation_model(mut_dat_assoc_with_preds[[marker]],
                                                 bb_paths[[marker]],
@@ -202,49 +224,84 @@ sim_coverages <- lapply(names(nice_name_lookup), function(marker){
                                                 nsim = 500)
 })
 # (all of those samples and their summarisation takes a bit of a while)
-names(sim_coverages) <- names(nice_name_lookup)
+names(sim_coverages) <- names(nice_name_lookup_all)
 
-sim_coverages <- lapply(names(sim_coverages), function(x){
-  mutate(sim_coverages[[x]], marker = x)
-}) %>%
+sim_coverages_pos_only <- lapply(names(nice_name_lookup_all)[grepl("k13", names(nice_name_lookup_all))], 
+                                 function(marker){
+  message(marker)
+  coverage_probabilities_from_observation_model(mut_dat_assoc_with_preds[[marker]] %>%
+                                                  filter(present > 0),
+                                                bb_paths[[marker]],
+                                                probs = seq(0, 1, 0.01),
+                                                nsim = 500)
+})
+names(sim_coverages_pos_only) <- names(nice_name_lookup_all)[grepl("k13", names(nice_name_lookup_all))]
+
+sim_coverages <- bind_rows(
+  lapply(names(sim_coverages), function(x){
+    mutate(sim_coverages[[x]], marker = x)
+  }) %>%
   do.call(what = rbind) %>%
-  mutate(recs = "All records") %>%
-  bind_rows(
-    coverage_probabilities_from_observation_model(
-      mut_dat_assoc_with_preds[["k13_marcse"]] %>%
-        filter(present > 0),
-      bb_paths[["k13_marcse"]],
-      probs = seq(0, 1, 0.01),
-      nsim = 500) %>%
-                mutate(recs = "Presences only",
-                       marker = "k13_marcse")
-    )
+  mutate(recs = "All records"),
+  lapply(names(sim_coverages_pos_only), function(x){
+    mutate(sim_coverages_pos_only[[x]], marker = x)
+  }) %>%
+    do.call(what = rbind) %>%
+    mutate(recs = "Presences only")
+)
 
 
 
-posterior_predictive_ecdfs <- lapply(names(nice_name_lookup), function(marker){
+
+posterior_predictive_ecdfs <- lapply(names(nice_name_lookup_all), function(marker){
   message(marker)
   posterior_predictive_check(mut_dat_assoc_with_preds[[marker]],
                              bb_paths[[marker]])
 })
-names(posterior_predictive_ecdfs) <- names(nice_name_lookup)
+names(posterior_predictive_ecdfs) <- names(nice_name_lookup_all)
 posterior_predictive_ecdfs <- lapply(names(posterior_predictive_ecdfs), function(x){
   mutate(posterior_predictive_ecdfs[[x]], marker = x)
 }) %>%
   do.call(what = rbind)
 
+# have ended up excluding:
+# p1 <- coverages_fig(paste0("output/", c("k13_marcse", "crt76", "mdr86", 
+#                                         "mdr184", "mdr1246"), "/bb_gne/"))
 
-p1 <- coverages_fig(paste0("output/", c("k13_marcse", "crt76", "mdr86", 
-                                        "mdr184", "mdr1246"), "/bb_gne/"))
+iddo_palettes$iddo
+pal <- c(  viridis(6), "#E37210")
+kelch_pal <- c(iddoblue, viridis(5))
+partner_pal <- c("#c7047c", iddo_palettes$iddo_new[c(1, 3, 5)])
+partner_pal <- c("#c7047c", "#7ECE7E", "#174D97", "#E37210")
 
-p2 <- ggplot(data = sim_coverages %>%
-               mutate(marker = factor(unlist(nice_name_lookup[marker]),
-                                      levels = nice_name_lookup)), 
+
+p1 <- ggplot(data = sim_coverages %>%
+               mutate(markerf = factor(unlist(nice_name_lookup_all[marker]),
+                                      levels = nice_name_lookup_all)) %>%
+               filter(grepl("k13", marker)),
              aes(x = widths, y = cover)) +
   # geom_point(aes(group = interaction(marker, recs), col = marker), size = 0.5) +
-  geom_line(aes(group = interaction(marker, recs), col = marker, linetype = recs)) +
+  geom_line(aes(group = interaction(markerf, recs), col = markerf, linetype = recs)) + #,
+           # show.legend = TRUE) +
   geom_abline(slope = 1, col = "grey") +
-  scale_color_manual(values = viridis(5)) +
+  scale_color_manual(values = kelch_pal) + #, drop = FALSE) +
+  scale_linetype_manual(values = c("solid", "longdash")) +
+  xlab("Posterior predictive interval width") +
+  ylab("Coverage probability") +
+  scale_x_continuous(expand = c(0,0), limits = c(0,1)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1)) +
+  theme_bw()
+
+p2 <- ggplot(data = sim_coverages %>%
+               mutate(markerf = factor(unlist(nice_name_lookup_all[marker]),
+                                      levels = nice_name_lookup_all)) %>%
+               filter(!grepl("k13", marker)), 
+             aes(x = widths, y = cover)) +
+  # geom_point(aes(group = interaction(marker, recs), col = marker), size = 0.5) +
+  geom_line(aes(group = interaction(markerf, recs), col = markerf, linetype = recs)) + #,
+            # show.legend = TRUE) +
+  geom_abline(slope = 1, col = "grey") +
+  scale_color_manual(values = partner_pal) + #, drop = FALSE) +
   xlab("Posterior predictive interval width") +
   ylab("Coverage probability") +
   scale_x_continuous(expand = c(0,0), limits = c(0,1)) +
@@ -252,20 +309,43 @@ p2 <- ggplot(data = sim_coverages %>%
   theme_bw()
 
 p3 <- ggplot(bind_rows(posterior_predictive_ecdfs %>% 
-                         filter(name == "leq") %>%
+                         filter(name == "leq" & 
+                                 grepl("k13", marker)) %>%
                          mutate(dat = "All records"), 
                        posterior_predictive_ecdfs %>% 
-                         filter(name == "leq" & marker == "k13_marcse" & present != 0) %>%
+                         filter(name == "leq" & 
+                                  grepl("k13", marker) &
+                                  #marker == "k13_marcse" & 
+                                  present != 0) %>%
                          mutate(dat = "Presences only")) %>%
-               mutate(marker = factor(unlist(nice_name_lookup[marker]),
-                                      levels = nice_name_lookup)),
+               mutate(marker = factor(unlist(nice_name_lookup_all[marker]),
+                                      levels = nice_name_lookup_all)),
+             aes(x = value)) +
+  stat_ecdf(geom = "step", 
+            aes(group = interaction(marker, dat), 
+                col = marker, linetype = dat)) + #, show.legend = TRUE) +
+  geom_abline(intercept = 0, slope = 1, col = "grey") +
+  scale_color_manual("Kelch 13 markers", values = kelch_pal) + #, drop = FALSE) + 
+  scale_linetype_manual("", values = c("solid", "longdash")) +
+  ylab("ECDF") +
+  xlab("Pr(posterior predictive samples <= observed data)") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_bw() +
+  theme(legend.box = "horizontal")
+
+p4 <- ggplot(posterior_predictive_ecdfs %>% 
+                         filter(name == "leq" & !grepl("k13", marker)) %>%
+                         mutate(dat = "All records") %>%
+               mutate(marker = factor(unlist(nice_name_lookup_all[marker]),
+                                      levels = nice_name_lookup_all)),
              aes(x = value)) +
   stat_ecdf(geom = "step", 
             aes(group = interaction(marker, dat), 
                 col = marker, linetype = dat)) +
   geom_abline(intercept = 0, slope = 1, col = "grey") +
-  scale_color_manual("Marker", values = viridis(5)) +
-  scale_linetype("") +
+  scale_color_manual("Partner drug markers", values = partner_pal) + 
+  scale_linetype("", guide = "none") +
   ylab("ECDF") +
   xlab("Pr(posterior predictive samples <= observed data)") +
   scale_x_continuous(expand = c(0,0)) +
@@ -273,16 +353,40 @@ p3 <- ggplot(bind_rows(posterior_predictive_ecdfs %>%
   theme_bw()
 # Kelch 13: high number of zeroes and low probabilities: 100% of samples leq observation
 
-leg = get_legend(p3)
+# leg = get_legend(p2)
+# plot_grid(
+#   plot_grid(# p1 + theme(legend.position = "none"),
+#             p1 + theme(legend.position = "none"), 
+#             p2 + theme(legend.position = "none"), 
+#             p3 + theme(legend.position = "none"), 
+#             p4 + theme(legend.position = "none"), 
+#             ncol = 1, align = "v",
+#             labels = c("(a)", "(b)"), label_fontface = "plain", label_x = 0.11, label_y = 0.98),
+#   leg, nrow = 1, rel_widths = c(1, 0.35)
+# )
+# # ggsave("figures/coverages_with_unsim.png", width = 7, height = 7)
+# ggsave("figures/coverages.png", width = 9, height = 9)
+
+pan_mar <- c(0.2,0.3,0.2,0.3)
+leg1 = get_legend(p3 + theme(legend.justification = c(0.5,1)))
+leg2 = get_legend(p4 + theme(legend.justification = c(0.5,1)))
 plot_grid(
   plot_grid(# p1 + theme(legend.position = "none"),
-            p2 + theme(legend.position = "none"), 
-            p3 + theme(legend.position = "none"), ncol = 1, align = "v",
-            labels = c("(a)", "(b)"), label_fontface = "plain", label_x = 0.11, label_y = 0.98),
-  leg, nrow = 1, rel_widths = c(1, 0.3)
+    p1 + theme(legend.position = "none",
+               plot.margin = unit(pan_mar, "cm")), 
+    p2 + theme(legend.position = "none",
+               plot.margin = unit(pan_mar, "cm")), 
+    p3 + theme(legend.position = "none",
+               plot.margin = unit(pan_mar, "cm")), 
+    p4 + theme(legend.position = "none",
+               plot.margin = unit(pan_mar, "cm")), 
+    ncol = 2, align = "v",
+    labels = c("(a)", "(b)", "(c)", "(d)"), label_fontface = "plain", 
+    label_x = -0.01, label_y = 0.96),
+  plot_grid(leg1, leg2, ncol = 2, align = "h", axis = "t"), 
+  nrow = 2, rel_heights = c(1, 0.27)
 )
-# ggsave("figures/coverages_with_unsim.png", width = 7, height = 7)
-ggsave("figures/coverages.png", width = 9, height = 7)
+ggsave("figures/coverages.png", width = 9, height = 9)
 
 
 # mut_data <- mut_data %>%
@@ -327,9 +431,6 @@ p <- plot_grid(tmp$k13_marcse, tmp$crt76, tmp$mdr86, tmp$mdr184, tmp$mdr1246,
 ggsave("figures/obs_prev_panelled.png", p, height = 9, width = 8, scale = 1.4)
 # legends will need a fiddle
 # could be 3 * 5 with UGA inset ...
-
-
-
 
 
 

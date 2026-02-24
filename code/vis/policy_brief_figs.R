@@ -123,9 +123,9 @@ p2
 
 
 # now some thresholds - could use a more relaxed threshold ?
-yrs_to_extract <- as.character(seq(2016, 2026, 2))
+yrs_to_extract <- as.character(seq(2018, 2026, 2))
 preds_thresh <- preds[[str_extract(names(preds), "\\d{4}") %in% yrs_to_extract]]
-values(preds_thresh) <- ifelse(values(preds_thresh) > 0.05, 1, 0)
+values(preds_thresh) <- ifelse(values(preds_thresh) > 0.1, 1, 0)
 preds_thresh <- app(preds_thresh, sum)
 
 coords <- xyFromCell(preds_thresh, cells(preds_thresh))
@@ -141,7 +141,7 @@ p3 <- ggplot() +
   geom_tile(data = df, aes(x = x, y = y), fill = "grey90") +
   geom_tile(data = dfthresh, aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, col = "grey80") +
-  scale_fill_manual(values = rev(viridis(6)), "Kelch 13\nprevalence\n>5%") +
+  scale_fill_manual(values = rev(viridis(6)), "Kelch 13\nprevalence\n>10%") +
   labs(title = "(c)") +
   # labs(title = "(c) Estimated spread of Kelch 13 mutations over time") +
   theme_classic() +
