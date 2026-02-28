@@ -86,6 +86,7 @@ pred_time_plot <- function(path,
                            zoom_pal = NULL, 
                            alpha = 0.5,
                            show_pts = FALSE,
+                           show_pt_cols = FALSE,
                            agg_fact = 10,
                            incid = NULL,
                            ylim = c(0, 1),
@@ -176,17 +177,33 @@ pred_time_plot <- function(path,
   #     p <- p + geom_line(df, mapping = aes(x = year, y = med), colour = case_pal[i])
   #   }
   #}
-  
+
   if (show_pts == TRUE){
     message("Watch out! I set size limits manually!")
     mut_data <- read_rds(paste0(path, "mut_data.rds"))
     message(max(mut_data$tested))
-    p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
-                            size=tested), 
-                        colour="grey", pch = 21,
-                        mut_data) +
-      scale_size_continuous(name = "Sample size", trans = "sqrt", 
-                            range = c(0.2, 5), limits = c(5, 5200), breaks = c(10, 100, 1000, 5000)) # +
+    
+    if (show_pt_cols == TRUE){
+      mut_data <- extract_regions(mut_data)
+      
+      pal <- c("#c7047c", viridis(4))
+      
+      p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
+                              size=tested, col=subregion),  pch = 21,
+                          mut_data) +
+        scale_size_continuous(name = "Sample size", trans = "sqrt", 
+                              range = c(0.2, 5), limits = c(5, 5200), breaks = c(10, 100, 1000, 5000)) +
+        scale_color_manual(values = pal, "Region") +
+        guides(color = guide_legend(override.aes = list(stroke = 2)))
+    } else {
+      p <- p + geom_point(aes(x=jitter(year), y=present/tested,  
+                              size=tested), 
+                          colour="grey", pch = 21,
+                          mut_data) +
+        scale_size_continuous(name = "Sample size", trans = "sqrt", 
+                              range = c(0.2, 5), limits = c(5, 5200), breaks = c(10, 100, 1000, 5000))
+    }
+     # +
     # geom_boxplot(aes(x = year, y = present/tested, group = as.factor(year)),
     #              mut_data, fill = NA, outliers = FALSE)
   }
@@ -211,6 +228,21 @@ summarise_ribbon <- function(path){
     summarise(med = median(val)) %>%
     mutate(year = as.numeric(year))
 }
+
+
+extract_regions <- function(dat){
+  # grab worded region for all points
+  joined <- dat %>%
+    st_as_sf(coords = c("x", "y"), crs = st_crs(afr)) %>%
+    st_intersection(afr) %>%
+    dplyr::select(name_en, subregion, tested, present, year) %>%
+    suppressWarnings()
+  bind_cols(st_coordinates(joined),
+                   st_drop_geometry(joined))
+  
+}
+
+
 
 pred_time_plot_policy <- function(path, 
                            title = "",
@@ -248,12 +280,6 @@ pred_time_plot_policy <- function(path,
   p
 }
 
-# this is super narrow
-# pred_time_plot_policy("output/k13_marcse/bb_gne/")
-# pred_time_plot_policy("output/crt76/bb_gne/")
-# pred_time_plot_policy("output/mdr1246/bb_gne/")
-# pred_time_plot_policy("output/mdr184/bb_gne/")
-# pred_time_plot_policy("output/mdr86/bb_gne/")
 
 pred_time_plot_crint <- function(path, 
                                   title = "",
@@ -327,6 +353,7 @@ factor_incidence <- function(preds, incid){
   
   preds
 }
+
 
 pred_time_factoring_incidence <- function(path, 
                                      incid,
@@ -759,3 +786,5 @@ lower_upper_panel_crints <- function(path,
   # theme(legend.position = "bottom")
   
 }
+
+

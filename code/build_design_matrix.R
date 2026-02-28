@@ -43,11 +43,8 @@ build_design_matrix <- function(covariates,
     
     temporal_covt_range <- range(temporal_covt_range)
     
-    # scale years after they are truncated ........ 
-    # no mate, you need to scale them before they're truncated !
+    # scale years before they're truncated !
     scaled_years <- scale_years(range(coords$year))
-    # coords$year_scaled <- scaled_years[coords$year_truncated - min(temporal_range) + 1]
-    # coords$year_scaled <- unlist(scaled_years[as.character(coords$year_truncated)])
     coords$year_scaled <- unlist(scaled_years[as.character(coords$year)])
     
     coords$year_truncated <- case_when(coords$year < min(temporal_covt_range) ~ min(temporal_covt_range),
@@ -70,8 +67,6 @@ build_design_matrix <- function(covariates,
         # and we're assuming that all years have the same number of covariates
         message(paste0("Warning: zero matches to year ", year))
       }
-      # cell_ids <- terra::cellFromXY(covariates[[lyr_idx]], 
-      #                               as.data.frame(coords[coord_idx, c("x","y")]))
       
       if(length(coord_idx) == 1){
         covs[coord_idx] <- terra::extract(covariates[[lyr_idx]], 
@@ -96,13 +91,9 @@ build_design_matrix <- function(covariates,
     
     # if coords is provided use those cells, otherwise use all cells
     if (is.null(coords)) {
-      # cell_ids <- terra::cells(covariates)
       coords <- crds(covariates)
       
-    } # else {
-    #   
-    #   cell_ids <- terra::cellFromXY(covariates, coords[,c("x", "y")])
-    # }
+    }
     
     # extract, pad with intercept dummy, and return
     covs <- terra::extract(covariates, 
@@ -132,6 +123,7 @@ build_design_matrix <- function(covariates,
 }
 
 
+
 scale_years <- function(temporal_range){
   years <- do.call(seq, as.list(temporal_range))
   scaled_years <- scale(years)
@@ -141,6 +133,7 @@ scale_years <- function(temporal_range){
   
   scaled_years
 } 
+
 
 # why did I set it up like that originally ??
 extended_scaled_years <- function(scaled_years, extra_years){

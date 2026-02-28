@@ -159,7 +159,9 @@ cat(reports, file = to_report, append = TRUE, sep = "\n")
 # # add priors to hists ...?
 
 ###############################################################################
-# require common colour palette between years !
+
+preds <- c(rast("output/k13_marcse/bb_gne/preds_medians.tif"),
+           rast("output/k13_marcse/bb_gne/preds_sds.tif"))
 
 # ended up going for nth_uganda and shifting "victoria" box south a little
 zambezi <- list(xmin = 19, xmax = 26, ymin = -21, ymax = -14)
@@ -261,6 +263,7 @@ medians <- ggplot() +
         axis.text = element_blank(),
         axis.ticks = element_blank(),
         plot.title = element_blank(), #element_text(hjust = 0.5),
+        strip.text = element_text(size = 12),
         legend.justification = "top") 
 medians
 
@@ -349,17 +352,19 @@ legs <- plot_grid(get_legend(medians),
 #   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
 #                            label = lab), angle = 90)
   
-rect <- data.frame(xmin = c(0.04, 0.525),
-                 xmax = c(0.52, 0.873),
+rect <- data.frame(xmin = c(0.047, 0.53),
+                 xmax = c(0.52, 0.878),
                  ymin = rep(0.992, 2),
-                 ymax = rep(1.02, 1),
+                 ymax = rep(1.018, 2),
                  lab = c("Median", "Standard deviation"))
 
-plot_grid(medians + theme(legend.position = "none"), 
+plot_grid(medians + theme(legend.position = "none",
+                          plot.margin = margin(t = 5.5, r = 0, b = 5.5, l = 5.5, unit = "pt")), 
           zooms, 
-          sds + theme(legend.position = "none"), 
+          sds + theme(legend.position = "none",
+                      plot.margin = margin(t = 5.5, r = 0, b = 5.5, l = 5.5, unit = "pt")), 
           legs,
-          ncol = 4, rel_widths = c(1,0.3,0.933,0.3)) +
+          ncol = 4, rel_widths = c(1.01,0.29,0.933,0.3)) +
   theme(plot.margin = unit(c(0.7,0,0,0), "cm")) +
   geom_rect(data = rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, 
                            ymax=ymax), 

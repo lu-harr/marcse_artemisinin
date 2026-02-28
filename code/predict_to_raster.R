@@ -542,6 +542,9 @@ concat_coverages <- function(path, fold = NULL){
 # 
 # concat_coverages("output/k13_marcse/bb_gne/cv_preds/", 9)
 
+
+
+
 # write annual preds objects as medians/sds preds objects
 concat_preds <- function(path, 
                          medians = TRUE, 
@@ -619,6 +622,61 @@ concat_preds <- function(path,
 # 
 # concat_preds("output/k13_marcse/bb_gne/cv_preds/", 
 #              medians = TRUE, fold = 1)
+
+
+
+
+#' Make model predictions for partial dependence plot
+#'
+#' @param draws greta_mcmc_list of samples from model posterior
+#' @param coords data.frame with columns "x", "y", "year", "pfpr"
+#' @param parameters list of greta arrays, defined in inference step
+#' @param random_field greta array, defined in inference step
+#' @param scaled_year numeric: `year` with scaling applied
+#' @param nsim numeric: number of simulations to draw from posterior
+#' @param stable_transmission_mask Rast or `NULL`: If Rast provided, predictions 
+#' are masked to areas of stable malaria transmission. (Only req if this should be different to mask of `stack`)
+#' @param coord_cols vector of strings: names of coordinate columns in design matrix
+#' @param design_cols vector of strings: names of covariate columns in design matrix
+#'
+#' @returns data.frame
+#' @export
+#'
+#' @examples
+#' \dontrun{
+
+#' }
+#' 
+predict_for_pdp <- function(draws,
+                            coords,
+                            parameters,
+                            random_field,
+                            nsim = 100,
+                            coord_cols,
+                            design_cols,
+                            out = ""){
+  
+  # finish off design matrix
+  X_pred <- coords %>%
+    mutate(intercept = 1)
+  
+  # project random field to coordinates we would like predictions for
+  random_field_pred <- greta.gp::project(random_field, X_pred[,coord_cols])
+  
+  mut_freq_pred <- (X_pred[,design_cols] %*% parameters$beta + 
+                       # transform here? Is R taking over?
+                       random_field_pred) %>%
+    ilogit()
+  
+  post_sims <- greta::calculate(mut_freq_pred,
+                                values = draws,
+                                nsim = 1,
+                                trace_batch_size = 1) # reducing: will take longer, use less mem
+  
+  write_rds(post_sims, out)
+  
+  
+}
 
 
 

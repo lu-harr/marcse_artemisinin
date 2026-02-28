@@ -348,7 +348,7 @@ obs_prev_panel <- function(mut_dat,
   }
 }
 
-obs_prev_panel(mut_dat_assoc_with_preds$k13_marcse, legend_position = "left")
+# obs_prev_panel(mut_dat_assoc_with_preds$k13_marcse, legend_position = "left")
 
 
 
@@ -454,7 +454,7 @@ coverage_probabilities_from_observation_model <- function(mut_data,
 }
 
 
-
+# this should just be all of the predictions I've summarised on the cluster :/
 posterior_predictive_check <- function(mut_data,
                                        draws_path,
                                        nsim = 500){

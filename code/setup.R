@@ -48,6 +48,20 @@ afr <- world %>%
   crop(ext(-21, 63, -35, 37)) %>%
   st_as_sf()
 
+# make some edits to rnaturalearth subregion labels
+# Zambia to Southern Africa, Angola to Southern Africa
+# Sudan to Eastern Africa, "Middle Africa" to "Central Africa"
+afr <- afr %>%
+  mutate(subregion = case_when(name_en == "Zambia" ~ "Southern Africa",
+                               name_en == "Angola" ~ "Southern Africa",
+                               name_en == "Sudan" ~ "North-eastern Africa",
+                               name_en == "Ethiopia" ~ "North-eastern Africa",
+                               name_en == "South Sudan" ~ "North-eastern Africa",
+                               name_en == "Eritrea" ~ "North-eastern Africa",
+                               subregion == "Middle Africa" ~ "Central Africa",
+                               TRUE ~ subregion))
+# (this is for colouring points in ribbon plots)
+
 afr_extent <- (matrix(c(-21, -34.9, 63, 37.4), nrow = 2, ncol = 2, 
                       dimnames = list(c("x", "y"), c("min", "max"))))
 
@@ -113,3 +127,8 @@ setup_multiple_snps <- function(path, min_year = NULL, buffer = 0){
 
 # e.g.:
 # mut_data <- setup_multiple_snps("../moldm/clean/pfmdr_single_locus.csv")
+
+
+
+
+

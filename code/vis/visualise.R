@@ -63,22 +63,6 @@ ggsave("figures/surveillance_effort_all_marcse.png", p, height = 6, width = 12)
 ###############################################################################
 # time !
 
-# p1 <- pred_time_plot("output/k13_marcse/gneiting_sparse/",
-#                title = "(a) Pfkelch13", show_pts = TRUE)
-# p2 <- pred_time_plot("output/crt76/gneiting_sparse/",
-#                title = "(b) Pfcrt K76T", show_pts = TRUE)
-# p3 <- pred_time_plot("output/mdr86/gneiting_sparse/",
-#                title = "(c) Pfmdr1 N86Y", show_pts = TRUE)
-# p4 <- pred_time_plot("output/mdr184/gneiting_sparse/",
-#                title = "(d) Pfmdr1 Y184F", show_pts = TRUE)
-# p5 <- pred_time_plot("output/mdr1246/gneiting_sparse/",
-#                title = "(e) Pfmdr1 D1246Y", show_pts = TRUE)
-#
-# library(patchwork)
-# p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-# ggsave("figures/all_markers_time_bin.png", scale = 1.5, height = 7, width = 6)
-
-
 p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
                      title = "(a) Kelch 13", show_pts = TRUE,
                      cut_year = 2028)
@@ -119,25 +103,25 @@ p1 + p2 + p3 + p4 + p5 +
   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
 ggsave("figures/all_markers_time_bb_crint.png", scale = 1.5, height = 7, width = 6)
 
-# p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
-#                      title = "(a) Pfkelch13",
-#                      cut_year = 2028)
-# p2 <- pred_time_plot("output/crt76/bb_gne/",
-#                      title = "(b) Pfcrt K76T",
-#                      cut_year = 2028)
-# p3 <- pred_time_plot("output/mdr86/bb_gne/",
-#                      title = "(c) Pfmdr1 N86Y",
-#                      cut_year = 2028)
-# p4 <- pred_time_plot("output/mdr184/bb_gne/",
-#                      title = "(d) Pfmdr1 Y184F",
-#                      cut_year = 2028)
-# p5 <- pred_time_plot("output/mdr1246/bb_gne/",
-#                      title = "(e) Pfmdr1 D1246Y",
-#                      cut_year = 2028)
-# 
-# p1 + p2 + p3 + p4 + p5 +
-#   plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
-# ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
+p1 <- pred_time_plot("output/k13_marcse/bb_gne/",
+                     title = "(a) Pfkelch13",
+                     cut_year = 2028)
+p2 <- pred_time_plot("output/crt76/bb_gne/",
+                     title = "(b) Pfcrt K76T",
+                     cut_year = 2028)
+p3 <- pred_time_plot("output/mdr86/bb_gne/",
+                     title = "(c) Pfmdr1 N86Y",
+                     cut_year = 2028)
+p4 <- pred_time_plot("output/mdr184/bb_gne/",
+                     title = "(d) Pfmdr1 Y184F",
+                     cut_year = 2028)
+p5 <- pred_time_plot("output/mdr1246/bb_gne/",
+                     title = "(e) Pfmdr1 D1246Y",
+                     cut_year = 2028)
+
+p1 + p2 + p3 + p4 + p5 +
+  plot_layout(ncol = 1, guides = "collect", axis_title = "collect")
+ggsave("figures/all_markers_time_bb_nopts_astmh.png", scale = 1.5, height = 7, width = 6)
 
 # make a version of this weighted by malaria case incidence
 incid <- rast("data/incid_rasters_afr.tif")
@@ -185,6 +169,11 @@ names(incid) <- paste0("incid_", str_extract(names(incid), ".{4}$"))
 # ggsave("figures/all_markers_time_bb_incidence_weighted.png", scale = 1.5, height = 7, width = 6)
 
 
+# the aggregation factor here bothers me: estimate would probably be lower if I aggregated by median
+# but would be losing tail ...
+# should have slurmed this
+# 2026 summary stats: 0.0584222927574479; (0.0294689492866093, 0.109705518437546)
+# which is pretty close to what I reported with aggregation:
 
 p1 <- pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
                                title = "(a) Pfkelch13", incid = incid,
@@ -231,7 +220,7 @@ reports <- c(reports,
                    pred_time_factoring_incidence("output/k13_marcse/bb_gne/",
                                                  incid = incid,
                                                  proportional = TRUE,
-                                                 cut_year = 2028,
+                                                 cut_year = 2028, agg_fact = 1,
                                                  plot = FALSE)))
 
 # make a version of this with highlights to k13 panel, highlights to other pred panels?
@@ -368,7 +357,7 @@ ggsave("figures/crt_mdr_out_bb_turbo.png", p, height = 8, width = 5.5, scale = 1
 
 # horizontal for presentations folder
 p <- ggplot(df %>%
-              filter(year %in% c("2002", "2014", "2026")) %>%
+              # filter(year %in% c("2002", "2014", "2026")) %>%
               mutate(marker = case_when(marker == "mdr1246"~ "Pfmdr1 D1246Y",
                                         marker == "mdr184" ~"Pfmdr1 Y184F",
                                         marker == "mdr86" ~ "Pfmdr1 N86Y",
@@ -378,7 +367,7 @@ p <- ggplot(df %>%
                                                     "Pfmdr1 N86Y", "Pfcrt K76T"))))) +
   geom_tile(aes(x = x, y = y, fill = val)) +
   geom_sf(data = afr, fill = NA, linewidth = 0.1) +
-  facet_grid(year ~ marker) +
+  facet_grid(marker~year, switch = "y") +
   xlab("Longitude") +
   ylab("Latitude") +
   scale_fill_gradientn(name = "Prevalence",
@@ -388,13 +377,11 @@ p <- ggplot(df %>%
                        limits = c(0,1)) +
   scale_x_continuous(breaks = seq(0, 40, 20), "Longitude") +
   scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
-  theme_bw() #+
-  # theme(legend.position = "bottom",
-  #       legend.title = element_text(hjust = 0.5),
-  #       legend.spacing.x = unit(4, "lines"),
-  #       panel.spacing = unit(0, "lines")) +
-  # guides(fill = guide_colourbar(title.position = "top"),
-  #        size = guide_legend(title.position = "top"))
+  theme_bw() +
+  theme(#legend.position = "bottom",
+        #legend.title = element_text(hjust = 0.5),
+        #legend.spacing.x = unit(4, "lines"),
+        panel.spacing = unit(0, "lines"))
 ggsave("~/Desktop/presentations/marcse/crt_mdr_out_bb.png", p, 
        height = 5, width = 7, scale = 1.2)
 
