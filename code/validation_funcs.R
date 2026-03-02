@@ -403,44 +403,152 @@ obs_prev_panel_nn <- function(data_path,
 }
 
 
+#################################################################################
+# helpers for coverage + PIT-ECDF outputs
+
+#' Make up sims for coverage probability estimates
+#'
+#' @param marker character, e.g. "k13_marcse"
+#'
+#' @returns 0
+#' @export
+#'
+#' @examples
+post_pred_sims_please <- function(marker){
+  # for given marker, please give me predictions along sets of time- and pfpr-varying coords
+  out_dir <- paste0("output/", marker, "/bb_gne/")
+  
+  draws <- readRDS(paste0(out_dir, "draws.rds"))
+  random_field <- readRDS(paste0(out_dir, "random_field.rds"))
+  parameters <- readRDS(paste0(out_dir, "parameters.rds"))
+  
+  mut_data <- setup_mut_data(data_path_lookup[[marker]], 
+                             min_year = MIN_YEAR, buffer = BUFFER)
+  tmp <- build_design_matrix(covariates = pfpr,
+                             degs_to_rads = TRUE,
+                             coords = mut_data[,c("x", "y", "year")],
+                             temporal_var = TRUE,
+                             temporal_covt_range = 2000:2028)
+  
+  mut_data <- dplyr::select(tmp$df, x, y, x_rd, y_rd, year, year_scaled, pfpr) %>%
+    bind_cols(mut_data %>% dplyr::select(present,
+                                         tested)) %>%
+    drop_na() %>% # some NA pfprs
+    mutate(id = 1:nrow(.))
+  
+  write.csv(mut_data, paste0(out_dir, "coords_post_pred.csv"), row.names = FALSE)
+  
+  predict_to_points(mut_data,
+                    draws,
+                    parameters,
+                    random_field,
+                    coord_cols = c("x_rd", "y_rd", "year_scaled"),
+                    design_cols = c("intercept", "year_scaled", "pfpr"),
+                    nsim = 500,
+                    out = paste0(out_dir, "post_pred_sims.rds"))
+  
+  message("all done")
+  return(0)
+}
 
 
-coverage_probabilities_from_observation_model <- function(mut_data,
-                                                         draws_path,
-                                                         nsim = 100,
-                                                         probs){
-  # given draws, grab median rho
-  draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
-    summary()
+#' Pass predictions through observation model
+#'
+#' @param out_dir char.
+#' @param new_samps Boolean: pass preds through obs model? If FALSE, read in previous 
+#' output from call to `preds_through_obs_model()`
+#'
+#' @returns df
+#' @export
+#'
+#' @examples
+preds_through_obs_model <- function(out_dir,
+                                    new_samps = TRUE,
+                                    nsim = 100){
+  if (!new_samps){
+    return(read.csv(paste0(out_dir, "preds_obs_model.csv")))
+  }
   
-  # (error in here if you try to ask draws from a binomial model for rho)
-  rho <- draws$quantiles[c("rho"), "50%"]
-  message(paste0("Rho: ", rho))
+  coords <- read.csv(paste0(out_dir, "coords_post_pred.csv"))
+  sims <- readRDS(paste0(out_dir, "post_pred_sims.rds"))$mut_freq[,,1]
   
-  mut_data <- mut_data[!is.na(mut_data$pred),]
+  message(paste("?", names(coords)))
   
-  widths <- sapply(1: floor(length(probs) / 2), 
+  draws <- readRDS(paste0(out_dir, "draws.rds"))
+  random_field <- readRDS(paste0(out_dir, "random_field.rds"))
+  parameters <- readRDS(paste0(out_dir, "parameters.rds"))
+  
+  rho <- parameters$rho
+  rho_samples <- greta::calculate(rho, values = draws, nsim = nsim)$rho[,,1]
+  write_rds(rho_samples, paste0(out_dir, "rho_samples.rds"))
+  
+  # here are some predictions
+  pred_cases <- sapply(1:nrow(coords), function(i){
+    betabinomial_p_rho(coords$tested[i],
+                       sims[,i],
+                       rho_samples) %>%
+      calculate(nsim = nsim) %>%
+      unlist()
+  })
+  
+  message(paste("?", dim(pred_cases)))
+  
+  write.csv(pred_cases, paste0(out_dir, "preds_obs_model.csv"), row.names = FALSE)
+  
+  return(pred_cases)
+}
+
+
+#' Calculate coverage probs
+#'
+#' @param marker e.g. "k13_marcse"
+#' @param probs vector of numerics between 0 and 1
+#' @param new_samps Boolean: take new samples in call to `preds_through_obs_model()` ?
+#' @param pos_only Boolean: calculate coverage probs given positive observations of marker only?
+#' @param nsim number of samples of rho to include
+#'
+#' @returns df
+#' @export
+#'
+#' @examples
+coverage_probabilities_from_observation_model <- function(marker,
+                                                          probs,
+                                                          new_samps = TRUE,
+                                                          pos_only = FALSE,
+                                                          nsim = 100){
+  out_dir <- paste0("output/", marker, "/bb_gne/")
+  
+  coords <- read.csv(paste0(out_dir, "coords_post_pred.csv"))
+  
+  pred_cases <- preds_through_obs_model(out_dir,
+                                        new_samps,
+                                        nsim)
+  
+  if (pos_only){
+    pred_cases <- pred_cases[, coords$present > 0]
+    coords <- filter(coords, present > 0)
+  }
+  
+  # widths for coverage intervals - there's a bug in here but it's not important ..
+  widths <- sapply(1: floor(length(probs) / 2),
                    function(i){probs[length(probs) - i + 1] - probs[i]})
   
-  quants <- sapply(1:nrow(mut_data), function(i){
-    # now assess quantiles of posterior samples, given predicted prevalences
-    sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
-      calculate(nsim = nsim) %>%
-      unlist() %>%
+  quants <- sapply(1:nrow(coords), function(i){
+    pred_cases[,i] %>%
       quantile(probs = probs)
   }) %>%
     t()
   
-  dat <- bind_cols(mut_data, quants)
+  dat <- bind_cols(coords, quants)
   
-  skip <- 7 # number of columns to skip
-  ind <<- 1 
+  skip <- which(names(dat) == names(coords)[ncol(coords)]) + 1 # number of columns to skip
+  ind <<- 1
   coverages <- lapply(widths, function(width){
     if (width == 0){return(0)}
     
     lower <- skip + ind
     upper <- length(names(dat)) - ind
-    # what proportion of recorded numbers of positives are in the intervals we 
+    # what proportion of recorded numbers of positives are in the intervals we
     # just simulated?
     out <- sum(dat$present >= dat[,lower] & dat$present <= dat[,upper])
     
@@ -449,35 +557,28 @@ coverage_probabilities_from_observation_model <- function(mut_data,
     out
   })
   
-  data.frame(widths = widths, 
+  write.csv(data.frame(widths = widths,
+                       cover = unlist(coverages) / nrow(dat)),
+            paste0(out_dir, "coverages.csv"))
+  data.frame(widths = widths,
              cover = unlist(coverages) / nrow(dat))
 }
 
 
-# this should just be all of the predictions I've summarised on the cluster :/
-posterior_predictive_check <- function(mut_data,
-                                       draws_path,
-                                       nsim = 500){
-  # given predicted prevalences, tested, and rho, 
-  # generate 100 observations from corresponding bbinomial
-  # "what fraction are below the observed"?
-  # histogram of the proportions - should be uniform
+pit_ecdfs <- function(marker, new_samps = TRUE, nsim = 100){
   
-  draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
-    summary()
-  # error in here if you try to ask draws from a binomial model for rho
-  rho <- draws$quantiles[c("rho"), "50%"]
+  out_dir <- paste0("output/", marker, "/bb_gne/")
   
-  message(paste0("rho ", rho))
+  mut_data <- read.csv(paste0(out_dir, "coords_post_pred.csv"))
+  pred_cases <- preds_through_obs_model(out_dir,
+                                        new_samps,
+                                        nsim) # not intending on using this ..
   
-  mut_data <- mut_data[!is.na(mut_data$pred),]
-  
-  # unsure why I'm doing this here when I've done it above already ..
+  nsim <- nrow(pred_cases)
   props <- sapply(1:nrow(mut_data), function(i){
-    sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
-      calculate(nsim = nsim)
-    c(sum(sims$. < mut_data$present[i]) / nsim, 
-      sum(sims$. == mut_data$present[i]) / nsim)
+    sims <- pred_cases[,i]
+    c(sum(sims < mut_data$present[i]) / nsim, 
+      sum(sims == mut_data$present[i]) / nsim)
   })
   
   probs <- props %>%
@@ -488,58 +589,104 @@ posterior_predictive_check <- function(mut_data,
     mutate(leq = less_than + equal_to, 
            geq = greater_than + equal_to,
            tested = mut_data$tested,
-           present = mut_data$present,
-           pred = mut_data$pred) %>%
-    pivot_longer(cols = -c(tested, present, pred))
+           present = mut_data$present) %>%
+    pivot_longer(cols = -c(tested, present))
   
   return(probs)
 }
 
-# ggsave("figures/resid/residuals_k13m_bin.png", height = 3.7, width = 5, scale = 1.5)
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_medians.tif",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_k13m_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# obs_prev_panel(get_input_dir("mdr184"),
-#                "output/mdr184/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# obs_prev_panel(get_input_dir("mdr184"),
-#                "output/mdr184/bb_gne/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_mdr184_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# obs_prev_panel(get_input_dir("mdr86"),
-#                "output/mdr86/gneiting_sparse/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# obs_prev_panel(get_input_dir("mdr86"),
-#                "output/mdr86/bb_gne/preds_medians.tif",
-#                xlim = c(0, 1), ylim = c(0, 1),
-#                ave_tag = "_50", buffer = 100000, bb = c(27, 37, -5,  5))
-# ggsave("figures/resid/residuals_mdr86_bb.png", height = 3.7, width = 5, scale = 1.5)
-# 
-# mdr86
 
-# # could try giving it longer ?
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/bb_gne/preds_all.tif",
-#                #main = "k13 betabinom gneiting",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                buffer = 100000)
-# ggsave("~/Desktop/presentations/MARCSE/op_bbinom.png", height=3, width=4, scale=2)
-# # bit spooked by the points changing between these two ...
-# # might be points falling off the mask?
-# # that is so many points !
-# obs_prev_panel("data/clean/moldm_marcse_k13_nomarker.csv",
-#                "output/k13_marcse/gneiting_ahmc/preds_all.tif",
-#                main = "",
-#                xlim = c(0, 0.6), ylim = c(0, 0.6),
-#                buffer = 100000)
-# ggsave("~/Desktop/presentations/MARCSE/op_binom.png", height=3, width=5, scale=1.5)
+# coverage_probabilities_from_observation_model <- function(mut_data,
+#                                                          draws_path,
+#                                                          nsim = 100,
+#                                                          probs){
+#   # given draws, grab median rho
+#   draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
+#     summary()
+#   
+#   # (error in here if you try to ask draws from a binomial model for rho)
+#   rho <- draws$quantiles[c("rho"), "50%"]
+#   message(paste0("Rho: ", rho))
+#   
+#   mut_data <- mut_data[!is.na(mut_data$pred),]
+#   
+#   widths <- sapply(1: floor(length(probs) / 2), 
+#                    function(i){probs[length(probs) - i + 1] - probs[i]})
+#   
+#   quants <- sapply(1:nrow(mut_data), function(i){
+#     # now assess quantiles of posterior samples, given predicted prevalences
+#     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
+#       calculate(nsim = nsim) %>%
+#       unlist() %>%
+#       quantile(probs = probs)
+#   }) %>%
+#     t()
+#   
+#   dat <- bind_cols(mut_data, quants)
+#   
+#   skip <- 7 # number of columns to skip
+#   ind <<- 1 
+#   coverages <- lapply(widths, function(width){
+#     if (width == 0){return(0)}
+#     
+#     lower <- skip + ind
+#     upper <- length(names(dat)) - ind
+#     # what proportion of recorded numbers of positives are in the intervals we 
+#     # just simulated?
+#     out <- sum(dat$present >= dat[,lower] & dat$present <= dat[,upper])
+#     
+#     ind <<- ind + 1
+#     
+#     out
+#   })
+#   
+#   data.frame(widths = widths, 
+#              cover = unlist(coverages) / nrow(dat))
+# }
+# 
+# 
+# # this should just be all of the predictions I've summarised on the cluster :/
+# posterior_predictive_check <- function(mut_data,
+#                                        draws_path,
+#                                        nsim = 500){
+#   # given predicted prevalences, tested, and rho, 
+#   # generate 100 observations from corresponding bbinomial
+#   # "what fraction are below the observed"?
+#   # histogram of the proportions - should be uniform
+#   
+#   draws <- readRDS(paste0(draws_path, "draws.rds")) %>%
+#     summary()
+#   # error in here if you try to ask draws from a binomial model for rho
+#   rho <- draws$quantiles[c("rho"), "50%"]
+#   
+#   message(paste0("rho ", rho))
+#   
+#   mut_data <- mut_data[!is.na(mut_data$pred),]
+#   
+#   # unsure why I'm doing this here when I've done it above already ..
+#   props <- sapply(1:nrow(mut_data), function(i){
+#     sims <- betabinomial_p_rho(mut_data$tested[i], mut_data$pred[i], rho) %>%
+#       calculate(nsim = nsim)
+#     c(sum(sims$. < mut_data$present[i]) / nsim, 
+#       sum(sims$. == mut_data$present[i]) / nsim)
+#   })
+#   
+#   probs <- props %>%
+#     t() %>%
+#     as.data.frame() %>%
+#     mutate(V3 = 1 - V1 - V2) %>%
+#     rename(less_than = V1, equal_to = V2, greater_than = V3) %>%
+#     mutate(leq = less_than + equal_to, 
+#            geq = greater_than + equal_to,
+#            tested = mut_data$tested,
+#            present = mut_data$present,
+#            pred = mut_data$pred) %>%
+#     pivot_longer(cols = -c(tested, present, pred))
+#   
+#   return(probs)
+# }
+
+
 
 
 

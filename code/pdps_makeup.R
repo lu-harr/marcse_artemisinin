@@ -1,4 +1,5 @@
 # make up pdps
+source("code/pdp_functions.R")
 
 nice_name_lookup_main <- list("k13_marcse" = "Kelch 13",
                               "crt76" = "Pfcrt-K76T",
@@ -18,12 +19,13 @@ nice_name_lookup_all <- list("k13_marcse" = "Kelch 13 aggregate",
                              "k13snp_R622I" = "Kelch 13 R622I")
 
 library(tidyverse)
+library(cowplot)
 
-plots = lapply(rep("k13_marcse", 5), function(marker){
+plots = lapply(names(nice_name_lookup_main), function(marker){
   list(pfpr = plot_pdps(out_dir = paste0("output/", marker, "/bb_gne/"), 
                                  target = "pfpr"),
-                year = plot_pdps(out_dir = paste0("output/", marker, "/bb_gne/"), 
-                                 target = "year"))
+        year = plot_pdps(out_dir = paste0("output/", marker, "/bb_gne/"), 
+                         target = "year"))
 })
 names(plots) <- names(nice_name_lookup_main)
 

@@ -21,16 +21,16 @@ pwd
 
 # provide marker and model ...
 
-# Rscript code/partial_dependence_plots.R k13_marcse
-# Rscript code/partial_dependence_plots.R mdr86
-# Rscript code/partial_dependence_plots.R mdr184
-# Rscript code/partial_dependence_plots.R mdr1246
-# Rscript code/partial_dependence_plots.R crt76
-# Rscript code/partial_dependence_plots.R k13snp_A675V 
-# Rscript code/partial_dependence_plots.R k13snp_C469Y 
-# Rscript code/partial_dependence_plots.R k13snp_P441L 
-# Rscript code/partial_dependence_plots.R k13snp_R561H
-# Rscript code/partial_dependence_plots.R k13snp_R622I
+Rscript code/partial_dependence_plots.R k13_marcse
+Rscript code/partial_dependence_plots.R mdr86
+Rscript code/partial_dependence_plots.R mdr184
+Rscript code/partial_dependence_plots.R mdr1246
+Rscript code/partial_dependence_plots.R crt76
+Rscript code/partial_dependence_plots.R k13snp_A675V
+Rscript code/partial_dependence_plots.R k13snp_C469Y
+Rscript code/partial_dependence_plots.R k13snp_P441L
+Rscript code/partial_dependence_plots.R k13snp_R561H
+Rscript code/partial_dependence_plots.R k13snp_R622I
 
 Rscript code/pdps_makeup.R
 

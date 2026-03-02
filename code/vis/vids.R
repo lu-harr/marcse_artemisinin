@@ -54,7 +54,7 @@ make_frames <- function(marker){
                            limits = lyr_lims) +
       scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
       scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
-      labs(title = paste0(nice_name_lookup[marker], " prevalence - ", yr)) +
+      labs(title = paste0(nice_name_lookup_all[marker], " prevalence - ", yr)) +
       theme_bw()
     
     ggsave(paste0("vids/", marker, "/", yr, ".png"),

@@ -642,8 +642,8 @@ coverages_fig <- function(path){
     message(str_extract(p, "(?<=/)[^/]+(?=/)"))
     coverages_inner(p) %>%
       mutate(marker = str_extract(p, "(?<=/)[^/]+(?=/)"),
-             marker = factor(unlist(nice_name_lookup[marker]),
-                                levels = nice_name_lookup))
+             marker = factor(unlist(nice_name_lookup_all[marker]),
+                                levels = nice_name_lookup_all))
   }) %>%
     do.call(what = rbind)
   

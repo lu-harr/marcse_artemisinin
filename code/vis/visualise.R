@@ -1026,7 +1026,7 @@ ggplot() +
   xlab("Longitude") +
   ylab("Latitude")
 
-ggsave("~/Desktop/presentations/MARCSE/k13_all_years.png", scale = 1.7, height = 4, width = 5)
+ggsave("figures/k13_all_years.png", scale = 1.7, height = 4, width = 5)
 
 preds <- rast("output/k13_marcse/bb_gne/preds_all.tif")
 coords <- xyFromCell(preds, cells(preds))
@@ -1050,8 +1050,28 @@ ggplot() +
   xlab("Longitude") +
   ylab("Latitude")
 
-ggsave("~/Desktop/presentations/MARCSE/k13_all_years_bb.png", scale = 1.7, height = 4, width = 5)
+ggsave("figures/k13_all_years_bb.png", scale = 1.7, height = 4, width = 5)
 
+################################################################################
+# let's crack into some partial dependence plots
 
+marker <- "k13_marcse"
+plots <- list(pfpr = plot_pdps(out_dir = paste0("output/", marker, "/bb_gne/"), 
+                                         target = "pfpr"),
+                        year = plot_pdps(out_dir = paste0("output/", marker, "/bb_gne/"), 
+                                         target = "pfpr"))
+
+plots <- read_rds("output/k13_marcse/pdps_plotted.rds")
+
+for
+
+################################################################################
 
 cat(reports, file = to_report, append = TRUE, sep = "\n")
+
+
+
+
+
+
+

@@ -270,124 +270,6 @@ predict_to_ras_hier <- function(stack,
 # plot(preds[[grepl("median", names(preds))]])
 # # this all looks like PfPR ....
 
-predict_to_points <- function(pts, 
-                               year, 
-                               draws, 
-                               parameters,
-                               random_field,
-                               scaled_year = 0,
-                               agg_factor = 1,
-                               nsim = 100,
-                               stable_transmission_mask = NULL,
-                               coord_cols = c("x", "y", "year"),
-                               design_cols = c("year"),
-                               coverage = FALSE,
-                               data_path = ""){
-  message("predicting to points")
-  message("warning coverages call is deprecated")
-  
-  # coords should be npts * c("x", "y", "year")
-  # X_pixel should be 
-  
-  
-  cov_years <- names(stack)
-  cov_years <- as.numeric(gsub("[^0-9]", "", cov_years))
-  lab_year <- year
-  if (year > max(cov_years)){
-    year = max(cov_years)
-  } else if (year < min(cov_years)){
-    year = min(cov_years)
-  }
-  
-  # retrieve raster for `year`
-  ras <- stack[[grep(as.character(year), names(stack))]]
-  
-  # aggregate covariate raster for `year`
-  if(agg_factor != 1){ras <- aggregate(ras, fact = agg_factor)}
-  
-  # make up df of coordinates and covariate values
-  coords <- cbind(terra::xyFromCell(ras, cell = terra::cells(ras)),
-                  rep(year, length(terra::cells(ras)))) %>%
-    as.data.frame()
-  
-  names(coords) <- c("x", "y", "year") # this is *not* coord_cols
-  # message(names(coords))
-  
-  # temporal var is turned off ... all one year
-  tmp <- build_design_matrix(ras,
-                             coords,
-                             temporal_var = FALSE,
-                             scale = FALSE,
-                             degs_to_rads = TRUE)
-  
-  # finish off design matrix
-  X_pixel <- tmp$df %>%
-    dplyr::mutate(year_scaled = scaled_year)
-  message(paste0("Scaled year: ", scaled_year))
-  # X_pixel <- dplyr::mutate(X_pixel, year_scaled = scaled_year)
-  message(coord_cols) # this is xyyear
-  message(design_cols) # this is interceptyear_scaledpfpr
-  message(paste(names(X_pixel), collapse = ", "))
-  message(dim(X_pixel[,coord_cols]))
-  message(dim(X_pixel[,design_cols]))
-  # 
-  # project random field to coordinates we would like predictions for
-  random_field_pixel <- greta.gp::project(random_field, X_pixel[,coord_cols])
-  
-  # message(dim(t(parameters$beta)))
-  # message(dim(random_field_pixel))
-  mut_freq_pixel <- (X_pixel[,design_cols] %*% parameters$beta + 
-                       # transform here? Is R taking over?
-                       random_field_pixel) %>%
-    ilogit()
-  # message(dim(mut_freq_pixel))
-  
-  # message(ncell(ras))
-  
-  post_pixel_sims <- greta::calculate(mut_freq_pixel,
-                                      values = draws,
-                                      nsim = nsim,
-                                      trace_batch_size = 1) # reducing: will take longer, use less mem
-  
-  if (coverage & data_path != ""){
-    coverages <- calculate_coverages(post_pixel_sims,
-                                     data_path,
-                                     lab_year,
-                                     ras,
-                                     incs = 100)
-  } else {
-    coverages <- NULL
-  }
-  
-  # message(coverages)
-  
-  # message("now here")
-  probs = c(0, 0.025, 0.25, 0.5, 0.75, 0.975, 1)
-  post_pixel_quants = apply(post_pixel_sims$mut_freq_pixel[,,1], 2, 
-                            quantile, 
-                            probs = probs)
-  post_pixel_mean <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, mean)
-  post_pixel_sd <- apply(post_pixel_sims$mut_freq_pixel[, , 1], 2, sd)
-  post_pixel_sd_logit <- apply(post_pixel_sims$mut_freq_pixel[,,1], 2, function(x){sd(log(x / (1 - x)))})
-  post_summary <- cbind(t(post_pixel_quants), post_pixel_mean, post_pixel_sd, post_pixel_sd_logit)
-  
-  out <- ras * rep(0, nrow(post_pixel_quants) + 3) # assuming we have at least two layers in there ..
-  names(out) <- paste0(lab_year, "_", c(probs*100, "mean", "sd", "sdscaled"))
-  out[terra::cells(out)] <- post_summary
-  
-  if(!is.null(stable_transmission_mask)){
-    # if (length(unique(suppressWarnings(values(stable_transmission_mask)))) != 1){
-    # let it be known that I did some googling about this :(
-    # in raster I would have plopped `raster(NA)` in the function definition
-    out <- mask(out, stable_transmission_mask)
-  }
-  message("predicted to raster")
-  list(out = out, coverages = coverages)
-}
-
-
-
-
 
 
 #' Calculate coverage probabilities
@@ -626,56 +508,51 @@ concat_preds <- function(path,
 
 
 
-#' Make model predictions for partial dependence plot
+#' Make predictions to arbitrary coords
 #'
-#' @param draws greta_mcmc_list of samples from model posterior
-#' @param coords data.frame with columns "x", "y", "year", "pfpr"
-#' @param parameters list of greta arrays, defined in inference step
-#' @param random_field greta array, defined in inference step
-#' @param scaled_year numeric: `year` with scaling applied
-#' @param nsim numeric: number of simulations to draw from posterior
-#' @param stable_transmission_mask Rast or `NULL`: If Rast provided, predictions 
-#' are masked to areas of stable malaria transmission. (Only req if this should be different to mask of `stack`)
-#' @param coord_cols vector of strings: names of coordinate columns in design matrix
-#' @param design_cols vector of strings: names of covariate columns in design matrix
+#' @param coords data.frame with columns in `coord_cols` and `design_cols`
+#' @param draws greta_mcmc_list
+#' @param parameters named list of greta arrays
+#' @param random_field greta array
+#' @param nsim numeric
+#' @param coord_cols vector of chars
+#' @param design_cols vector of chars
+#' @param out chars: location to write to
 #'
-#' @returns data.frame
+#' @returns 0
 #' @export
 #'
 #' @examples
-#' \dontrun{
-
-#' }
-#' 
-predict_for_pdp <- function(draws,
-                            coords,
-                            parameters,
-                            random_field,
-                            nsim = 100,
-                            coord_cols,
-                            design_cols,
-                            out = ""){
+predict_to_points <- function(coords, 
+                              draws, 
+                              parameters,
+                              random_field,
+                              nsim = 100,
+                              coord_cols = c("x", "y", "year"),
+                              design_cols = c("year"),
+                              out = ""){
   
   # finish off design matrix
   X_pred <- coords %>%
+    drop_na() %>%
     mutate(intercept = 1)
   
   # project random field to coordinates we would like predictions for
   random_field_pred <- greta.gp::project(random_field, X_pred[,coord_cols])
   
-  mut_freq_pred <- (X_pred[,design_cols] %*% parameters$beta + 
-                       # transform here? Is R taking over?
-                       random_field_pred) %>%
+  mut_freq <- (X_pred[,design_cols] %*% parameters$beta + 
+                 random_field_pred) %>%
     ilogit()
   
-  post_sims <- greta::calculate(mut_freq_pred,
+  message(paste(dim(mut_freq)))
+  
+  post_sims <- greta::calculate(mut_freq,
                                 values = draws,
-                                nsim = 1,
+                                nsim = nsim,
                                 trace_batch_size = 1) # reducing: will take longer, use less mem
   
+  message("predicted")
   write_rds(post_sims, out)
-  
-  
 }
 
 

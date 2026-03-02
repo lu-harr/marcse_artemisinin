@@ -1,6 +1,7 @@
 suppressWarnings(suppressMessages(source("code/setup.R")))
 suppressMessages(source("code/build_design_matrix.R"))
 source("code/pdp_functions.R")
+source("code/predict_to_raster.R")
 
 
 args <- commandArgs(trailingOnly = TRUE)

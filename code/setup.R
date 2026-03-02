@@ -23,22 +23,34 @@ MIN_YEAR <- 2000
 BUFFER <- 5000
 
 
-nice_name_lookup <- list("k13_marcse" = "Kelch 13",
-                         "crt76" = "Pfcrt-K76T",
-                         "mdr86" = "Pfmdr1-N86Y",
-                         "mdr184" = "Pfmdr1-Y184F",
-                         "mdr1246" = "Pfmdr1-D1246Y")
+# here is some run up:
+nice_name_lookup_main <- list("k13_marcse" = "Kelch 13",
+                              "crt76" = "Pfcrt-K76T",
+                              "mdr86" = "Pfmdr1-N86Y",
+                              "mdr184" = "Pfmdr1-Y184F",
+                              "mdr1246" = "Pfmdr1-D1246Y")
+
+nice_name_lookup_all <- list("k13_marcse" = "Kelch 13 aggregate",
+                             "crt76" = "Pfcrt-K76T",
+                             "mdr86" = "Pfmdr1-N86Y",
+                             "mdr184" = "Pfmdr1-Y184F",
+                             "mdr1246" = "Pfmdr1-D1246Y",
+                             "k13snp_A675V" = "Kelch 13 A675V",
+                             "k13snp_C469Y" = "Kelch 13 C469Y",
+                             "k13snp_P441L" = "Kelch 13 P441L",
+                             "k13snp_R561H" = "Kelch 13 R561H",
+                             "k13snp_R622I" = "Kelch 13 R622I")
 
 data_path_lookup <- list("k13_marcse" = "data/clean/moldm_marcse_k13_nomarker.csv",
                          "crt76" = "data/clean/moldm_crt76.csv",
                          "mdr86" = "data/clean/pfmdr_single_mdr86.csv",
                          "mdr184" = "data/clean/pfmdr_single_mdr184.csv",
                          "mdr1246" = "data/clean/pfmdr_single_mdr1246.csv",
-                         "k13snp_R561H" = "data/clean/moldm_marcse_k13snp_R561H.csv",
-                         "k13snp_R622I" = "data/clean/moldm_marcse_k13snp_R622I.csv",
+                         "k13snp_A675V" = "data/clean/moldm_marcse_k13snp_A675V.csv",
                          "k13snp_C469Y" = "data/clean/moldm_marcse_k13snp_C469Y.csv",
                          "k13snp_P441L" = "data/clean/moldm_marcse_k13snp_P441L.csv",
-                         "k13snp_A675V" = "data/clean/moldm_marcse_k13snp_A675V.csv")
+                         "k13snp_R561H" = "data/clean/moldm_marcse_k13snp_R561H.csv",
+                         "k13snp_R622I" = "data/clean/moldm_marcse_k13snp_R622I.csv")
 
 
 # country shps for plotting/masking
