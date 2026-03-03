@@ -1,6 +1,7 @@
 # make up some videos (gifs) of data/models
 library(tidyverse)
 library(magick)
+library(cowplot)
 
 source("code/setup.R")
 
@@ -19,9 +20,12 @@ make_frames <- function(marker){
   # }
   
   preds <- rast(paste0("output/", marker, "/bb_gne/preds_medians.tif"))
-  pal <- ifelse(marker == "k13_marcse",
-                viridis(100),
-                blrd)
+  if(marker == "k13_marcse"){
+    pal = viridis(100)
+  } else {
+    pal = as.vector(blrd)
+  }
+                
   
   coords <- xyFromCell(preds, cells(preds))
   vals <- terra::extract(preds, coords)
@@ -47,8 +51,9 @@ make_frames <- function(marker){
       geom_tile(aes(x = x, y = y, fill = val), 
                 data = df %>% filter(year == yr)) +
       geom_sf(data = st_as_sf(afr), fill = NA) +
-      scale_fill_viridis_c(na.value = NA, 
+      scale_fill_gradientn(na.value = NA, 
                            "Prevalence", 
+                           colors = pal,
                            trans = scale_trans, 
                            breaks = scale_breaks,
                            limits = lyr_lims) +
@@ -64,6 +69,79 @@ make_frames <- function(marker){
 }
 
 
+make_frames_horiz <- function(dir){
+  # for github landing page: show k13 aggregate, crt76 and mdr1-86
+  markers <- c("k13_marcse", "crt76", "mdr86")
+  
+  df <- lapply(markers, function(marker){
+    preds <- rast(paste0("output/", marker, "/bb_gne/preds_medians.tif"))
+    coords <- xyFromCell(preds, cells(preds))
+    vals <- terra::extract(preds, coords)
+    cbind(coords, vals) %>%
+      pivot_longer(starts_with("2"),
+                   names_to = "lyr",
+                   values_to = "val") %>%
+      mutate(year = str_extract(lyr, "\\d{4}"),
+             marker = marker)
+  }) %>%
+    do.call(what = rbind)
+  
+  for (yr in unique(df$year)){
+    k13 <- ggplot() +
+      geom_sf(data = st_as_sf(afr), fill = "white") +
+      geom_tile(aes(x = x, y = y, fill = val), 
+                data = df %>% filter(year == yr & marker == "k13_marcse")) +
+      geom_sf(data = st_as_sf(afr), fill = NA) +
+      scale_fill_gradientn(na.value = NA, 
+                           "Prevalence", 
+                           colors = viridis(100),
+                           trans = "sqrt", 
+                           breaks = c(0.1, 0.2, 0.4, 0.6),
+                           limits = c(0, 0.68)) +
+      scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+      scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+      labs(title = paste0("Kelch 13 aggregate", " prevalence - ", yr)) +
+      theme_bw()
+    
+    crt76 <- ggplot() +
+      geom_sf(data = st_as_sf(afr), fill = "white") +
+      geom_tile(aes(x = x, y = y, fill = val), 
+                data = df %>% filter(year == yr & marker == "crt76")) +
+      geom_sf(data = st_as_sf(afr), fill = NA) +
+      scale_fill_gradientn(na.value = NA, 
+                           "Prevalence", 
+                           colors = blrd,
+                           breaks = c(0, 0.25, 0.5, 0.75, 1),
+                           limits = c(0,1)) +
+      scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+      scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+      labs(title = paste0("Pfcrt-K76T", " prevalence - ", yr)) +
+      theme_bw()
+    
+    mdr86 <- ggplot() +
+      geom_sf(data = st_as_sf(afr), fill = "white") +
+      geom_tile(aes(x = x, y = y, fill = val), 
+                data = df %>% filter(year == yr & marker == "mdr86")) +
+      geom_sf(data = st_as_sf(afr), fill = NA) +
+      scale_fill_gradientn(na.value = NA, 
+                           "Prevalence", 
+                           colors = blrd,
+                           breaks = c(0, 0.25, 0.5, 0.75, 1),
+                           limits = c(0,1)) +
+      scale_x_continuous(breaks = seq(-20, 40, 20), "Longitude") +
+      scale_y_continuous(breaks = seq(-20, 40, 20), "Latitude") +
+      labs(title = paste0("Pfmdr1-N86Y", " prevalence - ", yr)) +
+      theme_bw()
+    
+    plot_grid(k13, crt76, mdr86, nrow = 1)
+    
+    ggsave(paste0("vids/", dir, "/", yr, ".png"),
+           height = 6,
+           width = 13)
+  }
+}
+
+
 compile_gif <- function(marker, years = NULL, fps = 1){
   # now whack it into a gif
   pngs <- list.files(paste0("vids/", marker),
@@ -75,7 +153,7 @@ compile_gif <- function(marker, years = NULL, fps = 1){
   if (!is.null(years)){
     # (implemented to chop off start of k13)
     years <- as.character(years[1]:years[2])
-    pngs <- pngs[str_extract(png_files, "\\d{4}") %in% years]
+    pngs <- pngs[str_extract(pngs, "\\d{4}") %in% years]
   }
   
   pngs %>%
@@ -88,6 +166,10 @@ compile_gif <- function(marker, years = NULL, fps = 1){
 
 
 make_frames("k13_marcse")
-compile_gif("k13_marcse", years = c(2010, 2028), fps = 3)
+make_frames("crt76")
+make_frames_horiz("horiz")
+
+compile_gif("k13_marcse", years = c(2010, 2028), fps = 4)
+compile_gif("horiz", fps = 4)
 
 

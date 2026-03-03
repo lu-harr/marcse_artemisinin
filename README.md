@@ -1,31 +1,27 @@
 
 ## Prevalence of molecular markers of artemisinin and partner drug resistance in Africa
 
-### Data usage
+### Motivation
 
-Data files in `data/clean` are provided only to allow replication of the
-results reported in this repository. This data is **not** licensed for
-general reuse. Users wishing to use this data for other purposes must
-obtain it from: <https://surveyor.iddo.org> and [this
-repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard). The data
-files supporting this manuscript will not be updated following
-manuscript submission. The IDDO/WWARN Molecular Surveyor is a living
-systematic review and is updated monthly on the Surveyor dashboard
-platform.
+Artemisinin combination therapies (ACTs) are the most widely-used
+treatment for *P. falciparum* malaria, but the spread of artemisinin
+partial resistance into Africa raises the spectre of no effective
+antimalarial treatment for populations with the greatest burden of the
+disease.
 
-### What the code does
+In this repo we include ten models of molecular markers for drug
+susceptibility in *P. falciparum*:
 
-There are ten models in here:
-
-- aggregate *PfKelch13* mutation prevalence (aggregating WHO-designated
+- Aggregate *PfKelch13* mutation prevalence (aggregating WHO-designated
   *validated* and *candidate* markers for artemisinin partial
-  resistance), together with five models of the prevalences of
-  individual *PfKelch13* mutations: C469Y, A675V, R561H, P441L, and
-  R622I
-- *Pfcrt-K76T* prevalence
-- *Pfmdr1-N86Y* prevalence
-- *Pfmdr1-Y184F* prevalence
-- *Pfmdr1-D1246Y* prevalence
+  resistance)
+- Prevalence of the following individual Kelch 13 mutations: C469Y,
+  A675V, R561H, P441L, and R622I
+- Prevalence of the following markers of parasite susceptibility to ACT
+  partner drugs: *Pfcrt*-K76T, *Pfmdr1*-N86Y, *Pfmdr1*-Y184F, and
+  *Pfmdr1*-D1246Y
+
+![](vids/horiz.gif)
 
 All models take as input published data from the **IDDO Molecular
 Surveyors** ([Kelch 13](https://surveyor.iddo.org/map/k13); [partner
@@ -38,7 +34,7 @@ Map](https://apps.who.int/malaria/maps/threats/) and other sources,
 retrieved from the [MARC SE-Africa antimalarial resistance
 dashboard](https://www.marcse-africa.org/antimalarial-resistance-dashboard)
 of Kelch 13 surveillance (see [this
-repo](https://github.com/Stephanie-van-Wyk/MARC_SEA_dashboard) and [this
+repo](https://github.com/lu-harr/MARC_SEA_dashboard) and [this
 preprint](https://doi.org/10.1101/2025.01.07.25320158)).
 
 All the modelling is done in R’s `greta` and `greta.gp`. I’ve added my
@@ -53,10 +49,11 @@ markers](https://www.who.int/tools/compendium-of-molecular-markers-for-antimalar
 of artemisinin partial resistance in the propeller region of the Kelch
 13 gene of *P. falciparum*.
 
-The partner drug marker models estimate the prevalence of mutant (e.g.,
-*Pfcrt-76T*) genotypes; mutant and wildtype (e.g., *Pfcrt-K76*) are
-inversely associated with reduced susceptibility to amodiaquine and
-lumefantrine.
+Partner drug marker models estimate the prevalence of mutant (e.g.,
+*Pfcrt*-76T) genotypes; mutant and wildtype are inversely putatively
+associated with reduced susceptibility to ACT partner drugs amodiaquine
+(*Pfcrt*-76T; *Pfmdr1*-86Y-Y184-1246Y) and lumefantrine (*Pfcrt*-K76;
+*Pfmdr1*-N86-184F-D1246).
 
 ### What’s in here
 
@@ -66,12 +63,12 @@ There are a number of scripts in `code/`:
   data formatting
 - `fit_betabinomial.R` runs betabinomial model fitting (written to be
   called from the command line or bash/slurm scripts in `slurm/`, with
-  arguments for marker (e.g. “crt76”) and seed (an integer))
+  arguments for marker (e.g. “crt76”) and seed (an integer)
 - `predict_slurm.R` makes predictions from using the outputs of
   inference (written to be called from the command line or bash/slurm
-  scripts with arguments for marker, seed, model (e.g., “bb_gne”, a
-  beta-binomial model with gneiting kernel), etc.)
-- `vis/visualise*.R` generate figures
+  scripts with arguments for marker, seed, and model (e.g., “bb_gne”, a
+  beta-binomial model with gneiting kernel, etc.)
+- `vis/visualise*.R` generate (most) figures
 
 Secondary to these there are:
 
@@ -82,21 +79,27 @@ Secondary to these there are:
   rasters for each model (intended to be called from the command line or
   bash/slurm scripts with arguments for marker, model, etc.).
 - `stable_transmission_mask.R` cooks up a mask for prediction using
-  MAP’s estimate of *P. falciparum* parasite rate for 2022.
+  MAP’s estimate of *P. falciparum* parasite rate for 2024.
+- `validate.R` with helpers in `validate_funcs.R` runs model validation
+  steps
 
 All code to clean raw Surveyor/MARCSE dashboard data are in
-`data/clean/`.
+`code/data_clean/`.
 
 Slurm scripts for fitting, prediction, and validation can be found in
 `slurm/`.
 
 All manuscript figures can be found in `figures/`.
 
-### See also
+### Molecular surveillance data
 
-- Flegg et al., 2022
-- Flegg et al., 2024
-- Foo et al., 2024
+Input data for the models included in this repo can be accessed from:
+<https://surveyor.iddo.org> and [this
+repo](https://github.com/lu-harr/MARC_SEA_dashboard). The IDDO/WWARN
+Molecular Surveyor is a living systematic review and is updated monthly
+on the Surveyor dashboard platform. To access data, IDDO/WWARN prompts
+users to provide some contact information. This information is collected
+to track use of the dataset.
 
 ### Supporting data
 
@@ -127,10 +130,3 @@ All manuscript figures can be found in `figures/`.
   - Annual gridded estimates, 2000–2024.
   - Accessed through the `malariaAtlas` R package. See [this
     paper](https://doi.org/10.1016/S0140-6736(25)00038-8).
-
-### TODO
-
-- Add proper refs to MAP pkg/data
-- Clean up validation code
-
-### R session info

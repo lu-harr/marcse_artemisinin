@@ -12,17 +12,7 @@ library(grid)
 library(cowplot)
 library(patchwork)
 
-library(viridisLite)
-library(RColorBrewer)
-library(iddoPal)
-oranges <- brewer.pal(9, "Oranges")
-blrd <- iddoPal::iddo_palettes$BlGyRd
-# I would like to mess around with this and make the darkest blue a bit darker and more grey in the middle
-blrd_plus <- iddoPal::iddo_palettes$BlGyRdPlus
 
-iddoblue <- iddo_palettes_discrete$iddo[1]
-# taking some bright colours that don't coincide with viridis:
-case_pal <- c("#E37210", iddoblue, "#c7047c")
 
 # mask
 afr <- world %>%
