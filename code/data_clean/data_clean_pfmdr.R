@@ -499,3 +499,22 @@ ggsave("figures/crt_pfmdr_data_short.png", scale = 1.7, height = 3, width = 4)
 
 cat(reports, file = to_report, append = TRUE, sep = "\n")
 
+
+# plot(crt$year, crt$Present / crt$Tested)
+# tmp <- crt %>%
+#   rename(x = Longitude, y = Latitude, tested = Tested, present = Present) %>%
+#   extract_regions()
+# 
+# ggplot() +
+#   geom_point(data = tmp,
+#              aes(x = year, y = present/tested, col = subregion, 
+#                  size = tested), alpha = 0.5) +
+#   scale_y_continuous(breaks = seq(0, 1, length.out = 6),
+#     minor_breaks = seq(0, 1, length.out = 11))
+
+
+
+
+
+
+  
