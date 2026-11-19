@@ -236,6 +236,18 @@ zoom_pan <- function(bits,
 }
 
 
+fill_lims <- df %>%
+  filter(year %in% years_to_plot & tag == "50") %>%
+  dplyr::select(val) %>%
+  range()
+
+fill_lims[1] <- 0
+
+df %>%
+  filter(year %in% years_to_plot & tag == "sd") %>%
+  dplyr::select(val) %>%
+  range()
+
 medians <- ggplot() +
   geom_sf(data = afr, fill = "white") +
   geom_tile(data = df %>%
@@ -246,7 +258,9 @@ medians <- ggplot() +
   # geom_tile(data = df %>%
   #             filter(year =="2022" & tag == "medi"),
   #           mapping = aes(x = x, y = y, fill = val)) +
-  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt") +
+  scale_fill_viridis_c(na.value = NA, "Prevalence", trans = "sqrt", 
+                       breaks = c(0, 0.2, 0.4, 0.6),
+                       limits = fill_lims) +
   # xlab("Longitude") +
   # ylab("Latitude") +
   # labs(title = "Median") +
@@ -266,11 +280,6 @@ medians <- ggplot() +
         strip.text = element_text(size = 12),
         legend.justification = "top") 
 medians
-
-fill_lims <- df %>%
-  filter(year %in% years_to_plot & tag == "50") %>%
-  dplyr::select(val) %>%
-  range()
 
 zooms <- plot_grid(zoom_pan(eswatini_bits, years_to_plot[1], 
                             panel_col = case_pal[3],
@@ -304,7 +313,6 @@ zooms <- plot_grid(zoom_pan(eswatini_bits, years_to_plot[1],
                    
                    ncol = 1) +
   theme(plot.margin = unit(c(0.25,0,0.2,0), "cm"))
-ggsave("~/Desktop/test.png", zooms, height=10, width = 2)
 
 
 sds <- ggplot() +
@@ -352,13 +360,13 @@ legs <- plot_grid(get_legend(medians),
 #   geom_text(data = df, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
 #                            label = lab), angle = 90)
   
-rect <- data.frame(xmin = c(0.047, 0.53),
-                 xmax = c(0.52, 0.878),
+rect <- data.frame(xmin = c(0.044, 0.5275),
+                 xmax = c(0.52, 0.876),
                  ymin = rep(0.992, 2),
                  ymax = rep(1.018, 2),
                  lab = c("Median", "Standard deviation"))
 
-plot_grid(medians + theme(legend.position = "none",
+p <- plot_grid(medians + theme(legend.position = "none",
                           plot.margin = margin(t = 5.5, r = 0, b = 5.5, l = 5.5, unit = "pt")), 
           zooms, 
           sds + theme(legend.position = "none",
@@ -370,9 +378,9 @@ plot_grid(medians + theme(legend.position = "none",
                            ymax=ymax), 
             colour="grey10", fill="grey85", linewidth=0.3) +
   geom_text(data = rect, aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2,
-                           label = lab))
+                           label = lab), size = 4.3)
 
-ggsave("figures/k13_out_bb.png", height = 5.2, width = 4.5, scale = 2)
+ggsave("figures/k13_out_bb.png", p, height = 5.2, width = 4.5, scale = 2)
 
 
 ################################################################################

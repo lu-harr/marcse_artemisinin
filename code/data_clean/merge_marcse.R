@@ -502,11 +502,11 @@ p2 <- ggplot() +
   theme(plot.background = element_rect(fill='transparent', color=NA),
         legend.position = "bottom",
         legend.title = element_text(hjust = 0.5),
-        legend.spacing.x = unit(15, "lines"),
+        #legend.spacing.x = unit(7, "lines"),
         panel.spacing = unit(0, "lines")) +
   guides(fill = guide_colourbar(title.position = "top",
                                 theme = theme(legend.key.width = unit(10, "lines"))),
-         size = guide_legend(title.position = "top"))
+         size = guide_legend(title.position = "top", override.aes = list(fill = "white")))
 
 p2
 
@@ -529,7 +529,7 @@ library(cowplot)
 rect <- rectGrob(
   # x = 0.915,
   # y = 0.27,
-  x = 0.4, 0.05,
+  x = 0.25, 0.05,
   width = unit(0.2, "in"),
   height = unit(0.2, "in"),
   gp = gpar(fill = "grey70", colour="grey50", alpha = 0.5)
@@ -538,7 +538,7 @@ rect <- rectGrob(
 p2 <- ggdraw(p2) +
   draw_grob(rect) + 
   # draw_label("Absence", x = 0.96, y = 0.27, size = 10)
-  draw_label("Absence", x = 0.45, y = 0.05, size = 10)
+  draw_label("Absence", x = 0.25, y = 0.025, size = 10)
 #theme(#strip.background = element_blank(),
 #strip.text.x = element_blank(),
 #strip.placement = "outside") +
