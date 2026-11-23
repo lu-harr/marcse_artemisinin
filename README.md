@@ -91,6 +91,9 @@ Slurm scripts for fitting, prediction, and validation can be found in
 
 All manuscript figures can be found in `figures/`.
 
+Prediction surfaces are also available:
+<https://doi.org/10.5281/zenodo.19049856>.
+
 ### Molecular surveillance data
 
 Input data for the models included in this repo can be accessed from:

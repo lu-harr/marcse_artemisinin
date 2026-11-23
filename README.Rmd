@@ -48,6 +48,8 @@ Slurm scripts for fitting, prediction, and validation can be found in `slurm/`.
 
 All manuscript figures can be found in `figures/`.
 
+Prediction surfaces are also available: https://doi.org/10.5281/zenodo.19049856.
+
 ### Molecular surveillance data
 
 Input data for the models included in this repo can be accessed from: https://surveyor.iddo.org and [this repo](https://github.com/lu-harr/MARC_SEA_dashboard). The IDDO/WWARN Molecular Surveyor is a living systematic review and is updated monthly on the Surveyor dashboard platform. To access data, IDDO/WWARN prompts users to provide some contact information. This information is collected to track use of the dataset.
